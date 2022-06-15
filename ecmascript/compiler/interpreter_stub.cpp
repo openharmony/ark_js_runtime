@@ -380,12 +380,12 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
         Branch(isBase, &ctorIsBase, &ctorNotBase);
         Bind(&ctorIsBase);
         {
-            Label notHole(env);
+            Label isHeapObject(env);
             Label checkJSObject(env);
             auto protoOrHclass = Load(VariableType::JS_ANY(), ctor,
                 IntPtr(JSFunction::PROTO_OR_DYNCLASS_OFFSET));
-            Branch(TaggedIsHole(protoOrHclass), &callRuntime, &notHole);
-            Bind(&notHole);
+            Branch(TaggedIsHeapObject(protoOrHclass), &isHeapObject, &callRuntime);
+            Bind(&isHeapObject);
             Branch(IsJSHClass(protoOrHclass), &checkJSObject, &callRuntime);
             Bind(&checkJSObject);
             auto objectType = GetObjectType(protoOrHclass);
@@ -5110,48 +5110,6 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
     DISPATCH_WITH_ACC(PREF_IMM16_IMM16);
 }
 
-DECLARE_ASM_HANDLER(NewObjectDynRangeReturn)
-{
-    auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-
-    Label isHeapObject(env);
-    Label isEcmaObject(env);
-    Label notEcmaObject(env);
-    Label throwError(env);
-    Label returnObject(env);
-    Label dispatch(env);
-
-    auto frame = GetFrame(sp);
-    auto newSp = Load(VariableType::NATIVE_POINTER(), frame, IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
-
-    Branch(TaggedIsHeapObject(*varAcc), &isHeapObject, &notEcmaObject);
-    Bind(&isHeapObject);
-    Branch(TaggedObjectIsEcmaObject(*varAcc), &dispatch, &notEcmaObject);
-    Bind(&notEcmaObject);
-    {
-        // default acc is not undefined
-        auto constructor = GetFunctionFromFrame(frame);
-        Branch(IsBase(constructor), &returnObject, &throwError);
-        Bind(&throwError);
-        {
-            CallRuntime(glue, RTSTUB_ID(ThrowDerivedMustReturnException), {});
-            DispatchLast(glue, newSp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
-        }
-        Bind(&returnObject);
-        {
-            auto fp = Load(VariableType::JS_POINTER(), frame,
-                IntPtr(AsmInterpretedFrame::GetFpOffset(GetEnvironment()->IsArch32Bit())));
-            auto thisObj = GetThisObjectFromFastNewFrame(fp);
-            varAcc = thisObj;
-            Jump(&dispatch);
-        }
-    }
-    Bind(&dispatch);
-    Dispatch(glue, newSp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter,
-             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8)));
-}
-
 DECLARE_ASM_HANDLER(InterpreterGetPropertyByName)
 {
     auto env = GetEnvironment();
@@ -5187,6 +5145,12 @@ DECLARE_ASM_HANDLER(InterpreterGetPropertyByName)
     Bind(&dispatch);
     varAcc = *result;
     DISPATCH_WITH_ACC(PREF_ID32_V8);
+}
+
+DECLARE_ASM_HANDLER(NewObjectDynRangeThrowException)
+{
+    CallRuntime(glue, RTSTUB_ID(ThrowDerivedMustReturnException), {});
+    DISPATCH_LAST();
 }
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH

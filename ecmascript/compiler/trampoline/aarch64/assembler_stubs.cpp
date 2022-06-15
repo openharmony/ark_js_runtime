@@ -1161,10 +1161,13 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 
     Register glueRegister = __ GlueRegister();
     Register sp(FP);
+    Register rsp(SP);
     Register pc(X20);
     Register jumpSizeRegister(X25);
 
+    Register ret(X23);
     Register opcode(X6, W);
+    Register temp(X7);
     Register bcStub(X7);
 
     int64_t fpOffset = static_cast<int64_t>(AsmInterpretedFrame::GetFpOffset(false))
@@ -1173,7 +1176,8 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
     ASSERT(fpOffset < 0);
     ASSERT(spOffset < 0);
-    __ Ldur(Register(SP), MemoryOperand(sp, fpOffset));  // resume rsp
+    __ Ldur(temp, MemoryOperand(sp, fpOffset));
+    __ Mov(rsp, temp);  // resume rsp
 
     Label newObjectDynRangeReturn;
     Label dispatch;
@@ -1191,31 +1195,69 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     }
 
     auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV);
+    Label getHiddenThis;
     Label notUndefined;
     __ Bind(&newObjectDynRangeReturn);
     {
-        Register ret(X0);
         __ Cmp(ret, Immediate(JSTaggedValue::VALUE_UNDEFINED));
         __ B(Condition::NE, &notUndefined);
         auto index = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
         auto thisOffset = index * 8;  // 8: byte size
         ASSERT(thisOffset < 0);
-        __ Ldur(ret, MemoryOperand(sp, thisOffset));  // update acc
+        __ Bind(&getHiddenThis);
+        __ Ldur(ret, MemoryOperand(rsp, thisOffset));  // update acc
+        __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
+        __ Add(pc, pc, Immediate(jumpSize));
+        __ Ldrb(opcode, MemoryOperand(pc, 0));
+        __ B(&dispatch);
+    }
+    __ Bind(&notUndefined);
+    {
+        Label notEcmaObject;
+        __ Mov(temp, Immediate(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN));
+        __ And(temp, temp, ret);
+        __ Cmp(temp, Immediate(0));
+        __ B(Condition::NE, &notEcmaObject);
+        // acc is heap object
+        __ Ldr(temp, MemoryOperand(ret, 0)); // hclass
+        __ Ldr(temp, MemoryOperand(temp, JSHClass::BIT_FIELD_OFFSET));
+        __ And(temp.W(), temp.W(), LogicalImmediate::Create(0xFF, RegWSize));
+        __ Cmp(temp.W(), Immediate(static_cast<int64_t>(JSType::ECMA_OBJECT_END)));
+        __ B(Condition::HI, &notEcmaObject);
+        __ Cmp(temp.W(), Immediate(static_cast<int64_t>(JSType::ECMA_OBJECT_BEGIN)));
+        __ B(Condition::LO, &notEcmaObject);
+        // acc is ecma object
         __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
         __ Add(pc, pc, Immediate(jumpSize));
         __ Ldrb(opcode, MemoryOperand(pc, 0));
         __ B(&dispatch);
 
-        __ Bind(&notUndefined);
-        __ Mov(opcode, kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeReturn);
-        __ B(&dispatch);
+        __ Bind(&notEcmaObject);
+        {
+            int64_t constructorOffset = static_cast<int64_t>(AsmInterpretedFrame::GetFunctionOffset(false))
+                - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
+            ASSERT(constructorOffset < 0);
+            __ Ldur(temp, MemoryOperand(sp, constructorOffset));  // load constructor
+            __ Ldr(temp, MemoryOperand(temp, JSFunction::BIT_FIELD_OFFSET));
+            __ Lsr(temp.W(), temp.W(), JSFunction::FunctionKindBits::START_BIT);
+            __ And(temp.W(), temp.W(),
+                LogicalImmediate::Create((1LU << JSFunction::FunctionKindBits::SIZE) - 1, RegWSize));
+            __ Cmp(temp.W(), Immediate(static_cast<int64_t>(FunctionKind::CLASS_CONSTRUCTOR)));
+            __ B(Condition::LS, &getHiddenThis);  // constructor is base
+            // exception branch
+            {
+                __ Mov(opcode, kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeThrowException);
+                __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
+                __ B(&dispatch);
+            }
+        }
     }
 }
 
 void AssemblerStubs::ResumeRspAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
-    Register sp(SP);
+    Register rsp(SP);
     Register lr(X30);
 
     [[maybe_unused]] TempRegister1Scope scope1(assembler);
@@ -1224,7 +1266,7 @@ void AssemblerStubs::ResumeRspAndReturn(ExtendedAssembler *assembler)
         - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
     ASSERT(offset < 0);
     __ Ldur(fpRegister, MemoryOperand(Register(FP), offset));
-    __ Mov(sp, fpRegister);
+    __ Mov(rsp, fpRegister);
 
     // return
     {
@@ -1257,7 +1299,10 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
     Label dispatch;
     __ Ldr(fp, MemoryOperand(glue, JSThread::GlueData::GetLastFpOffset(false)));
     __ Cmp(fp, Immediate(0));
-    __ CMov(Register(SP), Register(SP), fp, Condition::EQ);
+    __ B(Condition::EQ, &dispatch);
+    // up frame
+    __ Mov(Register(SP), fp);
+    // fall through
     __ Bind(&dispatch);
     {
         __ Ldrb(opcode, MemoryOperand(pc, 0));
