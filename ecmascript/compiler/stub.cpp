@@ -615,10 +615,10 @@ GateRef Stub::CallSetterHelper(GateRef glue, GateRef receiver, GateRef accessor,
         Label objIsUndefined(env);
         Label objNotUndefined(env);
         Branch(TaggedIsUndefined(setter), &objIsUndefined, &objNotUndefined);
-        // if getter is undefined, return undefiend
         Bind(&objIsUndefined);
         {
-            result = Undefined();
+            CallRuntime(glue, RTSTUB_ID(ThrowSetterIsUndefinedException), {});
+            result = Exception();
             Jump(&exit);
         }
         Bind(&objNotUndefined);
