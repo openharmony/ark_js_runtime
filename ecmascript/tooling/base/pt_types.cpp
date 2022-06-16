@@ -90,14 +90,7 @@ const std::string RemoteObject::MapIteratorDescription = "MapIterator";  // NOLI
 const std::string RemoteObject::WeakMapDescription = "WeakMap";          // NOLINT (readability-identifier-naming)
 const std::string RemoteObject::WeakSetDescription = "WeakSet";          // NOLINT (readability-identifier-naming)
 
-static constexpr uint64_t DOUBLE_SIGN_MASK = 0x8000000000000000ULL;
-
-Local<ObjectRef> PtBaseTypes::NewObject(const EcmaVM *ecmaVm)
-{
-    return ObjectRef::New(ecmaVm);
-}
-
-std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
     if (tagged->IsNull() || tagged->IsUndefined() ||
         tagged->IsBoolean() || tagged->IsNumber() ||
@@ -105,10 +98,10 @@ std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, con
         return std::make_unique<PrimitiveRemoteObject>(ecmaVm, tagged);
     }
     if (tagged->IsString()) {
-        return std::make_unique<StringRemoteObject>(ecmaVm, tagged);
+        return std::make_unique<StringRemoteObject>(ecmaVm, Local<StringRef>(tagged));
     }
     if (tagged->IsSymbol()) {
-        return std::make_unique<SymbolRemoteObject>(ecmaVm, tagged);
+        return std::make_unique<SymbolRemoteObject>(ecmaVm, Local<SymbolRef>(tagged));
     }
     if (tagged->IsFunction()) {
         return std::make_unique<FunctionRemoteObject>(ecmaVm, tagged);
@@ -169,30 +162,85 @@ std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, con
     return object;
 }
 
-PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
     if (tagged->IsNull()) {
-        this->SetType(ObjectType::Object).SetSubType(ObjectSubType::Null).SetValue(tagged);
+        SetType(ObjectType::Object).SetSubType(ObjectSubType::Null);
     } else if (tagged->IsBoolean()) {
-        this->SetType(ObjectType::Boolean).SetValue(tagged);
+        std::string description = tagged->IsTrue() ? "true" : "false";
+        SetType(ObjectType::Boolean)
+            .SetValue(tagged)
+            .SetUnserializableValue(description)
+            .SetDescription(description);
     } else if (tagged->IsUndefined()) {
-        this->SetType(ObjectType::Undefined);
+        SetType(ObjectType::Undefined);
     } else if (tagged->IsNumber()) {
-        this->SetType(ObjectType::Number)
-            .SetDescription(DebuggerApi::ToStdString(tagged->ToString(ecmaVm)));
-        double val = Local<NumberRef>(tagged)->Value();
-        if (!std::isfinite(val) || (val == 0 && ((bit_cast<uint64_t>(val) & DOUBLE_SIGN_MASK) == DOUBLE_SIGN_MASK))) {
-            this->SetUnserializableValue(this->GetDescription());
-        } else {
-            this->SetValue(tagged);
-        }
+        std::string description = tagged->ToString(ecmaVm)->ToString();
+        SetType(ObjectType::Number)
+            .SetValue(tagged)
+            .SetUnserializableValue(description)
+            .SetDescription(description);
     } else if (tagged->IsBigInt()) {
-        std::string literal = tagged->ToString(ecmaVm)->ToString() + "n"; // n : BigInt literal postfix
-        this->SetType(ObjectType::Bigint).SetValue(StringRef::NewFromUtf8(ecmaVm, literal.data()));
+        std::string description = tagged->ToString(ecmaVm)->ToString() + "n";  // n : BigInt literal postfix
+        SetType(ObjectType::Bigint)
+            .SetValue(tagged)
+            .SetUnserializableValue(description)
+            .SetDescription(description);
     }
 }
 
-std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+StringRemoteObject::StringRemoteObject([[maybe_unused]] const EcmaVM *ecmaVm, Local<StringRef> tagged)
+{
+    std::string description = tagged->ToString();
+    SetType(RemoteObject::TypeName::String)
+        .SetValue(tagged)
+        .SetUnserializableValue(description)
+        .SetDescription(description);
+}
+
+SymbolRemoteObject::SymbolRemoteObject(const EcmaVM *ecmaVm, Local<SymbolRef> tagged)
+{
+    std::string description = DescriptionForSymbol(ecmaVm, tagged);
+    SetType(RemoteObject::TypeName::Symbol)
+        .SetValue(tagged)
+        .SetUnserializableValue(description)
+        .SetDescription(description);
+}
+
+FunctionRemoteObject::FunctionRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
+{
+    std::string description = DescriptionForFunction(ecmaVm, tagged);
+    SetType(RemoteObject::TypeName::Function)
+        .SetClassName(RemoteObject::ClassName::Function)
+        .SetValue(tagged)
+        .SetUnserializableValue(description)
+        .SetDescription(description);
+}
+
+ObjectRemoteObject::ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged,
+                                       const std::string &classname)
+{
+    std::string description = DescriptionForObject(ecmaVm, tagged);
+    SetType(RemoteObject::TypeName::Object)
+        .SetClassName(classname)
+        .SetValue(tagged)
+        .SetUnserializableValue(description)
+        .SetDescription(description);
+}
+
+ObjectRemoteObject::ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged,
+                                       const std::string &classname, const std::string &subtype)
+{
+    std::string description = DescriptionForObject(ecmaVm, tagged);
+    SetType(RemoteObject::TypeName::Object)
+        .SetSubType(subtype)
+        .SetClassName(classname)
+        .SetValue(tagged)
+        .SetUnserializableValue(description)
+        .SetDescription(description);
+}
+
+std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
     if (tagged->IsArray(ecmaVm)) {
         return DescriptionForArray(ecmaVm, Local<ArrayRef>(tagged));
@@ -242,60 +290,59 @@ std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const
     return RemoteObject::ObjectDescription;
 }
 
-std::string ObjectRemoteObject::DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForArray(const EcmaVM *ecmaVm, Local<ArrayRef> tagged)
 {
     std::string description = "Array(" + std::to_string(tagged->Length(ecmaVm)) + ")";
     return description;
 }
 
-std::string ObjectRemoteObject::DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForRegexp(const EcmaVM *ecmaVm, Local<RegExpRef> tagged)
 {
-    std::string regexpSource = DebuggerApi::ToStdString(tagged->GetOriginalSource(ecmaVm));
+    std::string regexpSource = tagged->GetOriginalSource(ecmaVm)->ToString();
     std::string description = "/" + regexpSource + "/";
     return description;
 }
 
-std::string ObjectRemoteObject::DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForDate(const EcmaVM *ecmaVm, Local<DateRef> tagged)
 {
-    std::string description = DebuggerApi::ToStdString(tagged->ToString(ecmaVm));
+    std::string description = tagged->ToString(ecmaVm)->ToString();
     return description;
 }
 
-std::string ObjectRemoteObject::DescriptionForMap(const Local<MapRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForMap(Local<MapRef> tagged)
 {
     std::string description = ("Map(" + std::to_string(tagged->GetSize()) + ")");
     return description;
 }
 
-std::string ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForSet(Local<SetRef> tagged)
 {
     std::string description = ("Set(" + std::to_string(tagged->GetSize()) + ")");
     return description;
 }
 
-std::string ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
     // add message
     Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "message");
     Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
-    return DebuggerApi::ToStdString(result->ToString(ecmaVm));
+    return result->ToString(ecmaVm)->ToString();
 }
 
-std::string ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged)
 {
     int32_t len = tagged->ByteLength(ecmaVm);
     std::string description = ("ArrayBuffer(" + std::to_string(len) + ")");
     return description;
 }
 
-std::string SymbolRemoteObject::DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const
+std::string SymbolRemoteObject::DescriptionForSymbol(const EcmaVM *ecmaVm, Local<SymbolRef> tagged) const
 {
-    std::string description =
-        "Symbol(" + DebuggerApi::ToStdString(tagged->GetDescription(ecmaVm)) + ")";
+    std::string description = "Symbol(" + tagged->GetDescription(ecmaVm)->ToString() + ")";
     return description;
 }
 
-std::string FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const
+std::string FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, Local<FunctionRef> tagged) const
 {
     std::string sourceCode;
     if (tagged->IsNative(ecmaVm)) {
@@ -304,91 +351,8 @@ std::string FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, c
         sourceCode = "[js code]";
     }
     Local<StringRef> name = tagged->GetName(ecmaVm);
-    std::string description = "function " + DebuggerApi::ToStdString(name) + "( { " + sourceCode + " }";
+    std::string description = "function " + name->ToString() + "( { " + sourceCode + " }";
     return description;
-}
-
-std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto remoteObject = std::make_unique<RemoteObject>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            auto type = DebuggerApi::ToStdString(result);
-            if (ObjectType::Valid(type)) {
-                remoteObject->type_ = type;
-            } else {
-                error += "'type' is invalid;";
-            }
-        } else {
-            error += "'type' should be a String;";
-        }
-    } else {
-        error += "should contain 'type';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            auto type = DebuggerApi::ToStdString(result);
-            if (ObjectSubType::Valid(type)) {
-                remoteObject->subType_ = type;
-            } else {
-                error += "'subtype' is invalid;";
-            }
-        } else {
-            error += "'subtype' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "className")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            remoteObject->className_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'className' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        remoteObject->value_ = result;
-    }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            remoteObject->unserializableValue_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'unserializableValue' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "description")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            remoteObject->description_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'description' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            remoteObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create " << error;
-        return nullptr;
-    }
-
-    return remoteObject;
 }
 
 std::unique_ptr<RemoteObject> RemoteObject::Create(const PtJson &params)
@@ -461,45 +425,6 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const PtJson &params)
     return remoteObject;
 }
 
-Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, type_.c_str())));
-    if (subType_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, subType_->c_str())));
-    }
-    if (className_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "className")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, className_->c_str())));
-    }
-    if (value_) {
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")), value_.value());
-    }
-    if (unserializableValue_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, unserializableValue_->c_str())));
-    }
-    if (description_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "description")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, description_->c_str())));
-    }
-    if (objectId_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_.value()).c_str())));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> RemoteObject::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -522,103 +447,6 @@ std::unique_ptr<PtJson> RemoteObject::ToJson() const
     }
 
     return result;
-}
-
-std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "ExceptionDetails::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto exceptionDetails = std::make_unique<ExceptionDetails>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            exceptionDetails->exceptionId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'exceptionId' should be a Number;";
-        }
-    } else {
-        error += "should contain 'exceptionId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            exceptionDetails->text_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'text' should be a String;";
-        }
-    } else {
-        error += "should contain 'text';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            exceptionDetails->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            exceptionDetails->columnNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'columnNumber';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            exceptionDetails->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            exceptionDetails->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exception")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'exception' format error;";
-            } else {
-                exceptionDetails->exception_ = std::move(obj);
-            }
-        } else {
-            error += "'exception' should be an Object;";
-        }
-    }
-
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            exceptionDetails->executionContextId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'executionContextId' should be a Number;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ExceptionDetails::Create " << error;
-        return nullptr;
-    }
-
-    return exceptionDetails;
 }
 
 std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
@@ -679,10 +507,10 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
     ret = params.GetObject("exception", &exception);
     if (ret == Result::SUCCESS) {
         std::unique_ptr<RemoteObject> obj = RemoteObject::Create(*exception);
-        if (obj != nullptr) {
-            exceptionDetails->exception_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'exception' format error;";
+        } else {
+            exceptionDetails->exception_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'exception';";
@@ -704,45 +532,6 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
     return exceptionDetails;
 }
 
-Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionId")),
-        IntegerRef::New(ecmaVm, exceptionId_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, text_.c_str())));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-        IntegerRef::New(ecmaVm, columnNumber_));
-    if (scriptId_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_.value()).c_str())));
-    }
-    if (url_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_->c_str())));
-    }
-    if (exception_) {
-        ASSERT(exception_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exception")),
-            Local<JSValueRef>(exception_.value()->ToObject(ecmaVm)));
-    }
-    if (executionContextId_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")),
-            IntegerRef::New(ecmaVm, executionContextId_.value()));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> ExceptionDetails::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -758,7 +547,8 @@ std::unique_ptr<PtJson> ExceptionDetails::ToJson() const
     if (url_) {
         result->Add("url", url_->c_str());
     }
-    if (exception_ && exception_.value() != nullptr) {
+    if (exception_) {
+        ASSERT(exception_.value() != nullptr);
         result->Add("exception", exception_.value()->ToJson());
     }
     if (executionContextId_) {
@@ -766,48 +556,6 @@ std::unique_ptr<PtJson> ExceptionDetails::ToJson() const
     }
 
     return result;
-}
-
-std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto internalPropertyDescriptor = std::make_unique<InternalPropertyDescriptor>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            internalPropertyDescriptor->name_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'name' should be a String;";
-        }
-    } else {
-        error += "should contain 'name';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'value' format error;";
-            } else {
-                internalPropertyDescriptor->value_ = std::move(obj);
-            }
-        } else {
-            error += "'value' should be an Object;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create " << error;
-        return nullptr;
-    }
-
-    return internalPropertyDescriptor;
 }
 
 std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(const PtJson &params)
@@ -828,10 +576,10 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
     ret = params.GetObject("value", &value);
     if (ret == Result::SUCCESS) {
         std::unique_ptr<RemoteObject> obj = RemoteObject::Create(*value);
-        if (obj != nullptr) {
-            internalPropertyDescriptor->value_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'value' format error;";
+        } else {
+            internalPropertyDescriptor->value_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'value';";
@@ -845,101 +593,17 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
     return internalPropertyDescriptor;
 }
 
-Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
-    if (value_) {
-        ASSERT(value_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")),
-            Local<JSValueRef>(value_.value()->ToObject(ecmaVm)));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> InternalPropertyDescriptor::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("name", name_.c_str());
-    if (value_ && value_.value() != nullptr) {
+    if (value_) {
+        ASSERT(value_.value() != nullptr);
         result->Add("value", value_.value()->ToJson());
     }
 
     return result;
-}
-
-std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto propertyDescriptor = std::make_unique<PrivatePropertyDescriptor>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'name' should be a String;";
-        }
-    } else {
-        error += "should contain 'name';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'value' format error;";
-            } else {
-                propertyDescriptor->value_ = std::move(obj);
-            }
-        } else {
-            error += "'value' should be a Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'get' format error;";
-            } else {
-                propertyDescriptor->get_ = std::move(obj);
-            }
-        } else {
-            error += "'get' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'set' format error;";
-            } else {
-                propertyDescriptor->set_ = std::move(obj);
-            }
-        } else {
-            error += "'set' should be an Object;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create " << error;
-        return nullptr;
-    }
-
-    return propertyDescriptor;
 }
 
 std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(const PtJson &params)
@@ -961,10 +625,10 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     std::unique_ptr<RemoteObject> obj;
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*value);
-        if (obj != nullptr) {
-            privatePropertyDescriptor->value_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'value' format error;";
+        } else {
+            privatePropertyDescriptor->value_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'value';";
@@ -974,10 +638,10 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     ret = params.GetObject("get", &get);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*get);
-        if (obj != nullptr) {
-            privatePropertyDescriptor->get_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'get' format error;";
+        } else {
+            privatePropertyDescriptor->get_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'get';";
@@ -987,10 +651,10 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     ret = params.GetObject("set", &set);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*set);
-        if (obj != nullptr) {
-            privatePropertyDescriptor->set_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'set' format error;";
+        } else {
+            privatePropertyDescriptor->set_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'set';";
@@ -1004,47 +668,21 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     return privatePropertyDescriptor;
 }
 
-Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
-    if (value_) {
-        ASSERT(value_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")),
-            Local<JSValueRef>(value_.value()->ToObject(ecmaVm)));
-    }
-    if (get_) {
-        ASSERT(get_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")),
-            Local<JSValueRef>(get_.value()->ToObject(ecmaVm)));
-    }
-    if (set_) {
-        ASSERT(set_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")),
-            Local<JSValueRef>(set_.value()->ToObject(ecmaVm)));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> PrivatePropertyDescriptor::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("name", name_.c_str());
-    if (value_ && value_.value() != nullptr) {
+    if (value_) {
+        ASSERT(value_.value() != nullptr);
         result->Add("value", value_.value()->ToJson());
     }
-    if (get_ && get_.value() != nullptr) {
+    if (get_) {
+        ASSERT(get_.value() != nullptr);
         result->Add("get", get_.value()->ToJson());
     }
-    if (set_ && set_.value() != nullptr) {
+    if (set_) {
+        ASSERT(set_.value() != nullptr);
         result->Add("set", set_.value()->ToJson());
     }
 
@@ -1052,18 +690,17 @@ std::unique_ptr<PtJson> PrivatePropertyDescriptor::ToJson() const
 }
 
 std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &name, const PropertyAttribute &property)
+    Local<JSValueRef> name, const PropertyAttribute &property)
 {
     std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
 
     std::string nameStr;
     if (name->IsSymbol()) {
         Local<SymbolRef> symbol(name);
-        nameStr =
-            "Symbol(" + DebuggerApi::ToStdString(Local<SymbolRef>(name)->GetDescription(ecmaVm)) + ")";
+        nameStr = "Symbol(" + Local<SymbolRef>(name)->GetDescription(ecmaVm)->ToString() + ")";
         debuggerProperty->symbol_ = RemoteObject::FromTagged(ecmaVm, name);
     } else {
-        nameStr = DebuggerApi::ToStdString(name->ToString(ecmaVm));
+        nameStr = name->ToString(ecmaVm)->ToString();
     }
 
     debuggerProperty->name_ = nameStr;
@@ -1086,130 +723,6 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaV
     return debuggerProperty;
 }
 
-std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "PropertyDescriptor::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto propertyDescriptor = std::make_unique<PropertyDescriptor>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'name' should be a String;";
-        }
-    } else {
-        error += "should contain 'name';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'value' format error;";
-            } else {
-                propertyDescriptor->value_ = std::move(obj);
-            }
-        } else {
-            error += "'value' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "writable")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            propertyDescriptor->writable_ = result->IsTrue();
-        } else {
-            error += "'writable' should be a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'get' format error;";
-            } else {
-                propertyDescriptor->get_ = std::move(obj);
-            }
-        } else {
-            error += "'get' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'set' format error;";
-            } else {
-                propertyDescriptor->set_ = std::move(obj);
-            }
-        } else {
-            error += "'set' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "configurable")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            propertyDescriptor->configurable_ = result->IsTrue();
-        } else {
-            error += "'configurable' should be a Boolean;";
-        }
-    } else {
-        error += "should contain 'configurable';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "enumerable")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            propertyDescriptor->enumerable_ = result->IsTrue();
-        } else {
-            error += "'enumerable' should be a Boolean;";
-        }
-    } else {
-        error += "should contain 'enumerable';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "wasThrown")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            propertyDescriptor->wasThrown_ = result->IsTrue();
-        } else {
-            error += "'wasThrown' should be a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isOwn")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            propertyDescriptor->isOwn_ = result->IsTrue();
-        } else {
-            error += "'isOwn' should be a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "symbol")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'symbol' format error;";
-            } else {
-                propertyDescriptor->symbol_ = std::move(obj);
-            }
-        } else {
-            error += "'symbol' should be an Object;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PropertyDescriptor::Create " << error;
-        return nullptr;
-    }
-
-    return propertyDescriptor;
-}
-
 std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &params)
 {
     std::string error;
@@ -1229,10 +742,10 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     ret = params.GetObject("value", &value);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*value);
-        if (obj != nullptr) {
-            propertyDescriptor->value_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'value' format error;";
+        } else {
+            propertyDescriptor->value_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'value';";
@@ -1250,10 +763,10 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     ret = params.GetObject("get", &get);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*get);
-        if (obj != nullptr) {
-            propertyDescriptor->get_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'get' format error;";
+        } else {
+            propertyDescriptor->get_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'get';";
@@ -1263,10 +776,10 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     ret = params.GetObject("set", &set);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*set);
-        if (obj != nullptr) {
-            propertyDescriptor->set_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'set' format error;";
+        } else {
+            propertyDescriptor->set_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'set';";
@@ -1308,10 +821,10 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     ret = params.GetObject("symbol", &symbol);
     if (ret == Result::SUCCESS) {
         obj = RemoteObject::Create(*symbol);
-        if (obj != nullptr) {
-            propertyDescriptor->symbol_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'symbol' format error;";
+        } else {
+            propertyDescriptor->symbol_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'symbol';";
@@ -1325,76 +838,24 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     return propertyDescriptor;
 }
 
-Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
-    if (value_) {
-        ASSERT(value_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")),
-            Local<JSValueRef>(value_.value()->ToObject(ecmaVm)));
-    }
-    if (writable_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "writable")),
-            BooleanRef::New(ecmaVm, writable_.value()));
-    }
-    if (get_) {
-        ASSERT(get_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")),
-            Local<JSValueRef>(get_.value()->ToObject(ecmaVm)));
-    }
-    if (set_) {
-        ASSERT(set_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")),
-            Local<JSValueRef>(set_.value()->ToObject(ecmaVm)));
-    }
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "configurable")),
-        BooleanRef::New(ecmaVm, configurable_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "enumerable")),
-        BooleanRef::New(ecmaVm, enumerable_));
-    if (wasThrown_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "wasThrown")),
-            BooleanRef::New(ecmaVm, wasThrown_.value()));
-    }
-    if (isOwn_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isOwn")),
-            BooleanRef::New(ecmaVm, isOwn_.value()));
-    }
-    if (symbol_) {
-        ASSERT(symbol_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "symbol")),
-            Local<JSValueRef>(symbol_.value()->ToObject(ecmaVm)));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> PropertyDescriptor::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("name", name_.c_str());
-    if (value_ && value_.value() != nullptr) {
+    if (value_) {
+        ASSERT(value_.value() != nullptr);
         result->Add("value", value_.value()->ToJson());
     }
     if (writable_) {
         result->Add("writable", writable_.value());
     }
-    if (get_ && get_.value() != nullptr) {
+    if (get_) {
+        ASSERT(get_.value() != nullptr);
         result->Add("get", get_.value()->ToJson());
     }
-    if (set_ && set_.value() != nullptr) {
+    if (set_) {
+        ASSERT(set_.value() != nullptr);
         result->Add("set", set_.value()->ToJson());
     }
     result->Add("configurable", configurable_);
@@ -1405,7 +866,8 @@ std::unique_ptr<PtJson> PropertyDescriptor::ToJson() const
     if (isOwn_) {
         result->Add("isOwn", isOwn_.value());
     }
-    if (symbol_ && symbol_.value() != nullptr) {
+    if (symbol_) {
+        ASSERT(symbol_.value() != nullptr);
         result->Add("symbol", symbol_.value()->ToJson());
     }
 
@@ -1455,52 +917,6 @@ std::unique_ptr<PtJson> CallArgument::ToJson() const
     return result;
 }
 
-std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto location = std::make_unique<Location>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            location->scriptId_ = DebuggerApi::StringToInt(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            location->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            location->columnNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
-        return nullptr;
-    }
-
-    return location;
-}
-
 std::unique_ptr<Location> Location::Create(const PtJson &params)
 {
     auto location = std::make_unique<Location>();
@@ -1535,24 +951,6 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     }
 
     return location;
-}
-
-Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    if (columnNumber_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-            IntegerRef::New(ecmaVm, columnNumber_.value()));
-    }
-
-    return params;
 }
 
 std::unique_ptr<PtJson> Location::ToJson() const
@@ -1597,18 +995,6 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const PtJson &params)
     return scriptPosition;
 }
 
-Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-        IntegerRef::New(ecmaVm, columnNumber_));
-
-    return params;
-}
-
 std::unique_ptr<PtJson> ScriptPosition::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -1617,46 +1003,6 @@ std::unique_ptr<PtJson> ScriptPosition::ToJson() const
     result->Add("columnNumber", columnNumber_);
 
     return result;
-}
-
-std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "SearchMatch::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto locationSearch = std::make_unique<SearchMatch>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            locationSearch->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            locationSearch->lineContent_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'lineContent' should be a String;";
-        }
-    } else {
-        error += "should contain 'lineContent';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SearchMatch::Create " << error;
-        return nullptr;
-    }
-
-    return locationSearch;
 }
 
 std::unique_ptr<SearchMatch> SearchMatch::Create(const PtJson &params)
@@ -1689,18 +1035,6 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const PtJson &params)
     return locationSearch;
 }
 
-Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, lineContent_.c_str())));
-    return params;
-}
-
 std::unique_ptr<PtJson> SearchMatch::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -1730,10 +1064,10 @@ std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
     ret = params.GetObject("start", &start);
     if (ret == Result::SUCCESS) {
         obj = ScriptPosition::Create(*start);
-        if (obj != nullptr) {
-            locationRange->start_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'start' format error;";
+        } else {
+            locationRange->start_ = std::move(obj);
         }
     } else {
         error += "Unknown 'start';";
@@ -1743,10 +1077,10 @@ std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
     ret = params.GetObject("end", &end);
     if (ret == Result::SUCCESS) {
         obj = ScriptPosition::Create(*end);
-        if (obj != nullptr) {
-            locationRange->end_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'end' format error;";
+        } else {
+            locationRange->end_ = std::move(obj);
         }
     } else {
         error += "Unknown 'end';";
@@ -1760,96 +1094,17 @@ std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
     return locationRange;
 }
 
-Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
-    ASSERT(start_ != nullptr);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
-        Local<JSValueRef>(start_->ToObject(ecmaVm)));
-    ASSERT(end_ != nullptr);
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
-        Local<JSValueRef>(end_->ToObject(ecmaVm)));
-
-    return params;
-}
-
 std::unique_ptr<PtJson> LocationRange::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("scriptId", std::to_string(scriptId_).c_str());
-    if (start_ != nullptr) {
-        result->Add("start", start_->ToJson());
-    }
-    if (end_ != nullptr) {
-        result->Add("end", end_->ToJson());
-    }
+    ASSERT(start_ != nullptr);
+    result->Add("start", start_->ToJson());
+    ASSERT(end_ != nullptr);
+    result->Add("end", end_->ToJson());
 
     return result;
-}
-
-std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "BreakLocation::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto breakLocation = std::make_unique<BreakLocation>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            breakLocation->scriptId_ = DebuggerApi::StringToInt(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            breakLocation->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            breakLocation->columnNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            auto type = DebuggerApi::ToStdString(result);
-            if (BreakType::Valid(type)) {
-                breakLocation->type_ = type;
-            } else {
-                error += "'type' is invalid;";
-            }
-        } else {
-            error += "'type' should be a String;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
-        return nullptr;
-    }
-
-    return breakLocation;
 }
 
 std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
@@ -1902,29 +1157,6 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
     return breakLocation;
 }
 
-Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    if (columnNumber_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-            IntegerRef::New(ecmaVm, columnNumber_.value()));
-    }
-    if (type_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, type_->c_str())));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> BreakLocation::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -1939,88 +1171,6 @@ std::unique_ptr<PtJson> BreakLocation::ToJson() const
     }
 
     return result;
-}
-
-std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "Scope::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto scope = std::make_unique<Scope>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            auto type = DebuggerApi::ToStdString(result);
-            if (Scope::Type::Valid(type)) {
-                scope->type_ = type;
-            } else {
-                error += "'type' is invalid;";
-            }
-        } else {
-            error += "'type' should be a String;";
-        }
-    } else {
-        error += "should contain 'type';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'object' format error;";
-            } else {
-                scope->object_ = std::move(obj);
-            }
-        } else {
-            error += "'object' should be an Object;";
-        }
-    } else {
-        error += "should contain 'object';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scope->name_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'name' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLocation")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'startLocation' format error;";
-            } else {
-                scope->startLocation_ = std::move(obj);
-            }
-        } else {
-            error += "'startLocation' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLocation")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'endLocation' format error;";
-            } else {
-                scope->endLocation_ = std::move(obj);
-            }
-        } else {
-            error += "'endLocation' should be an Object;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
-        return nullptr;
-    }
-
-    return scope;
 }
 
 std::unique_ptr<Scope> Scope::Create(const PtJson &params)
@@ -2046,10 +1196,10 @@ std::unique_ptr<Scope> Scope::Create(const PtJson &params)
     ret = params.GetObject("object", &object);
     if (ret == Result::SUCCESS) {
         remoteObject = RemoteObject::Create(*object);
-        if (remoteObject != nullptr) {
-            scope->object_ = std::move(remoteObject);
-        } else {
+        if (remoteObject == nullptr) {
             error += "'object' format error;";
+        } else {
+            scope->object_ = std::move(remoteObject);
         }
     } else {
         error += "Unknown 'object';";
@@ -2068,10 +1218,10 @@ std::unique_ptr<Scope> Scope::Create(const PtJson &params)
     ret = params.GetObject("startLocation", &startLocation);
     if (ret == Result::SUCCESS) {
         obj = Location::Create(*startLocation);
-        if (obj != nullptr) {
-            scope->startLocation_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'startLocation' format error;";
+        } else {
+            scope->startLocation_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'startLocation';";
@@ -2081,10 +1231,10 @@ std::unique_ptr<Scope> Scope::Create(const PtJson &params)
     ret = params.GetObject("endLocation", &endLocation);
     if (ret == Result::SUCCESS) {
         obj = Location::Create(*endLocation);
-        if (obj != nullptr) {
-            scope->endLocation_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'endLocation' format error;";
+        } else {
+            scope->endLocation_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'endLocation';";
@@ -2098,183 +1248,26 @@ std::unique_ptr<Scope> Scope::Create(const PtJson &params)
     return scope;
 }
 
-Local<ObjectRef> Scope::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, type_.c_str())));
-    ASSERT(object_ != nullptr);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
-        Local<JSValueRef>(object_->ToObject(ecmaVm)));
-    if (name_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_->c_str())));
-    }
-    if (startLocation_) {
-        ASSERT(startLocation_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLocation")),
-            Local<JSValueRef>(startLocation_.value()->ToObject(ecmaVm)));
-    }
-    if (endLocation_) {
-        ASSERT(endLocation_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLocation")),
-            Local<JSValueRef>(endLocation_.value()->ToObject(ecmaVm)));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> Scope::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("type", type_.c_str());
-    if (object_ != nullptr) {
-        result->Add("object", object_->ToJson());
-    }
+    ASSERT(object_ != nullptr);
+    result->Add("object", object_->ToJson());
     if (name_) {
         result->Add("name", name_->c_str());
     }
-    if (startLocation_ && startLocation_.value() != nullptr) {
+    if (startLocation_) {
+        ASSERT(startLocation_.value() != nullptr);
         result->Add("startLocation", startLocation_.value()->ToJson());
     }
-    if (endLocation_ && endLocation_.value() != nullptr) {
+    if (endLocation_) {
+        ASSERT(endLocation_.value() != nullptr);
         result->Add("endLocation", endLocation_.value()->ToJson());
     }
 
     return result;
-}
-
-std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "CallFrame::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto callFrame = std::make_unique<CallFrame>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            callFrame->callFrameId_ = DebuggerApi::StringToInt(result);
-        } else {
-            error += "'callFrameId' should be a String;";
-        }
-    } else {
-        error += "should contain 'callFrameId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            callFrame->functionName_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'functionName' should be a String;";
-        }
-    } else {
-        error += "should contain 'functionName';";
-    }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionLocation")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'functionLocation' format error;";
-            } else {
-                callFrame->functionLocation_ = std::move(obj);
-            }
-        } else {
-            error += "'functionLocation' should be an Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'location' format error;";
-            } else {
-                callFrame->location_ = std::move(obj);
-            }
-        } else {
-            error += "'location' should be an Object;";
-        }
-    } else {
-        error += "should contain 'location';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            callFrame->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scopeChain")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<Scope> scope = Scope::Create(ecmaVm, resultValue);
-                if (resultValue.IsEmpty() || scope == nullptr) {
-                    error += "'scopeChain' format invalid;";
-                }
-                callFrame->scopeChain_.emplace_back(std::move(scope));
-            }
-        } else {
-            error += "'scopeChain' should be an Array;";
-        }
-    } else {
-        error += "should contain 'scopeChain';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "this")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'this' format error;";
-            } else {
-                callFrame->this_ = std::move(obj);
-            }
-        } else {
-            error += "'this' should be an Object;";
-        }
-    } else {
-        error += "should contain 'this';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnValue")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'returnValue' format error;";
-            } else {
-                callFrame->returnValue_ = std::move(obj);
-            }
-        } else {
-            error += "'returnValue' should be an Object;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "CallFrame::Create " << error;
-        return nullptr;
-    }
-
-    return callFrame;
 }
 
 std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
@@ -2304,10 +1297,10 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     ret = params.GetObject("functionLocation", &functionLocation);
     if (ret == Result::SUCCESS) {
         obj = Location::Create(*functionLocation);
-        if (obj != nullptr) {
-            callFrame->functionLocation_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'functionLocation' format error;";
+        } else {
+            callFrame->functionLocation_ = std::move(obj);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'functionLocation';";
@@ -2317,10 +1310,10 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     ret = params.GetObject("location", &location);
     if (ret == Result::SUCCESS) {
         obj = Location::Create(*location);
-        if (obj != nullptr) {
-            callFrame->location_ = std::move(obj);
-        } else {
+        if (obj == nullptr) {
             error += "'location' format error;";
+        } else {
+            callFrame->location_ = std::move(obj);
         }
     } else {
         error += "Unknown 'location';";
@@ -2340,15 +1333,12 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
         int32_t len = scopeChain->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = scopeChain->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<Scope> scope = Scope::Create(*arrayEle);
-                if (scope != nullptr) {
-                    callFrame->scopeChain_.emplace_back(std::move(scope));
-                } else {
-                    error += "'scopeChain' format error;";
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<Scope> scope = Scope::Create(*arrayEle);
+            if (scope == nullptr) {
+                error += "'scopeChain' format error;";
             } else {
-                error += "Unknown 'scopeChain';";
+                callFrame->scopeChain_.emplace_back(std::move(scope));
             }
         }
     } else {
@@ -2360,10 +1350,10 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     ret = params.GetObject("this", &thisObj);
     if (ret == Result::SUCCESS) {
         remoteObject = RemoteObject::Create(*thisObj);
-        if (remoteObject != nullptr) {
-            callFrame->this_ = std::move(remoteObject);
-        } else {
+        if (remoteObject == nullptr) {
             error += "'this' format error;";
+        } else {
+            callFrame->this_ = std::move(remoteObject);
         }
     } else {
         error += "Unknown 'this';";
@@ -2373,10 +1363,10 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     ret = params.GetObject("returnValue", &returnValue);
     if (ret == Result::SUCCESS) {
         remoteObject = RemoteObject::Create(*returnValue);
-        if (remoteObject != nullptr) {
-            callFrame->returnValue_ = std::move(remoteObject);
-        } else {
+        if (remoteObject == nullptr) {
             error += "'returnValue' format error;";
+        } else {
+            callFrame->returnValue_ = std::move(remoteObject);
         }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'returnValue';";
@@ -2390,49 +1380,6 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     return callFrame;
 }
 
-Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(callFrameId_).c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));
-    if (functionLocation_) {
-        ASSERT(functionLocation_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionLocation")),
-            Local<JSValueRef>(functionLocation_.value()->ToObject(ecmaVm)));
-    }
-    ASSERT(location_ != nullptr);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")),
-        Local<JSValueRef>(location_->ToObject(ecmaVm)));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-    size_t len = scopeChain_.size();
-    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
-    for (size_t i = 0; i < len; i++) {
-        Local<ObjectRef> scope = scopeChain_[i]->ToObject(ecmaVm);
-        values->Set(ecmaVm, i, scope);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scopeChain")), values);
-    ASSERT(this_ != nullptr);
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "this")),
-        Local<JSValueRef>(this_->ToObject(ecmaVm)));
-    if (returnValue_) {
-        ASSERT(returnValue_.value() != nullptr);
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnValue")),
-            Local<JSValueRef>(returnValue_.value()->ToObject(ecmaVm)));
-    }
-
-    return params;
-}
-
 std::unique_ptr<PtJson> CallFrame::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -2440,12 +1387,12 @@ std::unique_ptr<PtJson> CallFrame::ToJson() const
     result->Add("callFrameId", std::to_string(callFrameId_).c_str());
     result->Add("functionName", functionName_.c_str());
 
-    if (functionLocation_ && functionLocation_.value() != nullptr) {
+    if (functionLocation_) {
+        ASSERT(functionLocation_.value() != nullptr);
         result->Add("functionLocation", functionLocation_.value()->ToJson());
     }
-    if (location_ != nullptr) {
-        result->Add("location", location_->ToJson());
-    }
+    ASSERT(location_ != nullptr);
+    result->Add("location", location_->ToJson());
     result->Add("url", url_.c_str());
 
     size_t len = scopeChain_.size();
@@ -2456,66 +1403,14 @@ std::unique_ptr<PtJson> CallFrame::ToJson() const
     }
     result->Add("scopeChain", values);
 
-    if (this_ != nullptr) {
-        result->Add("this", this_->ToJson());
-    }
-    if (returnValue_ && returnValue_.value() != nullptr) {
+    ASSERT(this_ != nullptr);
+    result->Add("this", this_->ToJson());
+    if (returnValue_) {
+        ASSERT(returnValue_.value() != nullptr);
         result->Add("returnValue", returnValue_.value()->ToJson());
     }
 
     return result;
-}
-
-std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const EcmaVM *ecmaVm,
-                                                                             const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto samplingHeapProfileSample = std::make_unique<SamplingHeapProfileSample>();
-
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            samplingHeapProfileSample->size_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'size' should be a Number;";
-        }
-    } else {
-        error += "should contain 'size';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ordinal")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            samplingHeapProfileSample->ordinal_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'ordinal' should be a Number;";
-        }
-    } else {
-        error += "should contain 'ordinal';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodeId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            samplingHeapProfileSample->nodeId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'nodeId' should be a Number;";
-        }
-    } else {
-        error += "should contain 'nodeId';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create " << error;
-        return nullptr;
-    }
-
-    return samplingHeapProfileSample;
 }
 
 std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const PtJson &params)
@@ -2553,102 +1448,15 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
     return samplingHeapProfileSample;
 }
 
-Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")),
-        IntegerRef::New(ecmaVm, size_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ordinal")),
-        IntegerRef::New(ecmaVm, ordinal_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodeId")),
-        IntegerRef::New(ecmaVm, nodeId_));
-
-    return params;
-}
-
 std::unique_ptr<PtJson> SamplingHeapProfileSample::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
-    result->Add("size", static_cast<int32_t>(size_));
+    result->Add("size", size_);
     result->Add("nodeId", nodeId_);
-    result->Add("ordinal", static_cast<int32_t>(ordinal_));
+    result->Add("ordinal", ordinal_);
 
     return result;
-}
-
-std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
-
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            runtimeCallFrame->functionName_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'functionName' should be a String;";
-        }
-    } else {
-        error += "should contain 'functionName';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            runtimeCallFrame->scriptId_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            runtimeCallFrame->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            runtimeCallFrame->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            runtimeCallFrame->columnNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'columnNumber';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create " << error;
-        return nullptr;
-    }
-
-    return runtimeCallFrame;
 }
 
 std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const PtJson &params)
@@ -2715,28 +1523,6 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::FromFrameInfo(const FrameInf
     return runtimeCallFrame;
 }
 
-Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, lineNumber_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-        IntegerRef::New(ecmaVm, columnNumber_));
-
-    return params;
-}
-
 std::unique_ptr<PtJson> RuntimeCallFrame::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -2748,86 +1534,6 @@ std::unique_ptr<PtJson> RuntimeCallFrame::ToJson() const
     result->Add("columnNumber", columnNumber_);
 
     return result;
-}
-
-std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const EcmaVM *ecmaVm,
-                                                                         const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create params is nullptr";
-        return nullptr;
-    }
-
-    std::string error;
-    auto samplingHeapProfileNode = std::make_unique<SamplingHeapProfileNode>();
-
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RuntimeCallFrame> obj = RuntimeCallFrame::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'callFrame' format error;";
-            } else {
-                samplingHeapProfileNode->callFrame_ = std::move(obj);
-            }
-        } else {
-            error += "'callFrame' should be an Object;";
-        }
-    } else {
-        error += "should contain 'callFrame';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "selfSize")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            samplingHeapProfileNode->selfSize_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'selfSize' should be a Number;";
-        }
-    } else {
-        error += "should contain 'selfSize';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            samplingHeapProfileNode->id_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'id' should be a Number;";
-        }
-    } else {
-        error += "should contain 'id';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(ecmaVm, resultValue);
-                if (resultValue.IsEmpty() || node == nullptr) {
-                    error += "'children' format invalid;";
-                }
-                samplingHeapProfileNode->children_.emplace_back(std::move(node));
-            }
-        } else {
-            error += "'children' should be an Array;";
-        }
-    } else {
-        error += "should contain 'children';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create " << error;
-        return nullptr;
-    }
-
-    return samplingHeapProfileNode;
 }
 
 std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const PtJson &params)
@@ -2852,7 +1558,7 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const P
     int32_t selfSize;
     ret = params.GetInt("selfSize", &selfSize);
     if (ret == Result::SUCCESS) {
-        samplingHeapProfileNode->selfSize_ = static_cast<size_t>(selfSize);
+        samplingHeapProfileNode->selfSize_ = selfSize;
     } else {
         error += "Unknown 'selfSize';";
     }
@@ -2871,15 +1577,12 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const P
         int32_t len = children->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = children->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(*arrayEle);
-                if (node == nullptr) {
-                    error += "'children' format invalid;";
-                } else {
-                    samplingHeapProfileNode->children_.emplace_back(std::move(node));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(*arrayEle);
+            if (node == nullptr) {
+                error += "'children' format invalid;";
             } else {
-                error += "Unknown 'children';";
+                samplingHeapProfileNode->children_.emplace_back(std::move(node));
             }
         }
     } else {
@@ -2894,108 +1597,22 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const P
     return samplingHeapProfileNode;
 }
 
-Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    if (callFrame_ != nullptr) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")),
-            Local<JSValueRef>(callFrame_->ToObject(ecmaVm)));
-    }
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "selfSize")),
-        IntegerRef::New(ecmaVm, selfSize_));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")),
-        IntegerRef::New(ecmaVm, id_));
-
-    size_t len = children_.size();
-    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
-    for (size_t i = 0; i < len; i++) {
-        if (children_[i] != nullptr) {
-            Local<ObjectRef> node = children_[i]->ToObject(ecmaVm);
-            values->Set(ecmaVm, i, node);
-        }
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), values);
-
-    return params;
-}
-
 std::unique_ptr<PtJson> SamplingHeapProfileNode::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
-    if (callFrame_ != nullptr) {
-        result->Add("callFrame", callFrame_->ToJson());
-    }
-    
-    result->Add("selfSize", static_cast<int32_t>(selfSize_));
+    ASSERT(callFrame_ != nullptr);
+    result->Add("callFrame", callFrame_->ToJson());
+    result->Add("selfSize", selfSize_);
     result->Add("id", id_);
-    
+
     std::unique_ptr<PtJson> childrens = PtJson::CreateArray();
     size_t len = children_.size();
     for (size_t i = 0; i < len; i++) {
         childrens->Push(children_[i]->ToJson());
     }
     result->Add("children", childrens);
+
     return result;
-}
-
-std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto samplingHeapProfile = std::make_unique<SamplingHeapProfile>();
-
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<SamplingHeapProfileNode> obj = SamplingHeapProfileNode::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'head' format error;";
-            } else {
-                samplingHeapProfile->head_ = std::move(obj);
-            }
-        } else {
-            error += "'head' should be an Object;";
-        }
-    } else {
-        error += "should contain 'head';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<SamplingHeapProfileSample> node = SamplingHeapProfileSample::Create(ecmaVm,
-                                                                                                    resultValue);
-                if (resultValue.IsEmpty() || node == nullptr) {
-                    error += "'samples' format invalid;";
-                }
-                samplingHeapProfile->samples_.emplace_back(std::move(node));
-            }
-        } else {
-            error += "'samples' should be an Array;";
-        }
-    } else {
-        error += "should contain 'samples';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create " << error;
-        return nullptr;
-    }
-
-    return samplingHeapProfile;
 }
 
 std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const PtJson &params)
@@ -3023,15 +1640,12 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const PtJson &p
         int32_t len = samples->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = samples->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<SamplingHeapProfileSample> pSample = SamplingHeapProfileSample::Create(*arrayEle);
-                if (pSample == nullptr) {
-                    error += "'sample' format invalid;";
-                } else {
-                    samplingHeapProfile->samples_.emplace_back(std::move(pSample));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<SamplingHeapProfileSample> pSample = SamplingHeapProfileSample::Create(*arrayEle);
+            if (pSample == nullptr) {
+                error += "'sample' format invalid;";
             } else {
-                error += "Unknown 'samples';";
+                samplingHeapProfile->samples_.emplace_back(std::move(pSample));
             }
         }
     } else {
@@ -3046,81 +1660,21 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const PtJson &p
     return samplingHeapProfile;
 }
 
-Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    if (head_ != nullptr) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")),
-            Local<JSValueRef>(head_->ToObject(ecmaVm)));
-    }
-
-    size_t len = samples_.size();
-    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
-    for (size_t i = 0; i < len; i++) {
-        if (samples_[i] != nullptr) {
-            Local<ObjectRef> node = samples_[i]->ToObject(ecmaVm);
-            values->Set(ecmaVm, i, node);
-        }
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), values);
-
-    return params;
-}
-
 std::unique_ptr<PtJson> SamplingHeapProfile::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
+    ASSERT(head_ != nullptr);
     result->Add("head", head_->ToJson());
     
     std::unique_ptr<PtJson> samples = PtJson::CreateArray();
     size_t len = samples_.size();
     for (size_t i = 0; i < len; i++) {
-        if (samples_[i] != nullptr) {
-            samples->Push(samples_[i]->ToJson());
-        }
+        ASSERT(samples_[i] != nullptr);
+        samples->Push(samples_[i]->ToJson());
     }
     result->Add("samples", samples);
     return result;
-}
-
-std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "PositionTickInfo::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto positionTicks = std::make_unique<PositionTickInfo>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "line")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            positionTicks->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'line' should be a Number;";
-        }
-    } else {
-        error += "should contain 'line';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ticks")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            positionTicks->ticks_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'ticks' should be a Number;";
-        }
-    } else {
-        error += "should contain 'ticks';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PositionTickInfo::Create " << error;
-        return nullptr;
-    }
-    return positionTicks;
 }
 
 std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const PtJson &params)
@@ -3153,126 +1707,14 @@ std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const PtJson &params)
     return positionTickInfo;
 }
 
-Local<ObjectRef> PositionTickInfo::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "line")),
-        IntegerRef::New(ecmaVm, line_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ticks")),
-        IntegerRef::New(ecmaVm, ticks_));
-
-    return params;
-}
-
 std::unique_ptr<PtJson> PositionTickInfo::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
-    result->Add("line", static_cast<int32_t>(line_));
-    result->Add("ticks", static_cast<int32_t>(ticks_));
+    result->Add("line", line_);
+    result->Add("ticks", ticks_);
 
     return result;
-}
-
-std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "ProfileNode::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto profileNode = std::make_unique<ProfileNode>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            profileNode->id_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'id' should be a Number;";
-        }
-    } else {
-        error += "should contain 'id';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RuntimeCallFrame> obj = RuntimeCallFrame::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'callFrame' format error;";
-            } else {
-                profileNode->callFrame_ = std::move(obj);
-            }
-        } else {
-            error += "'callFrame' should be an Object;";
-        }
-    } else {
-        error += "should contain 'callFrame';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitCount")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            profileNode->hitCount_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'hitCount' should be a Number;";
-        }
-    } else {
-        error += "should contain 'hitCount';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t childrenLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < childrenLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                int32_t pChildren;
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                pChildren = resultValue->Int32Value(ecmaVm);
-                profileNode->children_.value()[i] = pChildren;
-            }
-        } else {
-            error += "'children' should be an Array;";
-        }
-    } else {
-        error += "should contain 'children';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "positionTicks")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t positionTickLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < positionTickLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<PositionTickInfo> positionTick = PositionTickInfo::Create(ecmaVm, resultValue);
-                profileNode->positionTicks_->emplace_back(std::move(positionTick));
-            }
-        } else {
-            error += "'positionTicks' should be an Array;";
-        }
-    } else {
-        error += "should contain 'positionTicks';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "deoptReason")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            profileNode->deoptReason_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'deoptReason' should be a String;";
-        }
-    } else {
-        error += "should contain 'deoptReason_';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ProfileNode::Create " << error;
-        return nullptr;
-    }
-    return profileNode;
 }
 
 std::unique_ptr<ProfileNode> ProfileNode::Create(const PtJson &params)
@@ -3328,15 +1770,12 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const PtJson &params)
         int32_t positionTicksLen = positionTicks->GetSize();
         for (int32_t i = 0; i < positionTicksLen; ++i) {
             std::unique_ptr<PtJson> arrayEle = positionTicks->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<PositionTickInfo> tmpPositionTicks = PositionTickInfo::Create(*arrayEle);
-                if (tmpPositionTicks == nullptr) {
-                    error += "'positionTicks' format invalid;";
-                } else {
-                    profileNode->positionTicks_.value().emplace_back(std::move(tmpPositionTicks));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<PositionTickInfo> tmpPositionTicks = PositionTickInfo::Create(*arrayEle);
+            if (tmpPositionTicks == nullptr) {
+                error += "'positionTicks' format invalid;";
             } else {
-                error += "Unknown 'positionTicks';";
+                profileNode->positionTicks_.value().emplace_back(std::move(tmpPositionTicks));
             }
         }
     } else if (ret == Result::TYPE_ERROR) {
@@ -3368,7 +1807,7 @@ std::unique_ptr<ProfileNode> ProfileNode::FromCpuProfileNode(const CpuProfileNod
     size_t childrenLen = cpuProfileNode.children.size();
     std::vector<int32_t> tmpChildren;
     tmpChildren.reserve(childrenLen);
-    for (uint32_t i = 0; i < childrenLen; ++i) {
+    for (size_t i = 0; i < childrenLen; ++i) {
         tmpChildren.push_back(cpuProfileNode.children[i]);
     }
     profileNode->SetChildren(tmpChildren);
@@ -3376,56 +1815,12 @@ std::unique_ptr<ProfileNode> ProfileNode::FromCpuProfileNode(const CpuProfileNod
     return profileNode;
 }
 
-Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")),
-        IntegerRef::New(ecmaVm, id_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")),
-        Local<JSValueRef>(callFrame_->ToObject(ecmaVm)));
-    
-    if (hitCount_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitCount")),
-            IntegerRef::New(ecmaVm, hitCount_.value()));
-    }
-    
-    if (children_) {
-        size_t childrenLen = children_->size();
-        Local<ArrayRef> childrenValues = ArrayRef::New(ecmaVm, childrenLen);
-        for (size_t i = 0; i < childrenLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, children_.value()[i]);
-            childrenValues->Set(ecmaVm, i, elem);
-        }
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), childrenValues);
-    }
-    
-    if (positionTicks_) {
-        size_t positionTickLen = positionTicks_->size();
-        Local<ArrayRef> positionValues = ArrayRef::New(ecmaVm, positionTickLen);
-        for (size_t i = 0; i < positionTickLen; i++) {
-            Local<ObjectRef> positionTick = positionTicks_.value()[i]->ToObject(ecmaVm);
-            positionValues->Set(ecmaVm, i, positionTick);
-        }
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "positionTicks")), positionValues);
-    }
-    
-    if (deoptReason_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "deoptReason")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, deoptReason_->c_str())));
-    }
-    
-    return params;
-}
-
 std::unique_ptr<PtJson> ProfileNode::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("id", id_);
+    ASSERT(callFrame_ != nullptr);
     result->Add("callFrame", callFrame_->ToJson());
     if (hitCount_) {
         result->Add("hitCount", hitCount_.value());
@@ -3442,9 +1837,8 @@ std::unique_ptr<PtJson> ProfileNode::ToJson() const
         std::unique_ptr<PtJson> positionTicks = PtJson::CreateArray();
         size_t len = positionTicks_->size();
         for (size_t i = 0; i < len; i++) {
-            if (positionTicks_.value()[i] != nullptr) {
-                positionTicks->Push(positionTicks_.value()[i]->ToJson());
-            }
+            ASSERT(positionTicks_.value()[i] != nullptr);
+            positionTicks->Push(positionTicks_.value()[i]->ToJson());
         }
         result->Add("positionTicks", positionTicks);
     }
@@ -3454,99 +1848,6 @@ std::unique_ptr<PtJson> ProfileNode::ToJson() const
     }
     
     return result;
-}
-
-std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "Profile::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto profile = std::make_unique<Profile>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t nodesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < nodesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<ProfileNode> node = ProfileNode::Create(ecmaVm, resultValue);
-                profile->nodes_.emplace_back(std::move(node));
-            }
-        } else {
-            error += "'nodes' should be an Array;";
-        }
-    } else {
-        error += "should contain 'nodes';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            profile->startTime_ = static_cast<int64_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'startTime' should be a Number;";
-        }
-    } else {
-        error += "should contain 'startTime';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            profile->endTime_ = static_cast<int64_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'endTime' should be a Number;";
-        }
-    } else {
-        error += "should contain 'endTime';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t samplesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < samplesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                int32_t pSamples;
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                pSamples = resultValue->Int32Value(ecmaVm);
-                profile->samples_.value()[i] = pSamples;
-            }
-        } else {
-            error += "'samples' should be an Array;";
-        }
-    } else {
-        error += "should contain 'samples';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t timeDeltasLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < timeDeltasLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                int32_t pTime;
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                pTime = resultValue->Int32Value(ecmaVm);
-                profile->timeDeltas_.value()[i] = pTime;
-            }
-        } else {
-            error += "'timeDeltas' should be an Array;";
-        }
-    } else {
-        error += "should contain 'timeDeltas';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Profile::Create " << error;
-        return nullptr;
-    }
-    return profile;
 }
 
 std::unique_ptr<Profile> Profile::Create(const PtJson &params)
@@ -3561,15 +1862,12 @@ std::unique_ptr<Profile> Profile::Create(const PtJson &params)
         int32_t nodesLen = nodes->GetSize();
         for (int32_t i = 0; i < nodesLen; ++i) {
             std::unique_ptr<PtJson> arrayEle = nodes->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<ProfileNode> profileNode = ProfileNode::Create(*arrayEle);
-                if (profileNode == nullptr) {
-                    error += "'nodes' format invalid;";
-                } else {
-                    profile->nodes_.emplace_back(std::move(profileNode));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<ProfileNode> profileNode = ProfileNode::Create(*arrayEle);
+            if (profileNode == nullptr) {
+                error += "'nodes' format invalid;";
             } else {
-                error += "Unknown 'nodes';";
+                profile->nodes_.emplace_back(std::move(profileNode));
             }
         }
     } else {
@@ -3632,7 +1930,7 @@ std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo
     size_t samplesLen = profileInfo.samples.size();
     std::vector<int32_t> tmpSamples;
     tmpSamples.reserve(samplesLen);
-    for (uint32_t i = 0; i < samplesLen; ++i) {
+    for (size_t i = 0; i < samplesLen; ++i) {
         tmpSamples.push_back(profileInfo.samples[i]);
     }
     profile->SetSamples(tmpSamples);
@@ -3640,59 +1938,19 @@ std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo
     size_t timeDeltasLen = profileInfo.timeDeltas.size();
     std::vector<int32_t> tmpTimeDeltas;
     tmpTimeDeltas.reserve(timeDeltasLen);
-    for (uint32_t i = 0; i < timeDeltasLen; ++i) {
+    for (size_t i = 0; i < timeDeltasLen; ++i) {
         tmpTimeDeltas.push_back(profileInfo.timeDeltas[i]);
     }
     profile->SetTimeDeltas(tmpTimeDeltas);
 
     std::vector<std::unique_ptr<ProfileNode>> profileNode;
     size_t nodesLen = profileInfo.nodes.size();
-    for (uint32_t i = 0; i < nodesLen; ++i) {
+    for (size_t i = 0; i < nodesLen; ++i) {
         const auto &cpuProfileNode = profileInfo.nodes[i];
         profileNode.push_back(ProfileNode::FromCpuProfileNode(cpuProfileNode));
     }
     profile->SetNodes(std::move(profileNode));
     return profile;
-}
-
-Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    size_t nodeLen = nodes_.size();
-    Local<ArrayRef> nodeValues = ArrayRef::New(ecmaVm, nodeLen);
-    for (size_t i = 0; i < nodeLen; i++) {
-        Local<ObjectRef> profileNode = nodes_[i]->ToObject(ecmaVm);
-        nodeValues->Set(ecmaVm, i, profileNode);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")), nodeValues);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")),
-        NumberRef::New(ecmaVm, startTime_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")),
-        NumberRef::New(ecmaVm, endTime_));
-    
-    if (samples_) {
-        size_t samplesLen = samples_->size();
-        Local<ArrayRef> sampleValues = ArrayRef::New(ecmaVm, samplesLen);
-        for (size_t i = 0; i < samplesLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, samples_.value()[i]);
-            sampleValues->Set(ecmaVm, i, elem);
-        }
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), sampleValues);
-    }
-    
-    if (timeDeltas_) {
-        size_t tdLen = timeDeltas_->size();
-        Local<ArrayRef> timeValues = ArrayRef::New(ecmaVm, tdLen);
-        for (size_t i = 0; i < tdLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, timeDeltas_.value()[i]);
-            timeValues->Set(ecmaVm, i, elem);
-        }
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);
-    }
-    
-    return params;
 }
 
 std::unique_ptr<PtJson> Profile::ToJson() const
@@ -3705,9 +1963,8 @@ std::unique_ptr<PtJson> Profile::ToJson() const
     std::unique_ptr<PtJson> nodes = PtJson::CreateArray();
     size_t nodesLen = nodes_.size();
     for (size_t i = 0; i < nodesLen; i++) {
-        if (nodes_[i] != nullptr) {
-            nodes->Push(nodes_[i]->ToJson());
-        }
+        ASSERT(nodes_[i] != nullptr);
+        nodes->Push(nodes_[i]->ToJson());
     }
     result->Add("nodes", nodes);
 
@@ -3730,53 +1987,6 @@ std::unique_ptr<PtJson> Profile::ToJson() const
     }
     
     return result;
-}
-
-std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "Coverage::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto coverage = std::make_unique<Coverage>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startOffset")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            coverage->startOffset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'startOffset' should be a Number;";
-        }
-    } else {
-        error += "should contain 'startOffset';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endOffset")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            coverage->endOffset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'endOffset' should be a Number;";
-        }
-    } else {
-        error += "should contain 'endOffset';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "count")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            coverage->count_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'count' should be a Number;";
-        }
-    } else {
-        error += "should contain 'count';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Coverage::Create " << error;
-        return nullptr;
-    }
-    return coverage;
 }
 
 std::unique_ptr<Coverage> Coverage::Create(const PtJson &params)
@@ -3817,18 +2027,6 @@ std::unique_ptr<Coverage> Coverage::Create(const PtJson &params)
     return coverage;
 }
 
-Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startOffset")), IntegerRef::New(ecmaVm, startOffset_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endOffset")), IntegerRef::New(ecmaVm, endOffset_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "count")), IntegerRef::New(ecmaVm, count_));
-    return params;
-}
-
 std::unique_ptr<PtJson> Coverage::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -3838,62 +2036,6 @@ std::unique_ptr<PtJson> Coverage::ToJson() const
     result->Add("count", count_);
     
     return result;
-}
-
-std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto functionCoverage = std::make_unique<FunctionCoverage>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            functionCoverage->functionName_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'functionName' should be a String;";
-        }
-    } else {
-        error += "should contain 'functionName';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ranges")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t rangesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < rangesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<Coverage> range = Coverage::Create(ecmaVm, resultValue);
-                functionCoverage->ranges_.emplace_back(std::move(range));
-            }
-        } else {
-            error += "'ranges' should be an Array;";
-        }
-    } else {
-        error += "should contain 'ranges';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm,
-                                                                                            "isBlockCoverage")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            functionCoverage->isBlockCoverage_ = result->IsTrue();
-        } else {
-            error += "'isBlockCoverage' should be a Boolean;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create " << error;
-        return nullptr;
-    }
-    return functionCoverage;
 }
 
 std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const PtJson &params)
@@ -3916,15 +2058,12 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const PtJson &params)
         int32_t len = ranges->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = ranges->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<Coverage> pRanges = Coverage::Create(*arrayEle);
-                if (pRanges == nullptr) {
-                    error += "'ranges' format invalid;";
-                } else {
-                    functionCoverage->ranges_.emplace_back(std::move(pRanges));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<Coverage> pRanges = Coverage::Create(*arrayEle);
+            if (pRanges == nullptr) {
+                error += "'ranges' format invalid;";
             } else {
-                error += "Unknown 'ranges';";
+                functionCoverage->ranges_.emplace_back(std::move(pRanges));
             }
         }
     } else {
@@ -3947,28 +2086,6 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const PtJson &params)
     return functionCoverage;
 }
 
-Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));
-    
-    size_t rangesLen = ranges_.size();
-    Local<ArrayRef> rangesValues = ArrayRef::New(ecmaVm, rangesLen);
-    for (size_t i = 0; i < rangesLen; i++) {
-        Local<ObjectRef> coverage = ranges_[i]->ToObject(ecmaVm);
-        rangesValues->Set(ecmaVm, i, coverage);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ranges")), rangesValues);
-    if (isBlockCoverage_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isBlockCoverage")),
-            BooleanRef::New(ecmaVm, isBlockCoverage_));
-    }
-    return params;
-}
-
 std::unique_ptr<PtJson> FunctionCoverage::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -3978,70 +2095,14 @@ std::unique_ptr<PtJson> FunctionCoverage::ToJson() const
     std::unique_ptr<PtJson> ranges = PtJson::CreateArray();
     size_t len = ranges_.size();
     for (size_t i = 0; i < len; i++) {
-        if (ranges_[i] != nullptr) {
-            ranges->Push(ranges_[i]->ToJson());
-        }
+        ASSERT(ranges_[i] != nullptr);
+        ranges->Push(ranges_[i]->ToJson());
     }
     result->Add("ranges", ranges);
 
     result->Add("isBlockCoverage", isBlockCoverage_);
     
     return result;
-}
-
-std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto scriptCoverage = std::make_unique<ScriptCoverage>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptCoverage->scriptId_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptCoverage->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functions")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t functionsLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < functionsLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<FunctionCoverage> function = FunctionCoverage::Create(ecmaVm, resultValue);
-                scriptCoverage->functions_.emplace_back(std::move(function));
-            }
-        } else {
-            error += "'functions' should be an Array;";
-        }
-    } else {
-        error += "should contain 'functions';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create " << error;
-        return nullptr;
-    }
-    return scriptCoverage;
 }
 
 std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const PtJson &params)
@@ -4072,15 +2133,12 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const PtJson &params)
         int32_t len = functions->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = functions->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<FunctionCoverage> pFunctions = FunctionCoverage::Create(*arrayEle);
-                if (pFunctions == nullptr) {
-                    error += "'functions' format invalid;";
-                } else {
-                    scriptCoverage->functions_.emplace_back(std::move(pFunctions));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<FunctionCoverage> pFunctions = FunctionCoverage::Create(*arrayEle);
+            if (pFunctions == nullptr) {
+                error += "'functions' format invalid;";
             } else {
-                error += "Unknown 'functions';";
+                scriptCoverage->functions_.emplace_back(std::move(pFunctions));
             }
         }
     } else {
@@ -4095,25 +2153,6 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const PtJson &params)
     return scriptCoverage;
 }
 
-Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-    size_t functionsLen = functions_.size();
-    Local<ArrayRef> rangesValues = ArrayRef::New(ecmaVm, functionsLen);
-    for (size_t i = 0; i < functionsLen; i++) {
-        Local<ObjectRef> functionCoverage = functions_[i]->ToObject(ecmaVm);
-        rangesValues->Set(ecmaVm, i, functionCoverage);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functions")), rangesValues);
-    return params;
-}
-
 std::unique_ptr<PtJson> ScriptCoverage::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -4124,40 +2163,12 @@ std::unique_ptr<PtJson> ScriptCoverage::ToJson() const
     std::unique_ptr<PtJson> functions = PtJson::CreateArray();
     size_t len = functions_.size();
     for (size_t i = 0; i < len; i++) {
-        if (functions_[i] != nullptr) {
-            functions->Push(functions_[i]->ToJson());
-        }
+        ASSERT(functions_[i] != nullptr);
+        functions->Push(functions_[i]->ToJson());
     }
     result->Add("functions", functions);
     
     return result;
-}
-
-std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "TypeObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto typeObject = std::make_unique<TypeObject>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            typeObject->name_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'name' should be a String;";
-        }
-    } else {
-        error += "should contain 'name';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "TypeObject::Create " << error;
-        return nullptr;
-    }
-    return typeObject;
 }
 
 std::unique_ptr<TypeObject> TypeObject::Create(const PtJson &params)
@@ -4182,15 +2193,6 @@ std::unique_ptr<TypeObject> TypeObject::Create(const PtJson &params)
     return typeObject;
 }
 
-Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
-    return params;
-}
-
 std::unique_ptr<PtJson> TypeObject::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -4198,50 +2200,6 @@ std::unique_ptr<PtJson> TypeObject::ToJson() const
     result->Add("name", name_.c_str());
     
     return result;
-}
-
-std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto typeProfileEntry = std::make_unique<TypeProfileEntry>();
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "offset")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            typeProfileEntry->offset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'offset' should be a Number;";
-        }
-    } else {
-        error += "should contain 'offset';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "types")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t typesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < typesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<TypeObject> type = TypeObject::Create(ecmaVm, resultValue);
-                typeProfileEntry->types_.emplace_back(std::move(type));
-            }
-        } else {
-            error += "'types' should be an Array;";
-        }
-    } else {
-        error += "should contain 'types';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create " << error;
-        return nullptr;
-    }
-    return typeProfileEntry;
 }
 
 std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const PtJson &params)
@@ -4264,15 +2222,12 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const PtJson &params)
         int32_t len = types->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = types->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<TypeObject> pTypes = TypeObject::Create(*arrayEle);
-                if (pTypes == nullptr) {
-                    error += "'types' format invalid;";
-                } else {
-                    typeProfileEntry->types_.emplace_back(std::move(pTypes));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<TypeObject> pTypes = TypeObject::Create(*arrayEle);
+            if (pTypes == nullptr) {
+                error += "'types' format invalid;";
             } else {
-                error += "Unknown 'types';";
+                typeProfileEntry->types_.emplace_back(std::move(pTypes));
             }
         }
     } else {
@@ -4287,27 +2242,11 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const PtJson &params)
     return typeProfileEntry;
 }
 
-Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "offset")),
-        IntegerRef::New(ecmaVm, offset_));
-    size_t typeLen = types_.size();
-    Local<ArrayRef> typeValues = ArrayRef::New(ecmaVm, typeLen);
-    for (size_t i = 0; i < typeLen; i++) {
-        Local<ObjectRef> typeObject = types_[i]->ToObject(ecmaVm);
-        typeValues->Set(ecmaVm, i, typeObject);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "types")), typeValues);
-    return params;
-}
-
 std::unique_ptr<PtJson> TypeProfileEntry::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
-    result->Add("offset", static_cast<int32_t>(offset_));
+    result->Add("offset", offset_);
 
     std::unique_ptr<PtJson> types = PtJson::CreateArray();
     size_t len = types_.size();
@@ -4317,62 +2256,6 @@ std::unique_ptr<PtJson> TypeProfileEntry::ToJson() const
     result->Add("types", types);
 
     return result;
-}
-
-std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptTypeProfile->scriptId_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptTypeProfile->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "entries")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t entriesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < entriesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> entriesValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<TypeProfileEntry> entries = TypeProfileEntry::Create(ecmaVm, entriesValue);
-                scriptTypeProfile->entries_.emplace_back(std::move(entries));
-            }
-        } else {
-            error += "'entries' should be an Array;";
-        }
-    } else {
-        error += "should contain 'entries';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create " << error;
-        return scriptTypeProfile;
-    }
-    return scriptTypeProfile;
 }
 
 std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const PtJson &params)
@@ -4403,15 +2286,12 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const PtJson &param
         int32_t len = entries->GetSize();
         for (int32_t i = 0; i < len; ++i) {
             std::unique_ptr<PtJson> arrayEle = entries->Get(i);
-            if (arrayEle != nullptr) {
-                std::unique_ptr<TypeProfileEntry> pEntries = TypeProfileEntry::Create(*arrayEle);
-                if (pEntries == nullptr) {
-                    error += "'entries' format invalid;";
-                } else {
-                    scriptTypeProfile->entries_.emplace_back(std::move(pEntries));
-                }
+            ASSERT(arrayEle != nullptr);
+            std::unique_ptr<TypeProfileEntry> pEntries = TypeProfileEntry::Create(*arrayEle);
+            if (pEntries == nullptr) {
+                error += "'entries' format invalid;";
             } else {
-                error += "Unknown 'entries';";
+                scriptTypeProfile->entries_.emplace_back(std::move(pEntries));
             }
         }
     } else {
@@ -4424,25 +2304,6 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const PtJson &param
     }
 
     return scriptTypeProfile;
-}
-
-Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-    size_t entriesLen = entries_.size();
-    Local<ArrayRef> entriesValues = ArrayRef::New(ecmaVm, entriesLen);
-    for (size_t i = 0; i < entriesLen; i++) {
-        Local<ObjectRef> typeProfileEntryObject = entries_[i]->ToObject(ecmaVm);
-        entriesValues->Set(ecmaVm, i, typeProfileEntryObject);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "entries")), entriesValues);
-    return params;
 }
 
 std::unique_ptr<PtJson> ScriptTypeProfile::ToJson() const

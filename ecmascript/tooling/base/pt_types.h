@@ -30,14 +30,7 @@ class PtBaseTypes {
 public:
     PtBaseTypes() = default;
     virtual ~PtBaseTypes() = default;
-    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const = 0;
-    virtual std::unique_ptr<PtJson> ToJson() const
-    {
-        return PtJson::CreateObject();
-    }
-
-protected:
-    static Local<ObjectRef> NewObject(const EcmaVM *ecmaVm);
+    virtual std::unique_ptr<PtJson> ToJson() const = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseTypes);
@@ -112,10 +105,8 @@ public:
     RemoteObject() = default;
     ~RemoteObject() override = default;
 
-    static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    static std::unique_ptr<RemoteObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
     static std::unique_ptr<RemoteObject> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     /*
@@ -173,7 +164,7 @@ public:
         return value_.value_or(Local<JSValueRef>());
     }
 
-    RemoteObject &SetValue(const Local<JSValueRef> &value)
+    RemoteObject &SetValue(Local<JSValueRef> value)
     {
         value_ = value;
         return *this;
@@ -338,72 +329,50 @@ private:
 
 class PrimitiveRemoteObject final : public RemoteObject {
 public:
-    explicit PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    PrimitiveRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
     ~PrimitiveRemoteObject() override = default;
 };
 
 class StringRemoteObject final : public RemoteObject {
 public:
-    explicit StringRemoteObject([[maybe_unused]] const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::String).SetValue(tagged);
-    }
+    StringRemoteObject(const EcmaVM *ecmaVm, Local<StringRef> tagged);
     virtual ~StringRemoteObject() = default;
 };
 
 class SymbolRemoteObject final : public RemoteObject {
 public:
-    explicit SymbolRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::Symbol).SetDescription(DescriptionForSymbol(ecmaVm, Local<SymbolRef>(tagged)));
-    }
+    SymbolRemoteObject(const EcmaVM *ecmaVm, Local<SymbolRef> tagged);
     ~SymbolRemoteObject() override = default;
 
 private:
-    std::string DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const;
+    std::string DescriptionForSymbol(const EcmaVM *ecmaVm, Local<SymbolRef> tagged) const;
 };
 
 class FunctionRemoteObject final : public RemoteObject {
 public:
-    FunctionRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::Function)
-            .SetClassName(RemoteObject::ClassName::Function)
-            .SetDescription(DescriptionForFunction(ecmaVm, tagged));
-    }
+    FunctionRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
     ~FunctionRemoteObject() override = default;
 
 private:
-    std::string DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const;
+    std::string DescriptionForFunction(const EcmaVM *ecmaVm, Local<FunctionRef> tagged) const;
 };
 
 class ObjectRemoteObject final : public RemoteObject {
 public:
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const std::string &classname)
-    {
-        SetType(RemoteObject::TypeName::Object)
-            .SetClassName(classname)
-            .SetDescription(DescriptionForObject(ecmaVm, tagged));
-    }
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const std::string &classname,
-        const std::string &subtype)
-    {
-        SetType(RemoteObject::TypeName::Object)
-            .SetSubType(subtype)
-            .SetClassName(classname)
-            .SetDescription(DescriptionForObject(ecmaVm, tagged));
-    }
+    ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged, const std::string &classname);
+    ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged, const std::string &classname,
+        const std::string &subtype);
     ~ObjectRemoteObject() override = default;
-    static std::string DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    static std::string DescriptionForObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
 
 private:
-    static std::string DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged);
-    static std::string DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged);
-    static std::string DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged);
-    static std::string DescriptionForMap(const Local<MapRef> &tagged);
-    static std::string DescriptionForSet(const Local<SetRef> &tagged);
-    static std::string DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged);
+    static std::string DescriptionForArray(const EcmaVM *ecmaVm, Local<ArrayRef> tagged);
+    static std::string DescriptionForRegexp(const EcmaVM *ecmaVm, Local<RegExpRef> tagged);
+    static std::string DescriptionForDate(const EcmaVM *ecmaVm, Local<DateRef> tagged);
+    static std::string DescriptionForMap(Local<MapRef> tagged);
+    static std::string DescriptionForSet(Local<SetRef> tagged);
+    static std::string DescriptionForError(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged);
 };
 
 // Runtime.ExceptionDetails
@@ -411,9 +380,7 @@ class ExceptionDetails final : public PtBaseTypes {
 public:
     ExceptionDetails() = default;
     ~ExceptionDetails() override = default;
-    static std::unique_ptr<ExceptionDetails> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<ExceptionDetails> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetExceptionId() const
@@ -548,9 +515,7 @@ public:
     InternalPropertyDescriptor() = default;
     ~InternalPropertyDescriptor() override = default;
 
-    static std::unique_ptr<InternalPropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<InternalPropertyDescriptor> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
@@ -597,9 +562,7 @@ public:
     PrivatePropertyDescriptor() = default;
     ~PrivatePropertyDescriptor() override = default;
 
-    static std::unique_ptr<PrivatePropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<PrivatePropertyDescriptor> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
@@ -686,11 +649,9 @@ public:
     PropertyDescriptor() = default;
     ~PropertyDescriptor() override = default;
 
-    static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, const Local<JSValueRef> &name,
+    static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, Local<JSValueRef> name,
         const PropertyAttribute &property);
-    static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<PropertyDescriptor> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
@@ -873,10 +834,6 @@ public:
     ~CallArgument() override = default;
 
     static std::unique_ptr<CallArgument> Create(const PtJson &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
-    {
-        return Local<ObjectRef>();
-    }
     std::unique_ptr<PtJson> ToJson() const override;
 
     Local<JSValueRef> GetValue() const
@@ -884,7 +841,7 @@ public:
         return value_.value_or(Local<JSValueRef>());
     }
 
-    CallArgument &SetValue(const Local<JSValueRef> &value)
+    CallArgument &SetValue(Local<JSValueRef> value)
     {
         value_ = value;
         return *this;
@@ -960,9 +917,7 @@ public:
     Location() = default;
     ~Location() override = default;
 
-    static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<Location> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
@@ -1007,7 +962,7 @@ private:
     NO_COPY_SEMANTIC(Location);
     NO_MOVE_SEMANTIC(Location);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     int32_t lineNumber_ {0};
     std::optional<int32_t> columnNumber_ {};
 };
@@ -1019,7 +974,6 @@ public:
     ~ScriptPosition() override = default;
 
     static std::unique_ptr<ScriptPosition> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetLine() const
@@ -1057,9 +1011,7 @@ class SearchMatch : public PtBaseTypes {
 public:
     SearchMatch() = default;
     ~SearchMatch() override = default;
-    static std::unique_ptr<SearchMatch> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<SearchMatch> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -1077,7 +1029,6 @@ public:
     ~LocationRange() override = default;
 
     static std::unique_ptr<LocationRange> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
@@ -1117,7 +1068,7 @@ private:
     NO_COPY_SEMANTIC(LocationRange);
     NO_MOVE_SEMANTIC(LocationRange);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     std::unique_ptr<ScriptPosition> start_ {nullptr};
     std::unique_ptr<ScriptPosition> end_ {nullptr};
 };
@@ -1128,9 +1079,7 @@ public:
     BreakLocation() = default;
     ~BreakLocation() override = default;
 
-    static std::unique_ptr<BreakLocation> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<BreakLocation> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
@@ -1214,7 +1163,7 @@ private:
     NO_COPY_SEMANTIC(BreakLocation);
     NO_MOVE_SEMANTIC(BreakLocation);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     int32_t lineNumber_ {0};
     std::optional<int32_t> columnNumber_ {};
     std::optional<std::string> type_ {};
@@ -1240,9 +1189,7 @@ public:
     Scope() = default;
     ~Scope() override = default;
 
-    static std::unique_ptr<Scope> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<Scope> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     /*
@@ -1391,9 +1338,7 @@ public:
     CallFrame() = default;
     ~CallFrame() override = default;
 
-    static std::unique_ptr<CallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<CallFrame> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     CallFrameId GetCallFrameId() const
@@ -1521,12 +1466,10 @@ class SamplingHeapProfileSample  final :  public PtBaseTypes {
 public:
     SamplingHeapProfileSample() = default;
     ~SamplingHeapProfileSample() override = default;
-    static std::unique_ptr<SamplingHeapProfileSample> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<SamplingHeapProfileSample> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
-    SamplingHeapProfileSample &SetSize(size_t size)
+    SamplingHeapProfileSample &SetSize(int32_t size)
     {
         size_ = size;
         return *this;
@@ -1548,7 +1491,7 @@ public:
         return nodeId_;
     }
 
-    SamplingHeapProfileSample &SetOrdinal(size_t ordinal)
+    SamplingHeapProfileSample &SetOrdinal(int32_t ordinal)
     {
         ordinal_ = ordinal;
         return *this;
@@ -1563,19 +1506,17 @@ private:
     NO_COPY_SEMANTIC(SamplingHeapProfileSample);
     NO_MOVE_SEMANTIC(SamplingHeapProfileSample);
 
-    size_t size_ {};
-    int32_t nodeId_ {};
-    size_t ordinal_ {};
+    int32_t size_ {0};
+    int32_t nodeId_ {0};
+    int32_t ordinal_ {0};
 };
 
 class RuntimeCallFrame  final :  public PtBaseTypes {
 public:
     RuntimeCallFrame() = default;
     ~RuntimeCallFrame() override = default;
-    static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<RuntimeCallFrame> Create(const PtJson &params);
     static std::unique_ptr<RuntimeCallFrame> FromFrameInfo(const FrameInfo &cpuFrameInfo);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     RuntimeCallFrame &SetFunctionName(const std::string &functionName)
@@ -1640,17 +1581,15 @@ private:
     std::string functionName_ {};
     std::string scriptId_ {};
     std::string url_ {};
-    int32_t lineNumber_ {};
-    int32_t columnNumber_ {};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
 };
 
 class SamplingHeapProfileNode  final :  public PtBaseTypes {
 public:
     SamplingHeapProfileNode() = default;
     ~SamplingHeapProfileNode() override = default;
-    static std::unique_ptr<SamplingHeapProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<SamplingHeapProfileNode> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
@@ -1664,7 +1603,7 @@ public:
         return callFrame_.get();
     }
 
-    SamplingHeapProfileNode &SetSelfSize(size_t selfSize)
+    SamplingHeapProfileNode &SetSelfSize(int32_t selfSize)
     {
         selfSize_ = selfSize;
         return *this;
@@ -1702,8 +1641,8 @@ private:
     NO_MOVE_SEMANTIC(SamplingHeapProfileNode);
 
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
-    size_t selfSize_ {};
-    int32_t id_ {};
+    int32_t selfSize_ {0};
+    int32_t id_ {0};
     std::vector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
 };
 
@@ -1711,9 +1650,7 @@ class SamplingHeapProfile final : public PtBaseTypes {
 public:
     SamplingHeapProfile() = default;
     ~SamplingHeapProfile() override = default;
-    static std::unique_ptr<SamplingHeapProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<SamplingHeapProfile> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     SamplingHeapProfile &SetHead(std::unique_ptr<SamplingHeapProfileNode> head)
@@ -1753,9 +1690,7 @@ public:
     PositionTickInfo() = default;
     ~PositionTickInfo() override = default;
 
-    static std::unique_ptr<PositionTickInfo> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<PositionTickInfo> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetLine() const
@@ -1763,7 +1698,7 @@ public:
         return line_;
     }
 
-    PositionTickInfo &SetLine(size_t line)
+    PositionTickInfo &SetLine(int32_t line)
     {
         line_ = line;
         return *this;
@@ -1774,7 +1709,7 @@ public:
         return ticks_;
     }
 
-    PositionTickInfo &SetTicks(size_t ticks)
+    PositionTickInfo &SetTicks(int32_t ticks)
     {
         ticks_ = ticks;
         return *this;
@@ -1783,8 +1718,8 @@ public:
 private:
     NO_COPY_SEMANTIC(PositionTickInfo);
     NO_MOVE_SEMANTIC(PositionTickInfo);
-    size_t line_ {0};
-    size_t ticks_ {0};
+    int32_t line_ {0};
+    int32_t ticks_ {0};
 };
 
 // Profiler.ProfileNode
@@ -1793,10 +1728,8 @@ public:
     ProfileNode() = default;
     ~ProfileNode() override = default;
 
-    static std::unique_ptr<ProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<ProfileNode> Create(const PtJson &params);
     static std::unique_ptr<ProfileNode> FromCpuProfileNode(const CpuProfileNode &cpuProfileNode);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
     
     int32_t GetId() const
@@ -1910,10 +1843,8 @@ public:
     Profile() = default;
     ~Profile() override = default;
 
-    static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<Profile> Create(const PtJson &params);
     static std::unique_ptr<Profile> FromProfileInfo(const ProfileInfo &profileInfo);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int64_t GetStartTime() const
@@ -2004,9 +1935,7 @@ public:
     Coverage() = default;
     ~Coverage() override = default;
 
-    static std::unique_ptr<Coverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<Coverage> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetStartOffset() const
@@ -2014,7 +1943,7 @@ public:
         return startOffset_;
     }
 
-    Coverage &SetStartOffset(size_t startOffset)
+    Coverage &SetStartOffset(int32_t startOffset)
     {
         startOffset_ = startOffset;
         return *this;
@@ -2025,7 +1954,7 @@ public:
         return endOffset_;
     }
 
-    Coverage &SetEndOffset(size_t endOffset)
+    Coverage &SetEndOffset(int32_t endOffset)
     {
         endOffset_ = endOffset;
         return *this;
@@ -2036,7 +1965,7 @@ public:
         return count_;
     }
 
-    Coverage &SetCount(size_t count)
+    Coverage &SetCount(int32_t count)
     {
         count_ = count;
         return *this;
@@ -2057,9 +1986,7 @@ public:
     FunctionCoverage() = default;
     ~FunctionCoverage() override = default;
 
-    static std::unique_ptr<FunctionCoverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<FunctionCoverage> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     const std::string &GetFunctionName() const
@@ -2111,9 +2038,7 @@ public:
     ScriptCoverage() = default;
     ~ScriptCoverage() override = default;
 
-    static std::unique_ptr<ScriptCoverage> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<ScriptCoverage> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     const std::string &GetScriptId() const
@@ -2164,9 +2089,7 @@ public:
     TypeObject() = default;
     ~TypeObject() override = default;
 
-    static std::unique_ptr<TypeObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<TypeObject> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     const std::string &GetName() const
@@ -2193,9 +2116,7 @@ public:
     TypeProfileEntry() = default;
     ~TypeProfileEntry() override = default;
 
-    static std::unique_ptr<TypeProfileEntry> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<TypeProfileEntry> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetOffset() const
@@ -2203,7 +2124,7 @@ public:
         return offset_;
     }
 
-    TypeProfileEntry &SetOffset(size_t offset)
+    TypeProfileEntry &SetOffset(int32_t offset)
     {
         offset_ = offset;
         return *this;
@@ -2224,7 +2145,7 @@ private:
     NO_COPY_SEMANTIC(TypeProfileEntry);
     NO_MOVE_SEMANTIC(TypeProfileEntry);
 
-    size_t offset_ {0};
+    int32_t offset_ {0};
     std::vector<std::unique_ptr<TypeObject>> types_ {};
 };
 
@@ -2234,9 +2155,7 @@ public:
     ScriptTypeProfile() = default;
     ~ScriptTypeProfile() override = default;
 
-    static std::unique_ptr<ScriptTypeProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<ScriptTypeProfile> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
     
     const std::string &GetScriptId() const

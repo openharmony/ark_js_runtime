@@ -105,7 +105,7 @@ private:
     NO_COPY_SEMANTIC(PtScript);
     NO_MOVE_SEMANTIC(PtScript);
 
-    ScriptId scriptId_ {};         // start from 0, such as "0","1","2"...
+    ScriptId scriptId_ {0};        // start from 0, such as "0","1","2"...
     std::string fileName_ {};      // binary file name, such as xx.bin
     std::string url_ {};           // source file name, such as xx.js
     std::string hash_ {};          // js source file hash code

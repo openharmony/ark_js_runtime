@@ -221,11 +221,11 @@ void HeapProfilerImpl::Frontend::LastSeenObjectId(int32_t lastSeenObjectId)
 
     tooling::LastSeenObjectId lastSeenObjectIdEvent;
     lastSeenObjectIdEvent.SetLastSeenObjectId(lastSeenObjectId);
-    size_t timestamp = 0;
+    int64_t timestamp = 0;
     struct timeval tv = {0, 0};
     gettimeofday(&tv, nullptr);
     const int THOUSAND = 1000;
-    timestamp = static_cast<size_t>(tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND);
+    timestamp = static_cast<int64_t>(tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND);
     lastSeenObjectIdEvent.SetTimestamp(timestamp);
     channel_->SendNotification(lastSeenObjectIdEvent);
 }

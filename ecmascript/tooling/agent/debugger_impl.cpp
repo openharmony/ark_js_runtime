@@ -514,7 +514,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(const EvaluateOnCallFramePara
 {
     CallFrameId callFrameId = params.GetCallFrameId();
     const std::string &expression = params.GetExpression();
-    if (callFrameId < 0 || callFrameId >= static_cast<int32_t>(callFrameHandlers_.size())) {
+    if (callFrameId < 0 || callFrameId >= static_cast<CallFrameId>(callFrameHandlers_.size())) {
         return DispatchResponse::Fail("Invalid callFrameId.");
     }
 
@@ -893,7 +893,7 @@ std::unique_ptr<Scope> DebuggerImpl::GetLocalScopeChain(const FrameHandler *fram
     }
 
     std::unique_ptr<RemoteObject> local = std::make_unique<RemoteObject>();
-    Local<ObjectRef> localObj(local->NewObject(vm_));
+    Local<ObjectRef> localObj = ObjectRef::New(vm_);
     local->SetType(ObjectType::Object)
         .SetObjectId(runtime_->curObjectId_)
         .SetClassName(ObjectClassName::Object)
@@ -1009,7 +1009,7 @@ std::unique_ptr<Scope> DebuggerImpl::GetGlobalScopeChain()
 }
 
 void DebuggerImpl::UpdateScopeObject(const FrameHandler *frameHandler,
-    std::string_view varName, const Local<JSValueRef> &newVal)
+    std::string_view varName, Local<JSValueRef> newVal)
 {
     auto *sp = DebuggerApi::GetSp(frameHandler);
     auto iter = scopeObjects_.find(sp);

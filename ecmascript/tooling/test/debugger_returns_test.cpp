@@ -60,6 +60,7 @@ protected:
     JSThread *thread {nullptr};
 };
 
+#ifdef CHANGE_TOJSON
 HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToObjectTest)
 {
     std::unique_ptr<EnableReturns> enableReturns = std::make_unique<EnableReturns>(100U);
@@ -69,7 +70,7 @@ HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToObjectTest)
     ASSERT_TRUE(enableObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = enableObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("100"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("100"), Local<StringRef>(result)->ToString());
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
@@ -88,7 +89,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
     ASSERT_TRUE(setObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = setObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("11"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("11"), Local<StringRef>(result)->ToString());
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToObjectTest)
@@ -136,13 +137,13 @@ HWTEST_F_L0(DebuggerReturnsTest, GetScriptSourceReturnsToObjectTest)
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("source_1"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("source_1"), Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "bytecode");
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("bytecode_1"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("bytecode_1"), Local<StringRef>(result)->ToString());
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, RestartFrameReturnsToObjectTest)
@@ -170,7 +171,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointReturnsToObjectTest)
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = breakObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("breakpointId_1"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("breakpointId_1"), Local<StringRef>(result)->ToString());
     
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "actualLocation");
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
@@ -189,7 +190,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetInstrumentationBreakpointReturnsToObjectTest
     ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = instrumentationObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("111"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("111"), Local<StringRef>(result)->ToString());
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
@@ -246,7 +247,10 @@ HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToObjectTest)
 {
+    std::unique_ptr<SamplingHeapProfileNode> head = std::make_unique<SamplingHeapProfileNode>();
     std::unique_ptr<SamplingHeapProfile> profile = std::make_unique<SamplingHeapProfile>();
+    profile->SetHead(std::move(head));
+    profile->SetSamples();
     std::unique_ptr<StopSamplingReturns> stopSamplingReturns =
                                          std::make_unique<StopSamplingReturns>(std::move(profile));
     ASSERT_NE(stopSamplingReturns, nullptr);
@@ -268,7 +272,7 @@ HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToObjectTest)
     
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("10"), DebuggerApi::ToStdString(result));
+    EXPECT_EQ(std::string("10"), Local<StringRef>(result)->ToString());
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
@@ -381,4 +385,5 @@ HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToObjectTest)
     ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
     ASSERT_TRUE(tmpResult->IsArray(ecmaVm));
 }
+#endif
 }  // namespace panda::test
