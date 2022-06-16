@@ -1409,10 +1409,10 @@ JSHandle<GlobalEnv> JSObject::GetFunctionRealm(JSThread *thread, const JSHandle<
         return GetFunctionRealm(thread, proxyTarget);
     }
     JSTaggedValue maybeGlobalEnv = JSHandle<JSFunction>(object)->GetLexicalEnv();
-    if (maybeGlobalEnv.IsUndefined()) {
-        return thread->GetEcmaVM()->GetGlobalEnv();
-    }
     while (!maybeGlobalEnv.IsJSGlobalEnv()) {
+        if (maybeGlobalEnv.IsUndefined()) {
+            return thread->GetEcmaVM()->GetGlobalEnv();
+        }
         maybeGlobalEnv = LexicalEnv::Cast(maybeGlobalEnv.GetTaggedObject())->GetParentEnv();
     }
     return JSHandle<GlobalEnv>(thread, maybeGlobalEnv);
