@@ -85,11 +85,6 @@ public:
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), value.GetRawData());
     }
 
-    explicit JSHandle(const JSThread *thread, const ObjectHeader *value)
-    {
-        address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());
-    }
-
     explicit JSHandle(const JSThread *thread, const TaggedObject *value)
     {
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());

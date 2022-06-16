@@ -58,6 +58,6 @@ TEST_F(ConcurrentSweepTest, ConcurrentSweep)
     }
     JSHandle<EcmaString> test2(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, true));
     ASSERT_EQ(test1->GetLength(), 4U);
-    ASSERT_NE(test1.GetTaggedValue().GetHeapObject(), test2.GetTaggedValue().GetHeapObject());
+    ASSERT_NE(test1.GetTaggedValue().GetTaggedObject(), test2.GetTaggedValue().GetTaggedObject());
 }
 }  // namespace panda::test

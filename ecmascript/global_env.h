@@ -185,7 +185,7 @@ public:
     void Init(JSThread *thread);
     void InitGlobalObject();
 
-    static GlobalEnv *Cast(ObjectHeader *object)
+    static GlobalEnv *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSGlobalEnv());
         return reinterpret_cast<GlobalEnv *>(object);

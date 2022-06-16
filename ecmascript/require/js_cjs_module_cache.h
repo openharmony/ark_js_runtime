@@ -28,8 +28,9 @@ class CjsModuleCache : public TaggedHashTable<CjsModuleCache> {
 public:
     using HashTable = TaggedHashTable<CjsModuleCache>;
 
-    static CjsModuleCache *Cast(ObjectHeader *object)
+    static CjsModuleCache *Cast(TaggedObject *object)
     {
+        ASSERT(JSTaggedValue(object).IsTaggedArray());
         return reinterpret_cast<CjsModuleCache *>(object);
     }
 

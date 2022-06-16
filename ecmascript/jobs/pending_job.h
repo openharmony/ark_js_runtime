@@ -29,7 +29,7 @@
 namespace panda::ecmascript::job {
 class PendingJob final : public Record {
 public:
-    static PendingJob *Cast(ObjectHeader *object)
+    static PendingJob *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsPendingJob());
         return static_cast<PendingJob *>(object);

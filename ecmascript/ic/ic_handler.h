@@ -193,7 +193,7 @@ public:
         JSHandle<TransitionHandler> handler = factory->NewTransitionHandler();
         JSHandle<JSTaggedValue> handlerInfo = StoreHandler::StoreProperty(thread, op);
         handler->SetHandlerInfo(thread, handlerInfo);
-        auto hclass = JSObject::Cast(op.GetReceiver()->GetHeapObject())->GetJSHClass();
+        auto hclass = JSObject::Cast(op.GetReceiver()->GetTaggedObject())->GetJSHClass();
         handler->SetTransitionHClass(thread, JSTaggedValue(hclass));
         return JSHandle<JSTaggedValue>::Cast(handler);
     }

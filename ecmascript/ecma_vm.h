@@ -350,7 +350,7 @@ public:
 
 protected:
 
-    void HandleUncaughtException(ObjectHeader *exception);
+    void HandleUncaughtException(TaggedObject *exception);
 
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 

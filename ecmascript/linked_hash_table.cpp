@@ -273,20 +273,20 @@ int LinkedHash::Hash(JSTaggedValue key)
         key = JSTaggedValue(0);
     }
     if (key.IsSymbol()) {
-        auto symbolString = JSSymbol::Cast(key.GetHeapObject());
+        auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
         return symbolString->GetHashField();
     }
     if (key.IsString()) {
-        auto keyString = reinterpret_cast<EcmaString *>(key.GetHeapObject());
+        auto keyString = reinterpret_cast<EcmaString *>(key.GetTaggedObject());
         return keyString->GetHashcode();
     }
     if (key.IsECMAObject()) {
-        int32_t hash = ECMAObject::Cast(key.GetHeapObject())->GetHash();
+        int32_t hash = ECMAObject::Cast(key.GetTaggedObject())->GetHash();
         if (hash == 0) {
             uint64_t keyValue = key.GetRawData();
             hash = static_cast<int32_t>(
                 GetHash32(reinterpret_cast<uint8_t *>(&keyValue), sizeof(keyValue) / sizeof(uint8_t)));
-            ECMAObject::Cast(key.GetHeapObject())->SetHash(hash);
+            ECMAObject::Cast(key.GetTaggedObject())->SetHash(hash);
         }
         return hash;
     }

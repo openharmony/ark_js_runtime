@@ -226,9 +226,9 @@ JSHandle<TaggedArray> TSTypeTable::GetExportTableFromPandFile(JSThread *thread, 
     }
     });
 
-    array_size_t length = exportTable.size();
+    uint32_t length = exportTable.size();
     JSHandle<TaggedArray> exportArray = factory->NewTaggedArray(length);
-    for (array_size_t i = 0; i < length; i ++) {
+    for (uint32_t i = 0; i < length; i ++) {
         JSHandle<EcmaString> typeIdString = factory->NewFromUtf8(exportTable[i]);
         exportArray->Set(thread, i, typeIdString);
     }

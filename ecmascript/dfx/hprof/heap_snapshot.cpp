@@ -663,7 +663,7 @@ void HeapSnapshot::FillEdges()
                 toValue.RemoveWeakTag();
             }
             if (toValue.IsHeapObject()) {
-                auto *to = reinterpret_cast<TaggedObject *>(toValue.GetHeapObject());
+                auto *to = reinterpret_cast<TaggedObject *>(toValue.GetTaggedObject());
                 entryTo = entryMap_.FindEntry(Node::NewAddress(to));
             }
             if (entryTo == nullptr) {

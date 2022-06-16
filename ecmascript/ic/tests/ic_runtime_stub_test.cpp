@@ -331,7 +331,7 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreICWithHandler)
     OffsetBit::Set<uint32_t>(bitOffset, &handler);
     AccessorBit::Set<uint32_t>(true, &handler);
 
-    array_size_t arrayLength = bitOffset + 1U;
+    uint32_t arrayLength = bitOffset + 1U;
     JSHandle<JSObject> handleHolder = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleTaggedArr->Set(thread, bitOffset, handleAccessor.GetTaggedValue());
@@ -389,7 +389,7 @@ HWTEST_F_L0(ICRuntimeStubTest, LoadICWithHandler)
     OffsetBit::Set<uint32_t>(bitOffset, &handler);
     AccessorBit::Set<uint32_t>(true, &handler);
 
-    array_size_t arrayLength = bitOffset + 1U;
+    uint32_t arrayLength = bitOffset + 1U;
     JSHandle<JSObject> handleHolder = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleTaggedArr->Set(thread, bitOffset, handleAccessor.GetTaggedValue());
@@ -428,7 +428,7 @@ HWTEST_F_L0(ICRuntimeStubTest, Prototype_StoreAndLoad)
     OffsetBit::Set<uint32_t>(bitOffset, &handler);
     KindBit::Set<uint32_t>(HandlerKind::FIELD, &handler); // test filed
 
-    array_size_t arrayLength = bitOffset + 1U;
+    uint32_t arrayLength = bitOffset + 1U;
     JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleObj->SetProperties(thread, handleTaggedArr.GetTaggedValue());
@@ -462,7 +462,7 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreWithTransition_In_Filed)
     OffsetBit::Set<uint32_t>(bitOffset, &handler);
     KindBit::Set<uint32_t>(HandlerKind::FIELD, &handler);
 
-    array_size_t arrayLength = bitOffset + 1U;
+    uint32_t arrayLength = bitOffset + 1U;
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleObj->SetProperties(thread, handleTaggedArr.GetTaggedValue());
 
@@ -487,7 +487,7 @@ HWTEST_F_L0(ICRuntimeStubTest, Field_StoreAndLoad)
     uint32_t bitOffset = 2U;
     OffsetBit::Set<uint32_t>(bitOffset, &handler);
 
-    array_size_t arrayLength = bitOffset + 1U;
+    uint32_t arrayLength = bitOffset + 1U;
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleTaggedArr->Set(thread, bitOffset, JSTaggedValue::Undefined());
 
@@ -533,7 +533,7 @@ HWTEST_F_L0(ICRuntimeStubTest, Element_StoreAndLoad)
     KindBit::Set<uint32_t>(HandlerKind::ELEMENT, &handlerInfo);
     IsJSArrayBit::Set<uint32_t>(true, &handlerInfo);
 
-    array_size_t arrayLength = 3U;
+    uint32_t arrayLength = 3U;
     JSArray *handleArr = JSArray::ArrayCreate(thread, JSTaggedNumber(arrayLength)).GetObject<JSArray>();
     JSHandle<JSObject> handleArrObj(thread, handleArr);
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);

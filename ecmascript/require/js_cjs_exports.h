@@ -24,11 +24,6 @@ class JSCjsExports final : public JSObject {
 public:
     CAST_CHECK(JSCjsExports, IsJSCjsExports);
 
-    inline static JSCjsExports *Cast(const TaggedObject *object)
-    {
-        return static_cast<JSCjsExports *>(const_cast<TaggedObject *>(object));
-    }
-
     static constexpr size_t JS_CJS_EXPORTS_OFFSET = JSObject::SIZE;
     ACCESSORS(Exports, JS_CJS_EXPORTS_OFFSET, SIZE)
 

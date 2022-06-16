@@ -24,7 +24,7 @@ namespace panda::ecmascript {
 enum class ContentType : uint8_t { None = 1, Number, BigInt };
 class JSTypedArray : public JSObject {
 public:
-    static JSTypedArray *Cast(ObjectHeader *object)
+    static JSTypedArray *Cast(TaggedObject *object)
     {
     #if ECMASCRIPT_ENABLE_CAST_CHECK
         if (!(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray())) {

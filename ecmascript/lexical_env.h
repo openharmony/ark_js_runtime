@@ -25,7 +25,7 @@ public:
     static constexpr uint32_t SCOPE_INFO_INDEX = 1;
     static constexpr uint32_t RESERVED_ENV_LENGTH = 2;
 
-    static LexicalEnv *Cast(ObjectHeader *object)
+    static LexicalEnv *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsTaggedArray());
         return static_cast<LexicalEnv *>(object);

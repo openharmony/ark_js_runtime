@@ -21,7 +21,7 @@
 namespace panda::ecmascript {
 class JSRealm : public JSObject {
 public:
-    static JSRealm *Cast(ObjectHeader *object)
+    static JSRealm *Cast(TaggedObject *object)
     {
         return static_cast<JSRealm *>(object);
     }

@@ -90,9 +90,9 @@ JSTaggedValue JSRegExpIterator::Next(EcmaRuntimeCallInfo *argv)
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 uint32_t nextIndex = BuiltinsRegExp::AdvanceStringIndex(inputStr, thisIndex.ToUint32(),
                                                                         fullUnicode);
-                FastRuntimeStub::FastSetProperty(thread, regexHandle.GetTaggedValue(),
-                                                 lastIndexString.GetTaggedValue(),
-                                                 JSTaggedValue(nextIndex), true);
+                FastRuntimeStub::FastSetPropertyByValue(thread, regexHandle.GetTaggedValue(),
+                                                        lastIndexString.GetTaggedValue(),
+                                                        JSTaggedValue(nextIndex));
             }
             // iii. Return ! CreateIterResultObject(match, false).
             return JSIterator::CreateIterResultObject(thread, matchHandle, false).GetTaggedValue();

@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 class JSAPIStack : public JSObject {
 public:
     static constexpr int DEFAULT_CAPACITY_LENGTH = 10;
-    static JSAPIStack *Cast(ObjectHeader *object)
+    static JSAPIStack *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPIStack());
         return static_cast<JSAPIStack *>(object);

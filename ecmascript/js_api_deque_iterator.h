@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSAPIDequeIterator : public JSObject {
 public:
-    static JSAPIDequeIterator *Cast(ObjectHeader *obj)
+    static JSAPIDequeIterator *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsJSAPIDequeIterator());
         return static_cast<JSAPIDequeIterator *>(obj);

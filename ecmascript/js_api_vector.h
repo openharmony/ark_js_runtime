@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 class JSAPIVector : public JSObject {
 public:
     static constexpr int32_t DEFAULT_CAPACITY_LENGTH = 10;
-    static JSAPIVector *Cast(ObjectHeader *object)
+    static JSAPIVector *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPIVector());
         return static_cast<JSAPIVector *>(object);

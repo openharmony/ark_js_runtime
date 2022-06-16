@@ -30,7 +30,7 @@ public:
     using InternalGetFunc = JSTaggedValue (*)(JSThread *, const JSHandle<JSObject> &);
     using InternalSetFunc = bool (*)(JSThread *, const JSHandle<JSObject> &, const JSHandle<JSTaggedValue> &, bool);
 
-    static AccessorData *Cast(ObjectHeader *object)
+    static AccessorData *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsAccessorData() || JSTaggedValue(object).IsInternalAccessor());
         return static_cast<AccessorData *>(object);
@@ -81,7 +81,7 @@ enum class CompletionRecordType : uint8_t {
 
 class CompletionRecord final : public Record {
 public:
-    static CompletionRecord *Cast(ObjectHeader *object)
+    static CompletionRecord *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsCompletionRecord());
         return static_cast<CompletionRecord *>(object);

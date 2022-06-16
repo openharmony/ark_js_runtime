@@ -268,8 +268,8 @@ HWTEST_F_L0(EcmaModuleTest, ParseCjsModule)
     JSTaggedValue resolvedModule2 = binding2->GetModule();
     JSTaggedValue resolvedModule1 = binding1->GetModule();
 
-    SourceTextModule *module1 = SourceTextModule::Cast(resolvedModule1.GetHeapObject());
-    SourceTextModule *module2 = SourceTextModule::Cast(resolvedModule2.GetHeapObject());
+    SourceTextModule *module1 = SourceTextModule::Cast(resolvedModule1.GetTaggedObject());
+    SourceTextModule *module2 = SourceTextModule::Cast(resolvedModule2.GetTaggedObject());
 
     CString bindingName1 = ConvertToString(binding1->GetBindingName());
     CString bindingName2 = ConvertToString(binding2->GetBindingName());

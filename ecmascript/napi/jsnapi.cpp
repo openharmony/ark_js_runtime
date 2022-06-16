@@ -1889,31 +1889,31 @@ bool JSValueRef::IsJSPrimitiveRef()
 bool JSValueRef::IsJSPrimitiveNumber()
 {
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
-    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsNumber();
+    return JSPrimitiveRef::Cast(obj->GetTaggedObject())->IsNumber();
 }
 
 bool JSValueRef::IsJSPrimitiveInt()
 {
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
-    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsInt();
+    return JSPrimitiveRef::Cast(obj->GetTaggedObject())->IsInt();
 }
 
 bool JSValueRef::IsJSPrimitiveBoolean()
 {
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
-    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsBoolean();
+    return JSPrimitiveRef::Cast(obj->GetTaggedObject())->IsBoolean();
 }
 
 bool JSValueRef::IsJSPrimitiveString()
 {
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
-    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsString();
+    return JSPrimitiveRef::Cast(obj->GetTaggedObject())->IsString();
 }
 
 bool JSValueRef::IsJSPrimitiveSymbol()
 {
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
-    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsSymbol();
+    return JSPrimitiveRef::Cast(obj->GetTaggedObject())->IsSymbol();
 }
 
 bool JSValueRef::IsGeneratorObject()

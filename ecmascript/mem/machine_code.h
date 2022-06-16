@@ -27,7 +27,7 @@ class MachineCode : public TaggedObject {
 public:
     NO_COPY_SEMANTIC(MachineCode);
     NO_MOVE_SEMANTIC(MachineCode);
-    static MachineCode *Cast(ObjectHeader *object)
+    static MachineCode *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsMachineCodeObject());
         return static_cast<MachineCode *>(object);

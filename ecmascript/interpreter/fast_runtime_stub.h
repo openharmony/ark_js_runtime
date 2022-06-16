@@ -26,9 +26,6 @@ class PropertyAttributes;
 
 class FastRuntimeStub {
 public:
-    /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
-    static inline JSTaggedValue FastAdd(JSTaggedValue left, JSTaggedValue right);
-    static inline JSTaggedValue FastSub(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue FastMul(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue FastDiv(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue FastMod(JSTaggedValue left, JSTaggedValue right);
@@ -37,38 +34,6 @@ public:
     static inline bool FastStrictEqual(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue NewLexicalEnvDyn(JSThread *thread, ObjectFactory *factory, uint16_t numVars);
     static inline JSTaggedValue GetGlobalOwnProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
-    /* -------------- Special API For Multi-Language VM Begin ----------------- */
-    static inline bool IsSpecialIndexedObjForGet(JSTaggedValue obj);
-    static inline bool IsSpecialIndexedObjForSet(JSTaggedValue obj);
-    static inline JSTaggedValue GetElement(JSTaggedValue receiver, uint32_t index);
-    static inline JSTaggedValue GetElementWithArray(JSTaggedValue receiver, uint32_t index);
-    static inline bool SetElement(JSThread *thread, JSTaggedValue receiver, uint32_t index, JSTaggedValue value,
-                                  bool mayThrow);
-    static inline bool SetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
-                                         JSTaggedValue value, bool mayThrow);
-    static inline bool SetGlobalOwnProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
-                                            JSTaggedValue value, bool mayThrow);
-
-    // set property that is not accessor and is writable
-    static inline void SetOwnPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
-                                            JSTaggedValue value);
-    // set element that is not accessor and is writable
-    static inline bool SetOwnElement(JSThread *thread, JSTaggedValue receiver, uint32_t index, JSTaggedValue value);
-    static inline bool FastSetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key, JSTaggedValue value,
-                                       bool mayThrow);
-    static inline JSTaggedValue FastGetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
-    static inline JSTaggedValue FindOwnProperty(JSThread *thread, JSObject *obj, TaggedArray *properties,
-                                                JSTaggedValue key, PropertyAttributes *attr, uint32_t *indexOrEntry);
-    static inline JSTaggedValue FindOwnElement(TaggedArray *elements, uint32_t index, bool isDict,
-                                               PropertyAttributes *attr, uint32_t *indexOrEntry);
-    static inline JSTaggedValue FindOwnProperty(JSThread *thread, JSObject *obj, JSTaggedValue key);
-
-    static inline JSTaggedValue FindOwnElement(JSObject *obj, uint32_t index);
-
-    static inline JSTaggedValue HasOwnProperty(JSThread *thread, JSObject *obj, JSTaggedValue key);
-    /* -------------- Special API For Multi-Language VM End ----------------- */
-    /* -------------- Common API End, Don't change those interface!!! ----------------- */
-
     template<bool UseOwn = false>
     static inline JSTaggedValue GetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
     template<bool UseOwn = false>
@@ -100,8 +65,6 @@ public:
 
     static inline JSTaggedValue NewThisObject(JSThread *thread, JSTaggedValue ctor, JSTaggedValue newTarget,
                                               InterpretedFrame* state);
-    static inline JSTaggedValue NewThisObject(JSThread *thread, JSTaggedValue ctor, JSTaggedValue newTarget,
-                                              AsmInterpretedFrame* state);
 
 private:
     friend class ICRuntimeStub;

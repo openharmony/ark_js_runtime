@@ -510,7 +510,7 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
                                                                                 GetHandledRightSquareBracketString());
                 concatName = factory->ConcatFromString(
                     leftBrackets,
-                    JSHandle<EcmaString>(thread, JSSymbol::Cast(nameBegin->GetHeapObject())->GetDescription()));
+                    JSHandle<EcmaString>(thread, JSSymbol::Cast(nameBegin->GetTaggedObject())->GetDescription()));
                 concatName = factory->ConcatFromString(concatName, rightBrackets);
                 nameHandle.Update(concatName.GetTaggedValue());
             }
