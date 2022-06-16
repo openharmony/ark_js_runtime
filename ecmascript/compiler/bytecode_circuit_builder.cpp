@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#include "bytecode_circuit_builder.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
+
 #include "ecmascript/base/number_helper.h"
-#include "ecmascript/ts_types/ts_loader.h"
 #include "ecmascript/compiler/gate_accessor.h"
+#include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript::kungfu {
 void BytecodeCircuitBuilder::BytecodeToCircuit()
@@ -1840,35 +1841,14 @@ void BytecodeCircuitBuilder::UpdateCFG()
 // build circuit
 void BytecodeCircuitBuilder::BuildCircuitArgs()
 {
-    const size_t numArgs = method_->GetNumArgs();
-    const size_t actualNumArgs = GetActualNumArgs(numArgs);
-    actualArgs_.resize(actualNumArgs);
-    auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-
-    auto glueGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, 0,
-                                     {argRoot}, GateType::NJSValue());
-    actualArgs_.at(0) = glueGate;
-    commonArgs_.at(0) = glueGate;
-
-    auto envGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, CommonArgIdx::LEXENV,
-                                    {argRoot}, GateType::TaggedValue());
-    actualArgs_.at(CommonArgIdx::LEXENV) = envGate;
-    commonArgs_.at(CommonArgIdx::LEXENV) = envGate;
-
-    auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
-                                       {argRoot}, GateType::NJSValue());
-    actualArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
-    commonArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
-    for (size_t argIdx = CommonArgIdx::FUNC; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
-        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx, {argRoot},
-                                        GateType::TaggedValue());
-        actualArgs_.at(argIdx) = argGate;
-        commonArgs_.at(argIdx) = argGate;
-    }
-
-    for (size_t argIdx = CommonArgIdx::NUM_OF_ARGS; argIdx < actualNumArgs; argIdx++) {
-        actualArgs_.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
-                                                  {argRoot}, GateType::TaggedValue());
+    argAcc_.NewCommonArg(CommonArgIdx::GLUE, MachineType::I64, GateType::NJSValue());
+    argAcc_.NewCommonArg(CommonArgIdx::LEXENV, MachineType::I64, GateType::TaggedValue());
+    argAcc_.NewCommonArg(CommonArgIdx::ACTUAL_ARGC, MachineType::I32, GateType::NJSValue());
+    auto funcIdx = static_cast<size_t>(CommonArgIdx::FUNC);
+    const size_t actualNumArgs = argAcc_.GetActualNumArgs();
+    // new actual argument gates
+    for (size_t argIdx = funcIdx; argIdx < actualNumArgs; argIdx++) {
+        argAcc_.NewArg(argIdx);
     }
 }
 
@@ -2084,7 +2064,7 @@ GateRef BytecodeCircuitBuilder::NewConst(const BytecodeInfo &info)
                                     GateType::TaggedValue());
             break;
         case EcmaOpcode::LDFUNCTION_PREF:
-            gate = GetCommonArgByIndex(CommonArgIdx::FUNC);
+            gate = argAcc_.GetCommonArgGate(CommonArgIdx::FUNC);
             break;
         default:
             UNREACHABLE();
@@ -2341,7 +2321,6 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
     const uint8_t *end, const uint16_t reg, const bool acc, const GateType gateType)
 {
     ASSERT(end != nullptr);
-    const size_t offsetArgs = method_->GetNumVregs();
     auto tmpReg = reg;
     auto tsType = GetRealGateType(tmpReg, gateType);
     // find def-site in bytecodes of basic block
@@ -2403,12 +2382,11 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
         }
         ans = bb.valueSelectorAccGate;
     }
-    if (ans == Circuit::NullGate() && bbId == 0) { // entry block
+    if (ans == Circuit::NullGate() && IsEntryBlock(bbId)) { // entry block
         // find def-site in function args
-        ASSERT(!tmpAcc && tmpReg >= offsetArgs && tmpReg < offsetArgs + actualArgs_.size());
-        auto index = GetFunctionArgIndex(tmpReg, offsetArgs);
-        ans = actualArgs_.at(index);
-        circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
+        ASSERT(!tmpAcc);
+        ans = argAcc_.GetArgGate(tmpReg);
+        circuit_.SetGateType(ans, tsType);
         return ans;
     }
     if (ans == Circuit::NullGate()) {
@@ -2416,7 +2394,7 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
         return RenameVariable(bb.iDominator->id, bb.iDominator->end, tmpReg, tmpAcc, tsType);
     } else {
         // def-site already found
-        circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
+        circuit_.SetGateType(ans, tsType);
         return ans;
     }
 }
@@ -2489,11 +2467,6 @@ void BytecodeCircuitBuilder::BuildCircuit()
     if (IsLogEnabled()) {
         circuit_.PrintAllGates(*this);
     }
-}
-
-size_t BytecodeCircuitBuilder::GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const
-{
-    return (currentVreg - numVregs + CommonArgIdx::NUM_OF_ARGS);
 }
 
 void BytecodeCircuitBuilder::AddBytecodeOffsetInfo(GateRef &gate, const BytecodeInfo &info, size_t bcOffsetIndex,

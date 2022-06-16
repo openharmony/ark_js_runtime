@@ -41,6 +41,7 @@ config("include_llvm") {
 
 source_set("libark_jsoptimizer_set") {
   sources = [
+    "argument_accessor.cpp",
     "assembler/aarch64/assembler_aarch64.cpp",
     "assembler/aarch64/extend_assembler.cpp",
     "assembler/x64/assembler_x64.cpp",

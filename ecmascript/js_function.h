@@ -190,6 +190,16 @@ public:
         GetClass()->SetClassConstructor(flag);
     }
 
+    // add for AOT
+    inline void SetCodeEntryAndMarkAOT(const uintptr_t codeEntry)
+    {
+        auto method = GetMethod();
+        ASSERT(method != nullptr);
+        method->SetAotCodeBit(true);
+        method->SetNativeBit(false);
+        SetCodeEntry(codeEntry);
+    }
+
     static void InitializeJSFunction(JSThread *thread, const JSHandle<JSFunction> &func,
                                      FunctionKind kind = FunctionKind::NORMAL_FUNCTION, bool strict = true);
     static JSHClass *GetOrCreateInitialJSHClass(JSThread *thread, const JSHandle<JSFunction> &fun);
