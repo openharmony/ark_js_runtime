@@ -17,6 +17,7 @@
 #define ECMASCRIPT_MEM_HEAP_H
 
 #include "ecmascript/base/config.h"
+#include "ecmascript/frames.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/linear_space.h"
@@ -38,8 +39,6 @@ class NativeAreaAllocator;
 class ParallelEvacuator;
 class PartialGC;
 class STWYoungGC;
-
-using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 
 enum class MarkType : uint8_t {
     MARK_YOUNG,
