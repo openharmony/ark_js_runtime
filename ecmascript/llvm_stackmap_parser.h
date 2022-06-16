@@ -250,7 +250,8 @@ private:
     inline uintptr_t GetStackSlotAddress(const DwarfRegAndOffsetType info,
         uintptr_t callSiteSp, uintptr_t callsiteFp) const;
     void CollectBaseAndDerivedPointers(const CallSiteInfo *infos, std::set<uintptr_t> &baseSet,
-        ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
+        uintptr_t callsiteFp, uintptr_t callSiteSp) const;
     void PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,
         uintptr_t callsiteFp) const;
 
