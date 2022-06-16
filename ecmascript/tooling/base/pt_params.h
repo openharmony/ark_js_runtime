@@ -23,10 +23,9 @@ class PtBaseParams : public PtBaseTypes {
 public:
     PtBaseParams() = default;
     ~PtBaseParams() override = default;
-
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override final
+    std::unique_ptr<PtJson> ToJson() const override
     {
-        return Local<ObjectRef>();
+        UNREACHABLE();
     }
 
 private:
@@ -149,7 +148,7 @@ private:
     NO_COPY_SEMANTIC(GetScriptSourceParams);
     NO_MOVE_SEMANTIC(GetScriptSourceParams);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
 };
 
 class RemoveBreakpointParams : public PtBaseParams {

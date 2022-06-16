@@ -134,19 +134,6 @@ Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
-std::string DebuggerApi::ToStdString(Local<JSValueRef> str)
-{
-    ecmascript::JSHandle<ecmascript::JSTaggedValue> ret = JSNApiHelper::ToJSHandle(str);
-    ASSERT(ret->IsString());
-    EcmaString *ecmaStr = EcmaString::Cast(ret.GetTaggedValue().GetTaggedObject());
-    return CstringConvertToStdString(ConvertToString(ecmaStr));
-}
-
-int32_t DebuggerApi::StringToInt(Local<JSValueRef> str)
-{
-    return std::stoi(ToStdString(str));
-}
-
 // JSThread
 Local<JSValueRef> DebuggerApi::GetAndClearException(const EcmaVM *ecmaVm)
 {
@@ -189,7 +176,7 @@ void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
 }
 
 bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
-    const Local<FunctionRef> &condFuncRef)
+    Local<FunctionRef> condFuncRef)
 {
     return debugger->SetBreakpoint(location, condFuncRef);
 }
@@ -337,7 +324,7 @@ Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, con
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(ecmaVm->GetJSThread(), func));
 }
 
-Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
+Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, Local<FunctionRef> funcRef,
     std::shared_ptr<FrameHandler> &frameHandler)
 {
     JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);

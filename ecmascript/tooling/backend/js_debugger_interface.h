@@ -112,7 +112,7 @@ public:
      * @param condition Optional condition
      * @return Error if any errors occur
      */
-    virtual bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) = 0;
+    virtual bool SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> condFuncRef) = 0;
 
     /**
      * \brief Remove breakpoint from \param location

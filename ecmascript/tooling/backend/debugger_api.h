@@ -68,10 +68,6 @@ public:
     static Local<JSValueRef> GetGlobalValue(const EcmaVM *vm, Local<StringRef> name);
     static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 
-    // String
-    static std::string ToStdString(Local<JSValueRef> str);
-    static int32_t StringToInt(Local<JSValueRef> str);
-
     // JSThread
     static Local<JSValueRef> GetAndClearException(const EcmaVM *ecmaVm);
     static void SetException(const EcmaVM *ecmaVm, Local<JSValueRef> exception);
@@ -85,10 +81,10 @@ public:
     static void DestroyJSDebugger(JSDebugger *debugger);
     static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
     static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
-        const Local<FunctionRef> &condFuncRef);
+        Local<FunctionRef> condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
     static void HandleUncaughtException(const EcmaVM *ecmaVm, std::string &message);
-    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
+    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, Local<FunctionRef> funcRef,
         std::shared_ptr<FrameHandler> &frameHandler);
     static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
         std::string_view entryPoint);
