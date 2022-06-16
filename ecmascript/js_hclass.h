@@ -243,17 +243,16 @@ public:
     using ObjectTypeBits = BitField<JSType, 0, TYPE_BITFIELD_NUM>;  // 7
     using CallableBit = ObjectTypeBits::NextFlag;
     using ConstructorBit = CallableBit::NextFlag;      // 9
-    using BuiltinsCtorBit = ConstructorBit::NextFlag;  // 10
-    using ExtensibleBit = BuiltinsCtorBit::NextFlag;
+    using ExtensibleBit = ConstructorBit::NextFlag;
     using IsPrototypeBit = ExtensibleBit::NextFlag;
     using ElementRepresentationBits = IsPrototypeBit::NextField<Representation, 3>;        // 3 means next 3 bit
-    using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 16
-    using IsDictionaryBit = DictionaryElementBits::NextFlag;                               // 17
-    using IsStableElementsBit = IsDictionaryBit::NextFlag;                                 // 18
-    using HasConstructorBits = IsStableElementsBit::NextFlag;                              // 19
-    using IsLiteralBit = HasConstructorBits::NextFlag;                                     // 20
-    using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 21
-    using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 22
+    using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 15
+    using IsDictionaryBit = DictionaryElementBits::NextFlag;                               // 16
+    using IsStableElementsBit = IsDictionaryBit::NextFlag;                                 // 17
+    using HasConstructorBits = IsStableElementsBit::NextFlag;                              // 18
+    using IsLiteralBit = HasConstructorBits::NextFlag;                                     // 19
+    using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 20
+    using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 21
 
     static constexpr int DEFAULT_CAPACITY_OF_IN_OBJECTS = 4;
     static constexpr int MAX_CAPACITY_OF_OUT_OBJECTS =
@@ -344,11 +343,6 @@ public:
     inline void SetConstructor(bool flag) const
     {
         ConstructorBit::Set<uint32_t>(flag, GetBitFieldAddr());
-    }
-
-    inline void SetBuiltinsCtor(bool flag) const
-    {
-        BuiltinsCtorBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetExtensible(bool flag) const
@@ -893,12 +887,6 @@ public:
     {
         uint32_t bits = GetBitField();
         return ConstructorBit::Decode(bits);
-    }
-
-    inline bool IsBuiltinsCtor() const
-    {
-        uint32_t bits = GetBitField();
-        return BuiltinsCtorBit::Decode(bits);
     }
 
     inline bool IsExtensible() const

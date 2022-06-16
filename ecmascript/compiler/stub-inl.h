@@ -999,20 +999,6 @@ inline GateRef Stub::IsDictionaryElement(GateRef hClass)
         Int32(0));
 }
 
-inline GateRef Stub::NotBuiltinsConstructor(GateRef object)
-{
-    GateRef hclass = LoadHClass(object);
-    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
-
-    GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
-    // decode
-    return Int32Equal(
-        Int32And(
-            Int32LSR(bitfield, Int32(JSHClass::BuiltinsCtorBit::START_BIT)),
-            Int32((1LU << JSHClass::BuiltinsCtorBit::SIZE) - 1)),
-        Int32(0));
-}
-
 inline GateRef Stub::IsClassConstructorFromBitField(GateRef bitfield)
 {
     // decode
@@ -1116,19 +1102,6 @@ inline GateRef Stub::IsConstructor(GateRef object)
     return Int32NotEqual(
         Int32And(Int32LSR(bitfield, Int32(JSHClass::ConstructorBit::START_BIT)),
                  Int32((1LU << JSHClass::ConstructorBit::SIZE) - 1)),
-        Int32(0));
-}
-
-inline GateRef Stub::IsBuiltinsConstructor(GateRef object)
-{
-    GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
-
-    GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    // decode
-    return Int32NotEqual(
-        Int32And(Int32LSR(bitfield, Int32(JSHClass::BuiltinsCtorBit::START_BIT)),
-                 Int32((1LU << JSHClass::BuiltinsCtorBit::SIZE) - 1)),
         Int32(0));
 }
 
