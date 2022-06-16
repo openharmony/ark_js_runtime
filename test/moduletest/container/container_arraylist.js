@@ -13,18 +13,44 @@
  * limitations under the License.
  */
 
-var fastarray = undefined;
+var arrayList = undefined;
 if (globalThis["ArkPrivate"] != undefined) {
-    fastarray = ArkPrivate.Load(ArkPrivate.ArrayList);
-    let arr = new fastarray();
+    arrayList = ArkPrivate.Load(ArkPrivate.ArrayList);
+    let arr = new arrayList();
     arr.add(1);
     arr.add(2);
-    print(arr[0]);
 
+    let map = new Map();
+    let flag1 = false;
     try {
         arr["aa"] = 3;
     } catch (e) {
-        print(e);
+        flag1 = true;
+    }
+    map.set("flag1", flag1);
+
+    let flag2 = true;
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] != (i + 1)) {
+            flag2 = false;
+            break;
+        }
+    }
+    map.set("flag2", flag2);
+    let flag = undefined;
+    function elements(value, key, map) {
+        if (!value) {
+            if (!flag) {
+                flag = [];
+            }
+            flag.push(key);
+        }
+    }
+    map.forEach(elements);
+    if (!flag) {
+        print("Test ArrayList success!!!");
+    } else {
+        print("Test ArrayList fail: " + flag);
     }
 }
 

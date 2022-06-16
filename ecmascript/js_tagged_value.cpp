@@ -587,6 +587,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         success = JSTypedArray::SetProperty(thread, obj, key, value, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
+    } else if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot set property on Container", false);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, mayThrow);
     }
@@ -614,6 +616,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         success = JSTypedArray::SetProperty(thread, obj, keyHandle, value, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
+    } else if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot set property on Container", false);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, mayThrow);
     }
@@ -642,6 +646,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         success = JSTypedArray::SetProperty(thread, obj, key, value, receiver, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
+    } else if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot set property on Container", false);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, receiver, mayThrow);
     }

@@ -219,7 +219,7 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         uint16_t end = start + size;
         if (end >= MAX_SLOT_SIZE) {
             literalInfo_ = SlotSizeBits::Update(literalInfo_, MAX_SLOT_SIZE);
-            return MAX_SLOT_SIZE;
+            return MAX_SLOT_SIZE - 1; // prevent solt + 1 overflow
         }
         literalInfo_ = SlotSizeBits::Update(literalInfo_, static_cast<uint8_t>(end));
         return start;

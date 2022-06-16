@@ -2779,7 +2779,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     Label entry(env);
     env->SubCfgEntry(&entry);
     Label exit(env);
-    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
 
     Label isDefaultLabel(env);
     Label noDefaultLabel(env);
@@ -3649,7 +3649,7 @@ GateRef Stub::JSAPIContainerGet(GateRef glue, GateRef receiver, GateRef index)
     Label entry(env);
     env->SubCfgEntry(&entry);
     Label exit(env);
-    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
 
     GateRef lengthOffset = IntPtr(panda::ecmascript::JSAPIArrayList::LENGTH_OFFSET);
     GateRef length = TaggedCastToInt32(Load(VariableType::INT64(), receiver, lengthOffset));

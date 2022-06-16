@@ -18,15 +18,16 @@ if (globalThis["ArkPrivate"] != undefined) {
     LinkedList = ArkPrivate.Load(ArkPrivate.LinkedList);
     let list = new LinkedList();
     let testArray = []
+    let map = new Map();
     for(let i = 0; i<10; i++) {
         list.add(i)
         testArray.push(i)
     }
-    print("test linkedlist has:",  list.has(8))
-    print("test linkedlist not has:", list.has(2))
-    print("test linkedlist getLastIndexOf:", list.getLastIndexOf(1) === 1)
-    print("test linkedlist getIndexOf:", list.getIndexOf(5) === 5)
-    
+    map.set("test linkedlist has:",  list.has(8))
+    map.set("test linkedlist not has:", list.has(2))
+    map.set("test linkedlist getLastIndexOf:", list.getLastIndexOf(1) === 1)
+    map.set("test linkedlist getIndexOf:", list.getIndexOf(5) === 5)
+
     list.removeByIndex(9)
 
     testArray.splice(9, 1)
@@ -36,7 +37,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test linkedlist removeByIndex:", res)
+    map.set("test linkedlist removeByIndex:", res)
 
     const removeRes = list.remove(8)
     testArray.splice(8, 1)
@@ -46,10 +47,10 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test linkedlist remove:", res)
-    print("test linkedlist remove1:", removeRes)
-    print("test linkedlist getFirst:", list.getFirst() === 0)
-    print("test linkedlist getLast:", list.getLast() === 7)
+    map.set("test linkedlist remove:", res)
+    map.set("test linkedlist remove1:", removeRes)
+    map.set("test linkedlist getFirst:", list.getFirst() === 0)
+    map.set("test linkedlist getLast:", list.getLast() === 7)
 
     list.insert(3, 999)
     testArray.splice(3, 0, 999)
@@ -59,7 +60,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test linkedlist insert:", res)
+    map.set("test linkedlist insert:", res)
 
     list.set(5, 888)
     testArray[5] = 888
@@ -69,15 +70,14 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test linkedlist set:", res)
+    map.set("test linkedlist set:", res)
+    map.set("test linkedlist clone:", res)
 
-    print("test linkedlist clone:", res)
-
-    list.addFirst(1111)    
-    print("test linkedlist addfirst:", list.getFirst() === 1111)
+    list.addFirst(1111)
+    map.set("test linkedlist addfirst:", list.getFirst() === 1111)
 
     const removefirstres = list.removeFirst()
-    print("test linkedlist removeFirst:", removefirstres === 1111)
+    map.set("test linkedlist removeFirst:", removefirstres === 1111)
 
     res = true
     let i = 0
@@ -87,7 +87,7 @@ if (globalThis["ArkPrivate"] != undefined) {
         }
         i++;
     }
-    print("test linkedlist intertor:", res)
+    map.set("test linkedlist intertor:", res)
 
     let list1 = new LinkedList();
     let testArray1 = []
@@ -103,20 +103,22 @@ if (globalThis["ArkPrivate"] != undefined) {
         }
     })
 
-    print("test linkedlist forEach:", res)
+    map.set("test linkedlist forEach:", res)
     list1.clear()
-    print("test linkedlist clear:", list1.length === 0)
-    print("test linkedlist get:", list.get(1232) === undefined)
-    print("test linkedlist getLastIndexOf:", list.getLastIndexOf('abc') === -1)
+    map.set("test linkedlist clear:", list1.length === 0)
+    map.set("test linkedlist get:", list.get(1232) === undefined)
+    map.set("test linkedlist getLastIndexOf:", list.getLastIndexOf('abc') === -1)
+    let flag = false;
     try {
         list.removeByIndex(99)
     } catch (error) {
-        print("test linkedlist removeByIndex:", 'There is no such element to delete')
+        flag = true;
     }
+    map.set("test linkedlist removeByIndex:", flag)
 
     testArray.splice(5, 1)
     const resRemove = list.remove(888)
-    print("test linkedlist remove:", resRemove)
+    map.set("test linkedlist remove:", resRemove)
 
     res = true
     const arr = list.convertToArray()
@@ -125,6 +127,21 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test linkedlist convertToArray:", res)
+    map.set("test linkedlist convertToArray:", res)
+    flag = undefined;
+    function elements(value, key, map) {
+        if (!value) {
+            if (!flag) {
+                flag = [];
+            }
+            flag.push(key);
+        }
+    }
+    map.forEach(elements);
+    if (!flag) {
+        print("Test LinkedList success!!!");
+    } else {
+        print("Test LinkedList fail: " + flag);
+    }
 }
 

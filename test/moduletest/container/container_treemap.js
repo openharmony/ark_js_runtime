@@ -16,75 +16,90 @@
 var fastmap = undefined;
 if (globalThis["ArkPrivate"] != undefined) {
     fastmap = ArkPrivate.Load(ArkPrivate.TreeMap);
-}
 
-let map = new fastmap();
-map.set("a", "aa");
-map.set("b", "bb");
+    let res = new Map();
+    let map = new fastmap();
+    map.set("a", "aa");
+    map.set("b", "bb");
 
-print("### test TreeMap start ###")
-// test get, out: true
-print("test get, out:", map.length == 2 && map.get("a") == "aa" && map.get("b") == "bb");
-// test hasKey and hasValue, out: true
-print("test hasKey and hasValue, out:", map.hasKey("a") && map.hasKey("b") && map.hasValue("aa") &&
-      map.hasValue("bb") && !map.hasKey("c") && !map.hasValue("cc"));
+    // test get: true
+    res.set("test get:", map.length == 2 && map.get("a") == "aa" && map.get("b") == "bb");
+    // test hasKey and hasValue: true
+    res.set("test hasKey and hasValue:", map.hasKey("a") && map.hasKey("b") && map.hasValue("aa") &&
+            map.hasValue("bb") && !map.hasKey("c") && !map.hasValue("cc"));
 
-map.set("c", "cc");
-// test getFirstKey and getLastKey, out: true
-print("test getFirstKey and getLastKey, out:", map.getFirstKey() == "a" && map.getLastKey() == "c");
-// test getLowerKey and getHigherKey, out: true
-print("test getLowerKey and getHigherKey, out:", map.getLowerKey("b") == "a" && map.getLowerKey("a") == undefined &&
-      map.getHigherKey("b") == "c" && map.getHigherKey("c") == undefined);
-// test keys, out: true
-let iteratorKey = map.keys();
-print("test keys, out:", iteratorKey.next().value == "a" && iteratorKey.next().value == "b" &&
-      iteratorKey.next().value == "c" && iteratorKey.next().value == undefined);
-// test values, out: true
-let iteratorValues = map.values();
-print("test values, out:", iteratorValues.next().value == "aa" && iteratorValues.next().value == "bb" &&
-      iteratorValues.next().value == "cc" && iteratorValues.next().value == undefined);
-// test entries, out: [c,cc], undefined
-let iteratorEntries = map.entries();
-iteratorEntries.next().value;
-iteratorEntries.next().value;
-print("test entries, out:", iteratorEntries.next().value);
-print(iteratorEntries.next().value);
+    map.set("c", "cc");
+    // test getFirstKey and getLastKey: true
+    res.set("test getFirstKey and getLastKey:", map.getFirstKey() == "a" && map.getLastKey() == "c");
+    // test getLowerKey and getHigherKey: true
+    res.set("test getLowerKey and getHigherKey:", map.getLowerKey("b") == "a" && map.getLowerKey("a") == undefined &&
+            map.getHigherKey("b") == "c" && map.getHigherKey("c") == undefined);
+    // test keys: true
+    let iteratorKey = map.keys();
+    res.set("test keys:", iteratorKey.next().value == "a" && iteratorKey.next().value == "b" &&
+            iteratorKey.next().value == "c" && iteratorKey.next().value == undefined);
+    // test values: true
+    let iteratorValues = map.values();
+    res.set("test values:", iteratorValues.next().value == "aa" && iteratorValues.next().value == "bb" &&
+            iteratorValues.next().value == "cc" && iteratorValues.next().value == undefined);
+    // test entries: [c,cc], undefined
+    let iteratorEntries = map.entries();
+    iteratorEntries.next().value;
+    iteratorEntries.next().value;
+    res.set("test entries1:", iteratorEntries.next().value != undefined);
+    res.set("itest entries2:", iteratorEntries.next().value == undefined);
 
-// test forof, out: [a, aa], [b, bb], [c, cc]
-print("test forof, out:");
-for (const item of map) {
-    print(item);
-}
-// test forin, out:
-print("test forin, out:");
-for (const item in map) {
-    print(item);
-}
-// test forEach, out:
-let flag = false;
-print("test forEach, out:");
-function TestForEach(value, key, map) {
-    flag = map.get(key) === value;
-    if (!flag) {
-        print(false)
+    // test forof: [a, aa], [b, bb], [c, cc]
+    let arr = ["aa", "bb", "cc"];
+    let i = 0;
+    for (const item of map) {
+        res.set(arr[i], item[1] == arr[i]);
+        i++;
     }
-}
-map.forEach(TestForEach);
+    // test forin:
+    for (const item in map) {
+        res.set("test forin", false);
+    }
+    // test forEach:
+    let flag = false;
+    function TestForEach(value, key, map) {
+        flag = map.get(key) === value;
+        res.set("test forEach" + key, flag)
+    }
+    map.forEach(TestForEach);
 
-let dmap = new fastmap();
-// test setAll, out: 3
-dmap.setAll(map);
-print("test setAll, out:", dmap.length);
-// test remove, out: true
-print("test remove, out:", dmap.remove("a") == "aa" && dmap.length == 2);
-// test replace, out: true
-print("test replace, out:", dmap.replace("b", "dd") && dmap.get("b") == "dd");
-// test clear, out: 0
-dmap.clear();
-print("test clear, out:", dmap.length);
+    let dmap = new fastmap();
+    // test setAll: 3
+    dmap.setAll(map);
+    res.set("test setAll:", dmap.length == 3);
+    // test remove: true
+    res.set("test remove:", dmap.remove("a") == "aa" && dmap.length == 2);
+    // test replace: true
+    res.set("test replace:", dmap.replace("b", "dd") && dmap.get("b") == "dd");
+    // test clear: 0
+    dmap.clear();
+    res.set("test clear:", dmap.length == 0);
 
-try {
-    map["aa"] = 3;
-} catch (e) {
-    print(e);
+    flag = false;
+    try {
+        map["aa"] = 3;
+    } catch (e) {
+        flag = true;
+    }
+    res.set("test map throw error", flag);
+    flag = undefined;
+    function elements(value, key, map) {
+        if (!value) {
+            if (!flag) {
+                flag = [];
+            }
+            flag.push(key);
+        }
+    }
+    res.forEach(elements);
+    if (!flag) {
+        print("Test TreeMap success!!!");
+    } else {
+        print("Test TreeMap fail: " + flag);
+    }
 }

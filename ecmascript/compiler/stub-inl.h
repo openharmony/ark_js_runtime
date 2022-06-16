@@ -1502,8 +1502,8 @@ inline GateRef Stub::IsSpecialContainer(GateRef jsType)
     // arraylist and vector has fast pass now
     return TruncInt32ToInt1(Int32And(
         ZExtInt1ToInt32(
-            Int32GreaterThanOrEqual(jsType, Int32(static_cast<int32_t>(JSType::JS_API_ARRAY_LIST)))),
-        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, Int32(static_cast<int32_t>(JSType::JS_API_QUEUE))))));
+            Int32Equal(jsType, Int32(static_cast<int32_t>(JSType::JS_API_ARRAY_LIST)))),
+        ZExtInt1ToInt32(Int32Equal(jsType, Int32(static_cast<int32_t>(JSType::JS_API_VECTOR))))));
 }
 
 inline GateRef Stub::IsFastTypeArray(GateRef jsType)
