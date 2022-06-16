@@ -84,6 +84,7 @@ public:
     Paused() = default;
     ~Paused() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -208,6 +209,7 @@ public:
     Resumed() = default;
     ~Resumed() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -224,6 +226,7 @@ public:
     ScriptFailedToParse() = default;
     ~ScriptFailedToParse() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -476,6 +479,7 @@ public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -651,12 +655,12 @@ public:
         return isModule_.has_value();
     }
 
-    uint32_t GetLength() const
+    int32_t GetLength() const
     {
         return length_.value_or(0);
     }
 
-    ScriptParsed &SetLength(uint32_t length)
+    ScriptParsed &SetLength(int32_t length)
     {
         length_ = length;
         return *this;
@@ -667,12 +671,12 @@ public:
         return length_.has_value();
     }
 
-    uint32_t GetCodeOffset() const
+    int32_t GetCodeOffset() const
     {
         return codeOffset_.value_or(0);
     }
 
-    ScriptParsed &SetCodeOffset(uint32_t codeOffset)
+    ScriptParsed &SetCodeOffset(int32_t codeOffset)
     {
         codeOffset_ = codeOffset;
         return *this;
@@ -734,8 +738,8 @@ private:
     std::optional<std::string> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
-    std::optional<uint32_t> length_ {};
-    std::optional<uint32_t> codeOffset_ {};
+    std::optional<int32_t> length_ {};
+    std::optional<int32_t> codeOffset_ {};
     std::optional<std::string> scriptLanguage_ {};
     std::optional<std::string> embedderName_ {};
 };
@@ -745,6 +749,7 @@ public:
     AddHeapSnapshotChunk() = default;
     ~AddHeapSnapshotChunk() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -768,6 +773,7 @@ public:
     ConsoleProfileFinished() = default;
     ~ConsoleProfileFinished() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
         return "Profile.ConsoleProfileFinished";
@@ -838,6 +844,7 @@ public:
     ConsoleProfileStarted() = default;
     ~ConsoleProfileStarted() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
         return "Profile.ConsoleProfileStarted";
@@ -896,6 +903,7 @@ public:
     PreciseCoverageDeltaUpdate() = default;
     ~PreciseCoverageDeltaUpdate() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
         return "Profile.PreciseCoverageDeltaUpdate";
@@ -948,18 +956,19 @@ public:
     HeapStatsUpdate() = default;
     ~HeapStatsUpdate() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
         return "HeapProfiler.heapStatsUpdate";
     }
 
-    const std::vector<uint32_t> *GetStatsUpdate() const
+    const std::vector<int32_t> *GetStatsUpdate() const
     {
         return &statsUpdate_;
     }
 
-    HeapStatsUpdate &SetStatsUpdate(std::vector<uint32_t> statsUpdate)
+    HeapStatsUpdate &SetStatsUpdate(std::vector<int32_t> statsUpdate)
     {
         statsUpdate_ = std::move(statsUpdate);
         return *this;
@@ -969,7 +978,7 @@ private:
     NO_COPY_SEMANTIC(HeapStatsUpdate);
     NO_MOVE_SEMANTIC(HeapStatsUpdate);
 
-    std::vector<uint32_t> statsUpdate_ {};
+    std::vector<int32_t> statsUpdate_ {};
 };
 
 class LastSeenObjectId final : public PtBaseEvents {
@@ -977,6 +986,7 @@ public:
     LastSeenObjectId() = default;
     ~LastSeenObjectId() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -988,7 +998,7 @@ public:
         return lastSeenObjectId_;
     }
 
-    LastSeenObjectId &SetLastSeenObjectId(uint32_t lastSeenObjectId)
+    LastSeenObjectId &SetLastSeenObjectId(int32_t lastSeenObjectId)
     {
         lastSeenObjectId_ = lastSeenObjectId;
         return *this;
@@ -1009,7 +1019,7 @@ private:
     NO_COPY_SEMANTIC(LastSeenObjectId);
     NO_MOVE_SEMANTIC(LastSeenObjectId);
 
-    uint32_t lastSeenObjectId_ {};
+    int32_t lastSeenObjectId_ {};
     int64_t timestamp_ {};
 };
 
@@ -1018,6 +1028,7 @@ public:
     ReportHeapSnapshotProgress() = default;
     ~ReportHeapSnapshotProgress() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {

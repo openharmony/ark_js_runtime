@@ -136,16 +136,16 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
         LOG(ERROR, DEBUGGER) << "HeapSnapshot::PushHeapStat::stream is nullptr";
         return;
     }
-    int preChunkSize = stream->GetSize();
-    uint32_t sequenceId = 0;
+    int32_t preChunkSize = stream->GetSize();
+    int32_t sequenceId = 0;
     auto iter = nodes_.begin();
     for (size_t timeIndex = 0; timeIndex < timeStamps_.size(); ++timeIndex) {
         TimeStamp& timeStamp = timeStamps_[timeIndex];
-        sequenceId = static_cast<uint32_t>(timeStamp.GetLastSequenceId());
-        uint32_t nodesSize = 0;
-        uint32_t nodesCount = 0;
+        sequenceId = timeStamp.GetLastSequenceId();
+        int32_t nodesSize = 0;
+        int32_t nodesCount = 0;
 
-        while (iter != nodes_.end() && (*iter)->GetId() <= sequenceId) {
+        while (iter != nodes_.end() && (*iter)->GetId() <= static_cast<uint32_t>(sequenceId)) {
             nodesCount++;
             nodesSize += (*iter)->GetSelfSize();
             iter++;
@@ -154,16 +154,16 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
             && ((nodesCount != 0) && (nodesSize != 0))) {
             timeStamp.SetCount(nodesCount);
             timeStamp.SetSize(nodesSize);
-            statsBuffer.emplace_back(static_cast<uint32_t>(timeIndex), nodesCount, nodesSize);
-            if (static_cast<int>(statsBuffer.size()) >= preChunkSize) {
-                stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int>(statsBuffer.size()));
+            statsBuffer.emplace_back(static_cast<int32_t>(timeIndex), nodesCount, nodesSize);
+            if (static_cast<int32_t>(statsBuffer.size()) >= preChunkSize) {
+                stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int32_t>(statsBuffer.size()));
                 statsBuffer.clear();
             }
         }
     }
 
     if (!statsBuffer.empty()) {
-        stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int>(statsBuffer.size()));
+        stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int32_t>(statsBuffer.size()));
         statsBuffer.clear();
     }
     stream->UpdateLastSeenObjectId(sequenceId);

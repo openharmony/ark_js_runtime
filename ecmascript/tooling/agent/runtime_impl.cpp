@@ -65,8 +65,7 @@ void RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger(const DispatchRequest 
 
 void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 {
-    std::unique_ptr<GetPropertiesParams> params =
-        GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<GetPropertiesParams> params = GetPropertiesParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -90,8 +89,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 
 void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
 {
-    std::unique_ptr<CallFunctionOnParams> params =
-        CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<CallFunctionOnParams> params = CallFunctionOnParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;

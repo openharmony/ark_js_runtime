@@ -69,7 +69,7 @@ std::pair<bool, std::string> FileStream::FilePathValid(const std::string &fileNa
 }
 
 // Writes the chunk of data into the stream
-bool FileStream::WriteChunk(char *data, int size)
+bool FileStream::WriteChunk(char *data, int32_t size)
 {
     if (fileStream_.fail()) {
         return false;
@@ -77,7 +77,7 @@ bool FileStream::WriteChunk(char *data, int size)
 
     std::string str;
     str.resize(size);
-    for (int i = 0; i < size; ++i) {
+    for (int32_t i = 0; i < size; ++i) {
         str[i] = data[i];
     }
 
@@ -99,7 +99,7 @@ bool FileDescriptorStream::Good()
 }
 
 // Writes the chunk of data into the stream
-bool FileDescriptorStream::WriteChunk(char *data, int size)
+bool FileDescriptorStream::WriteChunk(char *data, int32_t size)
 {
     if (fd_ < 0) {
         return false;
@@ -107,7 +107,7 @@ bool FileDescriptorStream::WriteChunk(char *data, int size)
 
     std::string str;
     str.resize(size);
-    for (int i = 0; i < size; ++i) {
+    for (int32_t i = 0; i < size; ++i) {
         str[i] = data[i];
     }
     int ret = dprintf(fd_, "%s", str.c_str());

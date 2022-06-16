@@ -89,10 +89,10 @@ private:
     public:
         explicit Frontend(ProtocolChannel *channel) : channel_(channel) {}
 
-        void AddHeapSnapshotChunk(char *data, int size);
+        void AddHeapSnapshotChunk(char *data, int32_t size);
         void ReportHeapSnapshotProgress(int32_t done, int32_t total);
-        void HeapStatsUpdate(HeapStat* updateData, int count);
-        void LastSeenObjectId(uint32_t lastSeenObjectId);
+        void HeapStatsUpdate(HeapStat* updateData, int32_t count);
+        void LastSeenObjectId(int32_t lastSeenObjectId);
         void ResetProfiles();
 
     private:
@@ -112,7 +112,7 @@ private:
             static const int heapProfilerChunkSise = 102400;
             return heapProfilerChunkSise;
         }
-        bool WriteChunk(char *data, int size) override
+        bool WriteChunk(char *data, int32_t size) override
         {
             if (!Good()) {
                 return false;
@@ -125,7 +125,7 @@ private:
             return frontend_ != nullptr;
         }
 
-        void UpdateHeapStats(HeapStat* updateData, int count) override
+        void UpdateHeapStats(HeapStat* updateData, int32_t count) override
         {
             if (!Good()) {
                 return;
@@ -133,7 +133,7 @@ private:
             frontend_->HeapStatsUpdate(updateData, count);
         }
 
-        void UpdateLastSeenObjectId(uint32_t lastSeenObjectId) override
+        void UpdateLastSeenObjectId(int32_t lastSeenObjectId) override
         {
             if (!Good()) {
                 return;

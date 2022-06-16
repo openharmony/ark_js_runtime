@@ -88,41 +88,31 @@ HWTEST_F_L0(DebuggerParamsTest, StartSamplingParamsCreateTest)
     std::string msg;
     std::unique_ptr<StartSamplingParams> startSamplingData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(startSamplingData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(startSamplingData, nullptr);
-
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startSamplingData = StartSamplingParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(startSamplingData, nullptr);
     EXPECT_EQ(startSamplingData->GetSamplingInterval(), 32768);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startSamplingData = StartSamplingParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(startSamplingData, nullptr);
     EXPECT_EQ(startSamplingData->GetSamplingInterval(), 32768);
 
     // abnormal params of params.sub-key=["samplingInterval":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"samplingInterval":true}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startSamplingData = StartSamplingParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(startSamplingData, nullptr);
 
     // abnormal params of params.sub-key=["samplingInterval":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"samplingInterval":"Test"}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startSamplingData = StartSamplingParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(startSamplingData, nullptr);
 
     // abnormal params of params.sub-key = [ "size"=100,"nodeId"=1,"ordinal"=10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"samplingInterval":1000}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startSamplingData = StartSamplingParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(startSamplingData, nullptr);
     EXPECT_EQ(startSamplingData->GetSamplingInterval(), 1000);
 }
@@ -132,41 +122,31 @@ HWTEST_F_L0(DebuggerParamsTest, StartTrackingHeapObjectsParamsCreateTest)
     std::string msg;
     std::unique_ptr<StartTrackingHeapObjectsParams> objectData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_FALSE(objectData->GetTrackAllocations());
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_FALSE(objectData->GetTrackAllocations());
 
     // abnormal params of params.sub-key=["trackAllocations":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"trackAllocations":10}})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["trackAllocations":"Test"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"trackAllocations":"Test"}})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["trackAllocations":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"trackAllocations":true}})";
-    objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_TRUE(objectData->GetTrackAllocations());
 }
@@ -176,19 +156,9 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
     std::string msg;
     std::unique_ptr<StopTrackingHeapObjectsParams> objectData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StopTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_FALSE(objectData->GetReportProgress());
     ASSERT_FALSE(objectData->GetTreatGlobalObjectsAsRoots());
@@ -196,7 +166,7 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StopTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_FALSE(objectData->GetReportProgress());
     ASSERT_FALSE(objectData->GetTreatGlobalObjectsAsRoots());
@@ -206,21 +176,21 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
             "reportProgress":10,
             "treatGlobalObjectsAsRoots":10,
             "captureNumericValue":10}})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StopTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "reportProgress":"Test",
             "treatGlobalObjectsAsRoots":"Test",
             "captureNumericValue":"Test"}})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StopTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "reportProgress":true,
             "treatGlobalObjectsAsRoots":true,
             "captureNumericValue":true}})";
-    objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StopTrackingHeapObjectsParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_TRUE(objectData->GetReportProgress());
     ASSERT_TRUE(objectData->GetTreatGlobalObjectsAsRoots());
@@ -234,39 +204,39 @@ HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["heapObjectId":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":10}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["heapObjectId":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":true}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["heapObjectId":“10”]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":"10"}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = AddInspectedHeapObjectParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
-    EXPECT_EQ((int)objectData->GetHeapObjectId(), 10);
+    EXPECT_EQ(objectData->GetHeapObjectId(), 10);
 }
 
 HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsCreateTest)
@@ -274,39 +244,19 @@ HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsCreateTest)
     std::string msg;
     std::unique_ptr<GetHeapObjectIdParams> objectData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of null params.sub-key
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
     // abnormal params of params.sub-key=["objectId":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":10}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["objectId":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":true}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["objectId":“10”]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ((int)objectData->GetObjectId(), 10);
 }
@@ -316,45 +266,25 @@ HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsCreateTest)
     std::string msg;
     std::unique_ptr<GetObjectByHeapObjectIdParams> objectData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of null params.sub-key
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
     // abnormal params of params.sub-key=["objectId":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":10}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetObjectByHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["objectId":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":10}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetObjectByHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of params.sub-key=["objectId":“10”]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetObjectByHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ((int)objectData->GetObjectId(), 10);
     ASSERT_FALSE(objectData->HasObjectGroup());
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":"groupname"}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = GetObjectByHeapObjectIdParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ((int)objectData->GetObjectId(), 10);
     EXPECT_EQ(objectData->GetObjectGroup(), "groupname");
@@ -365,45 +295,35 @@ HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
     std::string msg;
     std::unique_ptr<StartPreciseCoverageParams> objectData;
 
-    //  abnormal params of null msg
-    msg = std::string() + R"({})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
-    // abnormal params of unexist key params
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(objectData, nullptr);
-
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":8,
             "detailed":8,
             "allowTriggeredUpdates":8}})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":"Test",
             "detailed":"Test",
             "allowTriggeredUpdates":"Test"}})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":true,
             "detailed":true,
             "allowTriggeredUpdates":true}})";
-    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     ASSERT_TRUE(objectData->GetCallCount());
     ASSERT_TRUE(objectData->GetDetailed());
@@ -417,31 +337,31 @@ HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "interval":"500"}})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"interval":500}})";
-    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = SetSamplingIntervalParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ(objectData->GetInterval(), 500);
 }
