@@ -2005,10 +2005,13 @@ void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assemble
 // ResumeUncaughtFrameAndReturn(uintptr_t glue)
 // GHC calling convention
 // %r13 - glue
+// %rsi - acc
 void AssemblerStubsX64::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
     Register glueRegister = __ GlueRegister();
+    Register acc(rsi);
+    Register cppRet(rax);
 
     Label ret;
     Register fpRegister = r11;
@@ -2017,6 +2020,8 @@ void AssemblerStubsX64::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assemble
     __ Jz(&ret);
     __ Movq(fpRegister, rsp);  // resume rsp
     __ Bind(&ret);
+    // this method will return to Execute(cpp calling convention), and the return value should be put into rax.
+    __ Movq(acc, cppRet);
     __ Ret();
 }
 
