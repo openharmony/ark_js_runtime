@@ -45,8 +45,7 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 
 void HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject(const DispatchRequest &request)
 {
-    std::unique_ptr<AddInspectedHeapObjectParams> params =
-        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<AddInspectedHeapObjectParams> params = AddInspectedHeapObjectParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -75,8 +74,7 @@ void HeapProfilerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 
 void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &request)
 {
-    std::unique_ptr<GetHeapObjectIdParams> params =
-        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<GetHeapObjectIdParams> params = GetHeapObjectIdParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -90,8 +88,7 @@ void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &re
 
 void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchRequest &request)
 {
-    std::unique_ptr<GetObjectByHeapObjectIdParams> params =
-        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<GetObjectByHeapObjectIdParams> params = GetObjectByHeapObjectIdParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -114,8 +111,7 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 
 void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &request)
 {
-    std::unique_ptr<StartSamplingParams> params =
-        StartSamplingParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StartSamplingParams> params = StartSamplingParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -127,7 +123,7 @@ void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &requ
 void HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects(const DispatchRequest &request)
 {
     std::unique_ptr<StartTrackingHeapObjectsParams> params =
-        StartTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+        StartTrackingHeapObjectsParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -147,8 +143,7 @@ void HeapProfilerImpl::DispatcherImpl::StopSampling(const DispatchRequest &reque
 
 void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchRequest &request)
 {
-    std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StopTrackingHeapObjectsParams> params = StopTrackingHeapObjectsParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -159,8 +154,7 @@ void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchReq
 
 void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &request)
 {
-    std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StopTrackingHeapObjectsParams> params = StopTrackingHeapObjectsParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -174,7 +168,7 @@ bool HeapProfilerImpl::Frontend::AllowNotify() const
     return channel_ != nullptr;
 }
 
-void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int size)
+void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int32_t size)
 {
     if (!AllowNotify()) {
         return;
@@ -182,7 +176,7 @@ void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int size)
 
     tooling::AddHeapSnapshotChunk addHeapSnapshotChunk;
     addHeapSnapshotChunk.GetChunk().resize(size);
-    for (int i = 0; i < size; ++i) {
+    for (int32_t i = 0; i < size; ++i) {
         addHeapSnapshotChunk.GetChunk()[i] = data[i];
     }
 
@@ -203,13 +197,13 @@ void HeapProfilerImpl::Frontend::ReportHeapSnapshotProgress(int32_t done, int32_
     channel_->SendNotification(reportHeapSnapshotProgress);
 }
 
-void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count)
+void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int32_t count)
 {
     if (!AllowNotify()) {
         return;
     }
-    std::vector<uint32_t> statsDiff;
-    for (int i = 0; i < count; ++i) {
+    std::vector<int32_t> statsDiff;
+    for (int32_t i = 0; i < count; ++i) {
         statsDiff.emplace_back(updateData[i].index_);
         statsDiff.emplace_back(updateData[i].count_);
         statsDiff.emplace_back(updateData[i].size_);
@@ -219,7 +213,7 @@ void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count
     channel_->SendNotification(heapStatsUpdate);
 }
 
-void HeapProfilerImpl::Frontend::LastSeenObjectId(uint32_t lastSeenObjectId)
+void HeapProfilerImpl::Frontend::LastSeenObjectId(int32_t lastSeenObjectId)
 {
     if (!AllowNotify()) {
         return;

@@ -36,12 +36,12 @@ public:
     }
 
     // Writes the chunk of data into the stream
-    bool WriteChunk(char* data, int size) override;
+    bool WriteChunk(char* data, int32_t size) override;
     bool Good() override;
-    void UpdateHeapStats([[maybe_unused]]HeapStat* data, [[maybe_unused]]int count) override
+    void UpdateHeapStats([[maybe_unused]] HeapStat* data, [[maybe_unused]] int32_t count) override
     {
     }
-    void UpdateLastSeenObjectId([[maybe_unused]]uint32_t lastSeenObjectId) override
+    void UpdateLastSeenObjectId([[maybe_unused]] int32_t lastSeenObjectId) override
     {
     }
 
@@ -67,12 +67,12 @@ public:
     }
 
     // Writes the chunk of data into the stream
-    bool WriteChunk(char *data, int size) override;
+    bool WriteChunk(char *data, int32_t size) override;
     bool Good() override;
-    void UpdateHeapStats([[maybe_unused]]HeapStat* data, [[maybe_unused]]int count) override
+    void UpdateHeapStats([[maybe_unused]] HeapStat* data, [[maybe_unused]] int32_t count) override
     {
     }
-    void UpdateLastSeenObjectId([[maybe_unused]]uint32_t lastSeenObjectId) override
+    void UpdateLastSeenObjectId([[maybe_unused]] int32_t lastSeenObjectId) override
     {
     }
 

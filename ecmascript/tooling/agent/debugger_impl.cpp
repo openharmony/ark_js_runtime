@@ -286,8 +286,7 @@ void DebuggerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 
 void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &request)
 {
-    std::unique_ptr<EvaluateOnCallFrameParams> params =
-        EvaluateOnCallFrameParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<EvaluateOnCallFrameParams> params = EvaluateOnCallFrameParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -301,8 +300,7 @@ void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &re
 
 void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest &request)
 {
-    std::unique_ptr<GetPossibleBreakpointsParams> params =
-        GetPossibleBreakpointsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<GetPossibleBreakpointsParams> params = GetPossibleBreakpointsParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -315,8 +313,7 @@ void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest 
 
 void DebuggerImpl::DispatcherImpl::GetScriptSource(const DispatchRequest &request)
 {
-    std::unique_ptr<GetScriptSourceParams> params =
-        GetScriptSourceParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<GetScriptSourceParams> params = GetScriptSourceParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -335,8 +332,7 @@ void DebuggerImpl::DispatcherImpl::Pause(const DispatchRequest &request)
 
 void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &request)
 {
-    std::unique_ptr<RemoveBreakpointParams> params =
-        RemoveBreakpointParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<RemoveBreakpointParams> params = RemoveBreakpointParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -347,7 +343,7 @@ void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &reque
 
 void DebuggerImpl::DispatcherImpl::Resume(const DispatchRequest &request)
 {
-    std::unique_ptr<ResumeParams> params = ResumeParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<ResumeParams> params = ResumeParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -364,8 +360,7 @@ void DebuggerImpl::DispatcherImpl::SetAsyncCallStackDepth(const DispatchRequest 
 
 void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &request)
 {
-    std::unique_ptr<SetBreakpointByUrlParams> params =
-        SetBreakpointByUrlParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<SetBreakpointByUrlParams> params = SetBreakpointByUrlParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -380,8 +375,7 @@ void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &req
 
 void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &request)
 {
-    std::unique_ptr<SetPauseOnExceptionsParams> params =
-        SetPauseOnExceptionsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<SetPauseOnExceptionsParams> params = SetPauseOnExceptionsParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -393,7 +387,7 @@ void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &r
 
 void DebuggerImpl::DispatcherImpl::StepInto(const DispatchRequest &request)
 {
-    std::unique_ptr<StepIntoParams> params = StepIntoParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StepIntoParams> params = StepIntoParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -410,7 +404,7 @@ void DebuggerImpl::DispatcherImpl::StepOut(const DispatchRequest &request)
 
 void DebuggerImpl::DispatcherImpl::StepOver(const DispatchRequest &request)
 {
-    std::unique_ptr<StepOverParams> params = StepOverParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StepOverParams> params = StepOverParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;

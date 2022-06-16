@@ -197,22 +197,22 @@ public:
         return timeStampUs_;
     }
 
-    uint32_t GetSize() const
+    int32_t GetSize() const
     {
         return size_;
     }
 
-    void SetSize(uint32_t size)
+    void SetSize(int32_t size)
     {
         size_ = size;
     }
 
-    uint32_t GetCount() const
+    int32_t GetCount() const
     {
         return count_;
     }
 
-    void SetCount(uint32_t count)
+    void SetCount(int32_t count)
     {
         count_ = count;
     }
@@ -228,8 +228,8 @@ private:
 
     int lastSequenceId_ {0};
     int64_t timeStampUs_ {0};
-    uint32_t size_ {0};
-    uint32_t count_ {0};
+    int32_t size_ {0};
+    int32_t count_ {0};
 };
 
 class HeapEntryMap {

@@ -39,7 +39,6 @@ public:
     EnableParams() = default;
     ~EnableParams() override = default;
 
-    static std::unique_ptr<EnableParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<EnableParams> Create(const PtJson &params);
 
     double GetMaxScriptsCacheSize() const
@@ -64,7 +63,7 @@ public:
     EvaluateOnCallFrameParams() = default;
     ~EvaluateOnCallFrameParams() override = default;
 
-    static std::unique_ptr<EvaluateOnCallFrameParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<EvaluateOnCallFrameParams> Create(const PtJson &params);
 
     CallFrameId GetCallFrameId() const
     {
@@ -83,7 +82,7 @@ private:
     CallFrameId callFrameId_ {};
     std::string expression_ {};
     std::optional<std::string> objectGroup_ {};
-    std::optional<bool> includeCommandLineApi_ {};
+    std::optional<bool> includeCommandLineAPI_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
     std::optional<bool> generatePreview_ {};
@@ -95,7 +94,7 @@ public:
     GetPossibleBreakpointsParams() = default;
     ~GetPossibleBreakpointsParams() override = default;
 
-    static std::unique_ptr<GetPossibleBreakpointsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<GetPossibleBreakpointsParams> Create(const PtJson &params);
 
     Location *GetStart() const
     {
@@ -139,7 +138,7 @@ public:
     GetScriptSourceParams() = default;
     ~GetScriptSourceParams() override = default;
 
-    static std::unique_ptr<GetScriptSourceParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<GetScriptSourceParams> Create(const PtJson &params);
 
     ScriptId GetScriptId() const
     {
@@ -158,7 +157,7 @@ public:
     RemoveBreakpointParams() = default;
     ~RemoveBreakpointParams() override = default;
 
-    static std::unique_ptr<RemoveBreakpointParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<RemoveBreakpointParams> Create(const PtJson &params);
 
     BreakpointId GetBreakpointId() const
     {
@@ -177,7 +176,7 @@ public:
     ResumeParams() = default;
     ~ResumeParams() override = default;
 
-    static std::unique_ptr<ResumeParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ResumeParams> Create(const PtJson &params);
 
     bool GetTerminateOnResume() const
     {
@@ -201,9 +200,9 @@ public:
     SetAsyncCallStackDepthParams() = default;
     ~SetAsyncCallStackDepthParams() override = default;
 
-    static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const PtJson &params);
 
-    uint32_t GetMaxDepth() const
+    int32_t GetMaxDepth() const
     {
         return maxDepth_;
     }
@@ -212,14 +211,14 @@ private:
     NO_COPY_SEMANTIC(SetAsyncCallStackDepthParams);
     NO_MOVE_SEMANTIC(SetAsyncCallStackDepthParams);
 
-    uint32_t maxDepth_ {0};
+    int32_t maxDepth_ {0};
 };
 
 class SetBlackboxPatternsParams : public PtBaseParams {
 public:
     SetBlackboxPatternsParams() = default;
     ~SetBlackboxPatternsParams() override = default;
-    static std::unique_ptr<SetBlackboxPatternsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SetBlackboxPatternsParams> Create(const PtJson &params);
 
     std::list<std::string> GetPatterns() const
     {
@@ -238,11 +237,11 @@ public:
     SetBreakpointByUrlParams() = default;
     ~SetBreakpointByUrlParams() override = default;
 
-    static std::unique_ptr<SetBreakpointByUrlParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SetBreakpointByUrlParams> Create(const PtJson &params);
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
     const std::string &GetUrl() const
@@ -280,12 +279,12 @@ public:
 
     int32_t GetColumn() const
     {
-        return column_.value_or(0);
+        return columnNumber_.value_or(0);
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
     const std::string &GetCondition() const
@@ -303,11 +302,11 @@ private:
     NO_COPY_SEMANTIC(SetBreakpointByUrlParams);
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
-    int32_t line_ {0};
+    int32_t lineNumber_ {0};
     std::optional<std::string> url_ {};
     std::optional<std::string> urlRegex_ {};
     std::optional<std::string> scriptHash_ {};
-    std::optional<int32_t> column_ {0};
+    std::optional<int32_t> columnNumber_ {0};
     std::optional<std::string> condition_ {};
 };
 
@@ -317,7 +316,7 @@ class SetPauseOnExceptionsParams : public PtBaseParams {
 public:
     SetPauseOnExceptionsParams() = default;
     ~SetPauseOnExceptionsParams() override = default;
-    static std::unique_ptr<SetPauseOnExceptionsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SetPauseOnExceptionsParams> Create(const PtJson &params);
 
     PauseOnExceptionsState GetState() const
     {
@@ -353,7 +352,7 @@ public:
     StepIntoParams() = default;
     ~StepIntoParams() override = default;
 
-    static std::unique_ptr<StepIntoParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<StepIntoParams> Create(const PtJson &params);
 
     bool GetBreakOnAsyncCall() const
     {
@@ -391,7 +390,7 @@ public:
     StepOverParams() = default;
     ~StepOverParams() override = default;
 
-    static std::unique_ptr<StepOverParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<StepOverParams> Create(const PtJson &params);
 
     const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
@@ -418,7 +417,7 @@ public:
     GetPropertiesParams() = default;
     ~GetPropertiesParams() override = default;
 
-    static std::unique_ptr<GetPropertiesParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<GetPropertiesParams> Create(const PtJson &params);
 
     RemoteObjectId GetObjectId() const
     {
@@ -470,7 +469,7 @@ public:
     CallFunctionOnParams() = default;
     ~CallFunctionOnParams() override = default;
 
-    static std::unique_ptr<CallFunctionOnParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<CallFunctionOnParams> Create(const PtJson &params);
 
     const std::string &GetFunctionDeclaration()
     {
@@ -615,7 +614,7 @@ public:
     StartSamplingParams() = default;
     ~StartSamplingParams() override = default;
 
-    static std::unique_ptr<StartSamplingParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<StartSamplingParams> Create(const PtJson &params);
 
     int32_t GetSamplingInterval() const
     {
@@ -626,7 +625,7 @@ private:
     NO_COPY_SEMANTIC(StartSamplingParams);
     NO_MOVE_SEMANTIC(StartSamplingParams);
 
-    std::optional<size_t> samplingInterval_ {32768};
+    std::optional<int32_t> samplingInterval_ {32768};
 };
 
 class StartTrackingHeapObjectsParams : public PtBaseParams {
@@ -634,8 +633,7 @@ public:
     StartTrackingHeapObjectsParams() = default;
     ~StartTrackingHeapObjectsParams() override = default;
 
-    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm,
-                                                                  const Local<JSValueRef> &params);
+    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const PtJson &params);
 
     bool GetTrackAllocations() const
     {
@@ -659,7 +657,7 @@ public:
     StopTrackingHeapObjectsParams() = default;
     ~StopTrackingHeapObjectsParams() override = default;
 
-    static std::unique_ptr<StopTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<StopTrackingHeapObjectsParams> Create(const PtJson &params);
 
     bool GetReportProgress() const
     {
@@ -705,7 +703,7 @@ public:
     AddInspectedHeapObjectParams() = default;
     ~AddInspectedHeapObjectParams() override = default;
 
-    static std::unique_ptr<AddInspectedHeapObjectParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<AddInspectedHeapObjectParams> Create(const PtJson &params);
 
     HeapSnapshotObjectId GetHeapObjectId() const
     {
@@ -724,7 +722,7 @@ public:
     GetHeapObjectIdParams() = default;
     ~GetHeapObjectIdParams() override = default;
 
-    static std::unique_ptr<GetHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<GetHeapObjectIdParams> Create(const PtJson &params);
 
     RemoteObjectId GetObjectId() const
     {
@@ -743,7 +741,7 @@ public:
     GetObjectByHeapObjectIdParams() = default;
     ~GetObjectByHeapObjectIdParams() override = default;
 
-    static std::unique_ptr<GetObjectByHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<GetObjectByHeapObjectIdParams> Create(const PtJson &params);
 
     HeapSnapshotObjectId GetObjectId() const
     {
@@ -774,8 +772,7 @@ public:
     StartPreciseCoverageParams() = default;
     ~StartPreciseCoverageParams() override = default;
 
-    static std::unique_ptr<StartPreciseCoverageParams> Create(const EcmaVM *ecmaVm,
-                                                              const Local<JSValueRef> &params);
+    static std::unique_ptr<StartPreciseCoverageParams> Create(const PtJson &params);
 
     bool GetCallCount() const
     {
@@ -821,14 +818,14 @@ public:
     SetSamplingIntervalParams() = default;
     ~SetSamplingIntervalParams() override = default;
 
-    static std::unique_ptr<SetSamplingIntervalParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SetSamplingIntervalParams> Create(const PtJson &params);
 
-    int GetInterval() const
+    int32_t GetInterval() const
     {
         return interval_;
     }
 
-    SetSamplingIntervalParams &SetInterval(int interval)
+    SetSamplingIntervalParams &SetInterval(int32_t interval)
     {
         interval_ = interval;
         return *this;
@@ -838,7 +835,7 @@ private:
     NO_COPY_SEMANTIC(SetSamplingIntervalParams);
     NO_MOVE_SEMANTIC(SetSamplingIntervalParams);
 
-    int interval_ {0};
+    int32_t interval_ {0};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

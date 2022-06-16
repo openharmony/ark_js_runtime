@@ -19,12 +19,12 @@
 namespace panda::ecmascript {
 class HeapStat {
 public:
-    HeapStat(uint32_t index, uint32_t count, uint32_t size)
+    HeapStat(int32_t index, int32_t count, int32_t size)
         : index_(index), count_(count), size_(size) {}
 
-    uint32_t index_;
-    uint32_t count_;
-    uint32_t size_;
+    int32_t index_;
+    int32_t count_;
+    int32_t size_;
 };
 
 class Stream {
@@ -37,10 +37,10 @@ public:
     virtual int GetSize() = 0;
 
     // Writes the chunk of data into the stream
-    virtual bool WriteChunk(char *data, int size) = 0;
+    virtual bool WriteChunk(char *data, int32_t size) = 0;
     virtual bool Good() = 0;
-    virtual void UpdateHeapStats(HeapStat* data, int count) = 0;
-    virtual void UpdateLastSeenObjectId(uint32_t lastSeenObjectId) = 0;
+    virtual void UpdateHeapStats(HeapStat* data, int32_t count) = 0;
+    virtual void UpdateLastSeenObjectId(int32_t lastSeenObjectId) = 0;
 };
 }  // namespace panda::ecmascript
 

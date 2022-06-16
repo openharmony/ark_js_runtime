@@ -418,4 +418,15 @@ Result PtJson::GetArray(const char *key, std::unique_ptr<PtJson> *value) const
     *value = std::make_unique<PtJson>(item);
     return Result::SUCCESS;
 }
+
+Result PtJson::GetAny(const char *key, std::unique_ptr<PtJson> *value) const
+{
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+
+    *value = std::make_unique<PtJson>(item);
+    return Result::SUCCESS;
+}
 }  // namespace panda::ecmascript
