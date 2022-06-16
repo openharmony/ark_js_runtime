@@ -201,7 +201,7 @@ public:
     void AddModule(LLVMModule *llvmModule, LLVMAssembler *assembler, const JSPandaFile *jsPandaFile)
     {
         modulePackage_.emplace_back(Module(llvmModule, assembler));
-        auto hash = jsPandaFile->GetPandaFile()->GetFilenameHash();
+        auto hash = jsPandaFile->GetFileUniqId();
         aotfileHashs_.emplace_back(hash);
     }
 
