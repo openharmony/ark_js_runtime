@@ -2497,9 +2497,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         }
         Bind(&tryFastPath);
         {
-            GateRef result = CallStub(glue,
-                                      CommonStubCSigns::GetPropertyByValue,
-                                      { glue, receiver, propKey });
+            GateRef result = GetPropertyByValue(glue, receiver, propKey);
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
             Bind(&notHole);
@@ -2596,9 +2594,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
         }
         Bind(&tryFastPath);
         {
-            GateRef result = CallStub(glue,
-                CommonStubCSigns::SetPropertyByValue,
-                { glue, receiver, propKey, acc }); // acc is value
+            GateRef result = SetPropertyByValue(glue, receiver, propKey, acc, false);
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
             Bind(&notHole);
@@ -2641,8 +2637,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
     Bind(&notClassPrototype);
     {
         // fast path
-        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByValueWithOwn,
-                                  { glue, receiver, propKey, acc }); // acc is value
+        GateRef result = SetPropertyByValue(glue, receiver, propKey, acc, true); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2763,8 +2758,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
-        GateRef result = CallStub(glue, CommonStubCSigns::GetPropertyByIndex,
-                                  { glue, receiver, index });
+        GateRef result = GetPropertyByIndex(glue, receiver, index);
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2806,8 +2800,7 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
-        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByIndex,
-                                  { glue, receiver, index, acc }); // acc is value
+        GateRef result = SetPropertyByIndex(glue, receiver, index, acc, false);
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2848,8 +2841,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
     Bind(&notClassPrototype);
     {
         // fast path
-        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByIndexWithOwn,
-                                  { glue, receiver, index, acc }); // acc is value
+        GateRef result = SetPropertyByIndex(glue, receiver, index, acc, true); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -3803,9 +3795,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         {
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-            result = CallStub(glue, CommonStubCSigns::SetPropertyByName, {
-                glue, receiver, propKey, acc
-            });
+            result = SetPropertyByName(glue, receiver, propKey, acc, false);
             Branch(TaggedIsHole(*result), &slowPath, &checkResult);
         }
     }
@@ -3855,9 +3845,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
             Branch(IsClassPrototype(receiver), &slowPath, &notClassPrototype);
             Bind(&notClassPrototype);
             {
-                GateRef res = CallStub(glue,
-                    CommonStubCSigns::SetPropertyByValueWithOwn,
-                    { glue, receiver, propKey, acc });
+                GateRef res = SetPropertyByValue(glue, receiver, propKey, acc, true);
                 Branch(TaggedIsHole(res), &slowPath, &notHole);
                 Bind(&notHole);
                 {
@@ -3909,8 +3897,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
             Branch(IsClassPrototype(receiver), &slowPath, &fastPath);
             Bind(&fastPath);
             {
-                result = CallStub(glue, CommonStubCSigns::SetPropertyByNameWithOwn,
-                                  { glue, receiver, propKey, acc });
+                result = SetPropertyByName(glue, receiver, propKey, acc, true);
                 Branch(TaggedIsHole(*result), &slowPath, &checkResult);
             }
         }
@@ -3957,8 +3944,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
             Branch(IsClassPrototype(receiver), &notJSObject, &notClassPrototype);
             Bind(&notClassPrototype);
             {
-                GateRef res = CallStub(glue, CommonStubCSigns::SetPropertyByNameWithOwn,
-                                       { glue, receiver, propKey, acc });
+                GateRef res = SetPropertyByName(glue, receiver, propKey, acc, true);
                 Branch(TaggedIsHole(res), &notJSObject, &notHole);
                 Bind(&notHole);
                 {
