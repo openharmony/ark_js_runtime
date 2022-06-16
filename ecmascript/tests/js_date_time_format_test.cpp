@@ -61,7 +61,7 @@ public:
 };
 
 void SetDateOptionsTest(JSThread *thread, JSHandle<JSObject> &optionsObj,
-    std::map<std::string, std::string> dateOptions)
+    std::map<std::string, std::string> &dateOptions)
 {
     auto vm = thread->GetEcmaVM();
     auto factory = vm->GetFactory();
@@ -84,7 +84,7 @@ void SetDateOptionsTest(JSThread *thread, JSHandle<JSObject> &optionsObj,
 }
 
 void SetTimeOptionsTest(JSThread *thread, JSHandle<JSObject> &optionsObj,
-    std::map<std::string, std::string> timeOptionsMap)
+    std::map<std::string, std::string> &timeOptionsMap)
 {
     auto vm = thread->GetEcmaVM();
     auto factory = vm->GetFactory();
@@ -147,6 +147,9 @@ HWTEST_F_L0(JSDateTimeFormatTest, Set_Get_IcuSimpleDateFormat)
     auto vm = thread->GetEcmaVM();
     auto factory = vm->GetFactory();
     auto env = vm->GetGlobalEnv();
+    const icu::UnicodeString timeZoneId("Asia/Shanghai");
+    icu::TimeZone *tz = icu::TimeZone::createTimeZone(timeZoneId);
+    icu::TimeZone::adoptDefault(tz);
     JSHandle<JSTaggedValue> ctor = env->GetDateTimeFormatFunction();
     JSHandle<JSDateTimeFormat> dtf =
         JSHandle<JSDateTimeFormat>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(ctor), ctor));
@@ -350,11 +353,14 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTime_001)
 
     icu::Locale icuLocale("zh", "Hans", "Cn");
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> optionsEmtpy = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
-    JSObject::SetProperty(thread, optionsEmtpy, hourCycleKey, hourCycleValue);
-    JSHandle<JSDateTimeFormat> dtf = CreateDateTimeFormatTest(thread, icuLocale, optionsEmtpy);
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
+    JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
+    JSHandle<JSDateTimeFormat> dtf = CreateDateTimeFormatTest(thread, icuLocale, options);
 
     double timeStamp1 = 1653448174000; // test "2022-05-25 11:09:34.000"
     double timeStamp2 = 1653921012999; // test "2022-05-30 22:30:12.999"
@@ -376,12 +382,15 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTime_002)
 
     icu::Locale icuLocale("zh", "Hans", "Cn");
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> optionsEmtpy = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
-    JSObject::SetProperty(thread, optionsEmtpy, hourCycleKey, hourCycleValue);
-    JSHandle<JSObject> options = JSDateTimeFormat::ToDateTimeOptions(
-        thread, JSHandle<JSTaggedValue>::Cast(optionsEmtpy), RequiredOption::ANY, DefaultsOption::ALL);
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
+    JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
+    options = JSDateTimeFormat::ToDateTimeOptions(
+        thread, JSHandle<JSTaggedValue>::Cast(options), RequiredOption::ANY, DefaultsOption::ALL);
     JSHandle<JSDateTimeFormat> dtf = CreateDateTimeFormatTest(thread, icuLocale, options);
 
     double timeStamp1 = 1653448174000; // test "2022-05-25 11:09:34.000"
@@ -403,13 +412,15 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTime_003)
 
     icu::Locale icuLocale("zh", "Hans", "Cn");
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> optionsEmtpy = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
-    JSObject::SetProperty(thread, optionsEmtpy, hourCycleKey, hourCycleValue);
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
+    JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
 
     // Set custom date time format.
-    JSHandle<JSObject> options = optionsEmtpy;
     std::map<std::string, std::string> dateOptionsMap {
         { "weekday", "long" },
         { "year", "2-digit" },
@@ -445,15 +456,17 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTime_004)
     auto env = vm->GetGlobalEnv();
     auto globalConst = thread->GlobalConstants();
 
-    icu::Locale icuLocale("en", "Hans", "US");
+    icu::Locale icuLocale("en", "Latn", "US");
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> optionsEmtpy = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
-    JSObject::SetProperty(thread, optionsEmtpy, hourCycleKey, hourCycleValue);
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
+    JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
 
     // Set custom date time format.
-    JSHandle<JSObject> options = optionsEmtpy;
     std::map<std::string, std::string> dateOptionsMap {
         { "weekday", "long" },
         { "year", "2-digit" },
@@ -513,11 +526,14 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTimeToParts_001)
 
     icu::Locale icuLocale("zh", "Hans", "Cn");
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> optionsEmtpy = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
-    JSObject::SetProperty(thread, optionsEmtpy, hourCycleKey, hourCycleValue);
-    JSHandle<JSDateTimeFormat> dtf = CreateDateTimeFormatTest(thread, icuLocale, optionsEmtpy);
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
+    JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
+    JSHandle<JSDateTimeFormat> dtf = CreateDateTimeFormatTest(thread, icuLocale, options);
 
     double timeStamp = 1653448174123; // test "2022-05-25 11:09:34.123"
     // Use default date time format and format date and time to parts.
@@ -555,6 +571,9 @@ HWTEST_F_L0(JSDateTimeFormatTest, FormatDateTimeToParts_002)
     JSHandle<JSObject> options = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> hourCycleKey = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h12"));
+    JSHandle<JSTaggedValue> timeZoneKey = globalConst->GetHandledTimeZoneString();
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("ETC/GMT-8"));
+    JSObject::SetProperty(thread, options, timeZoneKey, timeZoneValue);
     JSObject::SetProperty(thread, options, hourCycleKey, hourCycleValue);
 
     double timeStamp = 1653448174123; // test "2022-05-25 11:09:34.123"
