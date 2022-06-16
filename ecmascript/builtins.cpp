@@ -281,7 +281,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     // Object = new Function()
     JSHandle<JSObject> objectFunction(
         NewBuiltinConstructor(env, objFuncPrototype, Object::ObjectConstructor, "Object", FunctionLength::ONE));
-    objectFunction.GetObject<JSFunction>()->SetBuiltinsCtorMode();
     objectFunction.GetObject<JSFunction>()->SetFunctionPrototype(thread_, objFuncDynclass.GetTaggedValue());
     // initialize object method.
     env->SetObjectFunction(thread_, objectFunction);
@@ -437,8 +436,6 @@ void Builtins::InitializeFunction(const JSHandle<GlobalEnv> &env, const JSHandle
     JSHandle<JSHClass> funcFuncIntanceDynclass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, funcFuncPrototypeValue);
     funcFuncIntanceDynclass->SetConstructor(true);
-    JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(factory_->NewJSObjectWithInit(funcFuncIntanceDynclass));
-    function->SetBuiltinsCtorMode();
 
     // Function = new Function() (forbidden use NewBuiltinConstructor)
     JSHandle<JSFunction> funcFunc =
@@ -464,9 +461,6 @@ void Builtins::InitializeFunction(const JSHandle<GlobalEnv> &env, const JSHandle
     JSHandle<JSHClass> constructorFunctionClass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, env->GetFunctionPrototype());
     constructorFunctionClass->SetConstructor(true);
-    JSHandle<JSFunction> functionConstructor =
-        JSHandle<JSFunction>::Cast(factory_->NewJSObjectWithInit(constructorFunctionClass));
-    functionConstructor->SetBuiltinsCtorMode();
     env->SetConstructorFunctionClass(thread_, constructorFunctionClass);
 
     StrictModeForbiddenAccessCallerArguments(env, funcFuncPrototypeObj);
@@ -1013,8 +1007,6 @@ void Builtins::InitializeAllTypeError(const JSHandle<GlobalEnv> &env, const JSHa
     JSHandle<JSHClass> nativeErrorFuncClass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, env->GetErrorFunction());
     nativeErrorFuncClass->SetConstructor(true);
-    JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(factory_->NewJSObjectWithInit(nativeErrorFuncClass));
-    function->SetBuiltinsCtorMode();
     env->SetNativeErrorFunctionClass(thread_, nativeErrorFuncClass);
 
     JSHandle<JSHClass> errorNativeFuncInstanceDynclass =
@@ -2024,9 +2016,6 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
     JSHandle<JSHClass> specificTypedArrayFuncClass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, env->GetTypedArrayFunction());
     specificTypedArrayFuncClass->SetConstructor(true);
-    JSHandle<JSFunction> function =
-        JSHandle<JSFunction>::Cast(factory_->NewJSObjectWithInit(specificTypedArrayFuncClass));
-    function->SetBuiltinsCtorMode();
     env->SetSpecificTypedArrayFunctionClass(thread_, specificTypedArrayFuncClass);
 
     InitializeInt8Array(env, typedArrFuncInstanceDynclass);

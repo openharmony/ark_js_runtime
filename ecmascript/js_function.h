@@ -161,17 +161,19 @@ public:
 
     inline static bool IsConstructorKind(FunctionKind kind)
     {
-        return (kind >= FunctionKind::BUILTIN_PROXY_CONSTRUCTOR) && (kind <= FunctionKind::DERIVED_CONSTRUCTOR);
+        return (kind >= FunctionKind::BASE_CONSTRUCTOR) && (kind <= FunctionKind::DERIVED_CONSTRUCTOR);
     }
 
-    inline static bool IsBuiltinConstructor(FunctionKind kind)
+    inline bool IsBuiltinConstructor()
     {
+        FunctionKind kind = GetFunctionKind();
         return kind >= FunctionKind::BUILTIN_PROXY_CONSTRUCTOR && kind <= FunctionKind::BUILTIN_CONSTRUCTOR;
     }
 
     inline static bool HasPrototype(FunctionKind kind)
     {
-        return kind >= FunctionKind::BUILTIN_CONSTRUCTOR && kind <= FunctionKind::GENERATOR_FUNCTION;
+        return (kind >= FunctionKind::BASE_CONSTRUCTOR) && (kind <= FunctionKind::GENERATOR_FUNCTION)
+            && (kind != FunctionKind::BUILTIN_PROXY_CONSTRUCTOR);
     }
 
     inline static bool HasAccessor(FunctionKind kind)
