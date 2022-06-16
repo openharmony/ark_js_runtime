@@ -102,7 +102,7 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreGlobalICByName)
     JSHandle<JSTaggedValue> globalValue(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
     JSTaggedValue handleValue(2);
 
-    uint32_t arrayLength = 2U;
+    uint32_t arrayLength = 2U; // 2 means ProfileTypeInfo length
     JSHandle<TaggedArray> handleTaggedArray = factory->NewTaggedArray(arrayLength);
     handleTaggedArray->Set(thread, 0, handleBoxValue.GetTaggedValue());
     handleTaggedArray->Set(thread, 1, handleValue);
@@ -152,7 +152,7 @@ HWTEST_F_L0(ICRuntimeStubTest, CheckPolyHClass)
     EXPECT_TRUE(resultValue.IsPropertyBox());
 }
 
-HWTEST_F_L0(ICRuntimeStubTest,  StoreICAndLoadIC_ByName)
+HWTEST_F_L0(ICRuntimeStubTest, StoreICAndLoadIC_ByName)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -176,7 +176,7 @@ HWTEST_F_L0(ICRuntimeStubTest,  StoreICAndLoadIC_ByName)
     EXPECT_EQ(resultValue.GetInt(), 2);
 }
 
-HWTEST_F_L0(ICRuntimeStubTest,  StoreICAndLoadIC_ByValue)
+HWTEST_F_L0(ICRuntimeStubTest, StoreICAndLoadIC_ByValue)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -187,7 +187,7 @@ HWTEST_F_L0(ICRuntimeStubTest,  StoreICAndLoadIC_ByValue)
     JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
     JSHandle<JSTaggedValue> handleStoreVal(factory->NewFromASCII("1"));
 
-    uint32_t arrayLength = 1U;
+    uint32_t arrayLength = 2U; // 2 means ProfileTypeInfo length
     JSHandle<TaggedArray> handleTaggedArray = factory->NewTaggedArray(arrayLength);
     JSHandle<ProfileTypeInfo> handleProfileTypeInfo = JSHandle<ProfileTypeInfo>::Cast(handleTaggedArray);
     // test receiver is typedArray
@@ -237,7 +237,7 @@ HWTEST_F_L0(ICRuntimeStubTest, TryStoreICAndLoadIC_ByName)
     EXPECT_TRUE(resultValue2.IsHole());
 }
 
-HWTEST_F_L0(ICRuntimeStubTest,  TryStoreICAndLoadIC_ByValue1)
+HWTEST_F_L0(ICRuntimeStubTest, TryStoreICAndLoadIC_ByValue1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -267,7 +267,7 @@ HWTEST_F_L0(ICRuntimeStubTest,  TryStoreICAndLoadIC_ByValue1)
     EXPECT_EQ(resultValue.GetInt(), handleStoreVal.GetInt());
 }
 
-HWTEST_F_L0(ICRuntimeStubTest,  TryStoreICAndLoadIC_ByValue2)
+HWTEST_F_L0(ICRuntimeStubTest, TryStoreICAndLoadIC_ByValue2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
