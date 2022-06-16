@@ -18,7 +18,6 @@
 #include <signal.h>  // NOLINTNEXTLINE(modernize-deprecated-headers)
 #include <vector>
 
-#include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/file_generators.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"

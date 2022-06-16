@@ -486,7 +486,8 @@ bool TypeInfer::InferNewObjSpread(GateRef gate)
 
 bool TypeInfer::InferSuperCall(GateRef gate)
 {
-    auto newTarget = builder_->GetCommonArgByIndex(CommonArgIdx::NEW_TARGET);
+    ArgumentAccessor argAcc(circuit_);
+    auto newTarget = argAcc.GetCommonArgGate(CommonArgIdx::NEW_TARGET);
     auto funcType = gateAccessor_.GetGateType(newTarget);
     if (!funcType.IsUndefinedType()) {
         return UpdateType(gate, funcType);

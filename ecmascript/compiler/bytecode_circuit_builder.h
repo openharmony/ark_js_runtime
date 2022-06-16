@@ -22,7 +22,8 @@
 #include <vector>
 #include <variant>
 
-#include "circuit.h"
+#include "ecmascript/compiler/argument_accessor.h"
+#include "ecmascript/compiler/circuit.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -374,16 +375,6 @@ enum BytecodeOffset {
     TEN
 };
 
-enum CommonArgIdx : uint8_t {
-    GLUE = 0,
-    LEXENV,
-    ACTUAL_ARGC,
-    FUNC,
-    NEW_TARGET,
-    THIS,
-    NUM_OF_ARGS,
-};
-
 class BytecodeCircuitBuilder {
 public:
     explicit BytecodeCircuitBuilder(const BytecodeTranslationInfo &translationInfo, size_t index,
@@ -392,6 +383,7 @@ public:
           method_(translationInfo.methodPcInfos[index].method),
           pcArray_(translationInfo.methodPcInfos[index].pcArray),
           constantPool_(translationInfo.constantPool),
+          argAcc_(&circuit_, method_),
           enableLog_(enableLog)
     {
     }
@@ -430,11 +422,6 @@ public:
     [[nodiscard]] const uint8_t* GetJSBytecode(GateRef gate) const
     {
         return jsgateToBytecode_.at(gate).second;
-    }
-
-    [[nodiscard]] GateRef GetCommonArgByIndex(CommonArgIdx idx)
-    {
-        return commonArgs_[idx];
     }
 
     BytecodeInfo GetBytecodeInfo(const uint8_t *pc);
@@ -489,28 +476,27 @@ private:
     void BuildCircuit();
 
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
-    size_t GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const;
     void PrintGraph();
     void PrintBytecodeInfo();
     void PrintBBInfo();
     GateType GetRealGateType(const uint16_t reg, const GateType gateType);
-    size_t GetActualNumArgs(size_t numArgs)
+
+    inline bool IsEntryBlock(const size_t bbId) const
     {
-        return numArgs + CommonArgIdx::NUM_OF_ARGS;
+        return bbId == 0;
     }
 
     kungfu::Circuit circuit_;
     std::map<kungfu::GateRef, std::pair<size_t, const uint8_t *>> jsgateToBytecode_;
     std::map<const uint8_t *, kungfu::GateRef> byteCodeToJSGate_;
     BytecodeGraph graph_;
-    std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
-    std::vector<GateRef> actualArgs_ {};
     TSLoader *tsLoader_ {nullptr};
     const JSPandaFile *file_ {nullptr};
     const panda_file::File *pf_ {nullptr};
     const JSMethod *method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
+    ArgumentAccessor argAcc_;
     bool enableLog_ {false};
     std::map<uint8_t *, int32_t> pcToBCOffset_;
 };

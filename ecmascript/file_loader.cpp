@@ -210,7 +210,7 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();
         auto curFileHash = aotFileHashs_[entries_[i].moduleIndex_];
         auto curMethodId = entries_[i].indexInKind_;
-        vm->SetAOTFuncEntry(curFileHash, curMethodId, entries_[i].codeAddr_);
+        vm->SaveAOTFuncEntry(curFileHash, curMethodId, entries_[i].codeAddr_);
     }
     moduleFile.close();
     COMPILER_LOG(INFO) << "Load aot file success";
@@ -279,36 +279,31 @@ bool FileLoader::hasLoaded(const JSPandaFile *jsPandaFile)
 
 void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
-    // get generated const pool in execution phase
-    auto thread = vm_->GetAssociatedJSThread();
-    JSHandle<JSTaggedValue> constPool(thread, mainFunc->GetConstantPool());
-    ConstantPool *curPool = ConstantPool::Cast(constPool->GetTaggedObject());
-
     // get main func method
     auto mainFuncMethodId = jsPandaFile->GetMainMethodIndex();
     auto fileHash = jsPandaFile->GetFileUniqId();
     auto mainEntry = GetAOTFuncEntry(fileHash, mainFuncMethodId);
-    // 1 : default para number
     JSMethod *mainMethod =  jsPandaFile->FindMethods(mainFuncMethodId);
     mainMethod->SetAotCodeBit(true);
     mainMethod->SetNativeBit(false);
     mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
+}
 
-    const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
-    for (const auto &it : constpoolMap) {
-        ConstPoolValue value(it.second);
-        if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::NC_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::METHOD) {
-                auto id = value.GetConstpoolIndex();
-                auto codeEntry = GetAOTFuncEntry(fileHash, it.first);
-                JSMethod *curMethod = jsPandaFile->FindMethods(it.first);
-                curMethod->SetAotCodeBit(true);
-                curMethod->SetNativeBit(false);
-                auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
-                curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
+void FileLoader::SetAOTFuncEntry(const JSPandaFile *jsPandaFile, const JSHandle<JSFunction> &func)
+{
+    auto codeEntry = GetAOTFuncEntry(jsPandaFile->GetFileUniqId(), jsPandaFile->GetUniqueMethod(func));
+    func->SetCodeEntryAndMarkAOT(codeEntry);
+}
+
+void FileLoader::SetAOTFuncEntryForLiteral(const JSPandaFile *jsPandaFile, const JSHandle<TaggedArray> &obj)
+{
+    JSThread *thread = vm_->GetJSThread();
+    JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue::Undefined());
+    size_t elementsLen = obj->GetLength();
+    for (size_t i = 0; i < elementsLen; i++) {
+        valueHandle.Update(obj->Get(i));
+        if (valueHandle->IsJSFunction()) {
+            SetAOTFuncEntry(jsPandaFile, JSHandle<JSFunction>(valueHandle));
         }
     }
 }

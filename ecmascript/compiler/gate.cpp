@@ -14,7 +14,6 @@
  */
 
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
 constexpr size_t ONE_DEPEND = 1;

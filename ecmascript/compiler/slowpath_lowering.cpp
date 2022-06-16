@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "slowpath_lowering.h"
+#include "ecmascript/compiler/slowpath_lowering.h"
 
 namespace panda::ecmascript::kungfu {
 #define CREATE_DOUBLE_EXIT(SuccessLabel, FailLabel)               \
@@ -229,9 +229,10 @@ GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gat
 
 void SlowPathLowering::Lower(GateRef gate)
 {
-    GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
-    GateRef newTarget = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::NEW_TARGET);
-    GateRef jsFunc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
+    GateRef glue = argAcc_.GetCommonArgGate(CommonArgIdx::GLUE);
+    GateRef newTarget = argAcc_.GetCommonArgGate(CommonArgIdx::NEW_TARGET);
+    GateRef jsFunc = argAcc_.GetCommonArgGate(CommonArgIdx::FUNC);
+    GateRef actualArgc = argAcc_.GetCommonArgGate(CommonArgIdx::ACTUAL_ARGC);
 
     auto pc = bcBuilder_->GetJSBytecode(gate);
     EcmaOpcode op = static_cast<EcmaOpcode>(*pc);
@@ -266,7 +267,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerLexicalEnv(gate, glue);
             break;
         case GETUNMAPPEDARGS_PREF:
-            LowerGetUnmappedArgs(gate, glue);
+            LowerGetUnmappedArgs(gate, glue, actualArgc);
             break;
         case ASYNCFUNCTIONENTER_PREF:
             LowerAsyncFunctionEnter(gate, glue);
@@ -614,7 +615,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerDefineFuncDyn(gate, glue, jsFunc);
             break;
         case COPYRESTARGS_PREF_IMM16:
-            LowerCopyRestArgs(gate, glue);
+            LowerCopyRestArgs(gate, glue, actualArgc);
             break;
         default:
             break;
@@ -843,7 +844,6 @@ void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
 {
     // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
-    // 2: func and bcoffset
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
@@ -1026,7 +1026,7 @@ void SlowPathLowering::LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
 {
-    GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    GateRef glue = argAcc_.GetCommonArgGate(CommonArgIdx::GLUE);
     GateRef depend = acc_.GetDep(hirGate);
     GateRef exceptionOffset = builder_.Int64(JSThread::GlueData::GetExceptionOffset(false));
     GateRef val = builder_.Int64Add(glue, exceptionOffset);
@@ -2993,18 +2993,16 @@ void SlowPathLowering::LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsF
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerGetUnmappedArgs(GateRef gate, GateRef glue)
+void SlowPathLowering::LowerGetUnmappedArgs(GateRef gate, GateRef glue, GateRef actualArgc)
 {
-    GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
     GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
     const int id = RTSTUB_ID(GetAotUnmapedArgs);
     GateRef newGate = LowerCallRuntime(glue, id, {taggedArgc});
     ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerCopyRestArgs(GateRef gate, GateRef glue)
+void SlowPathLowering::LowerCopyRestArgs(GateRef gate, GateRef glue, GateRef actualArgc)
 {
-    GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
     GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
     GateRef restIdx = acc_.GetValueIn(gate, 0);
     GateRef taggedRestIdx = builder_.TaggedTypeNGC(restIdx);
