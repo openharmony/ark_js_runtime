@@ -32,7 +32,7 @@ public:
     static constexpr int ENTRY_TYPE_OFFSET = 1;
     static constexpr int ENTRY_KEY_OFFSET = 0;
 
-    inline static TSObjLayoutInfo *Cast(ObjectHeader *obj)
+    inline static TSObjLayoutInfo *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsTaggedArray());
         return reinterpret_cast<TSObjLayoutInfo*>(obj);

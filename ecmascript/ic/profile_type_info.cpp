@@ -259,11 +259,11 @@ ProfileTypeAccessor::ICState ProfileTypeAccessor::GetICState() const
                 return ICState::MONO;
             }
             if (profileData.IsTaggedArray()) {
-                TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
+                TaggedArray *array = TaggedArray::Cast(profileData.GetTaggedObject());
                 return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
             }
             profileData = profileTypeInfo_->Get(slotId_ + 1);
-            TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
+            TaggedArray *array = TaggedArray::Cast(profileData.GetTaggedObject());
             return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
         }
         case ICKind::NamedGlobalLoadIC:
@@ -273,7 +273,7 @@ ProfileTypeAccessor::ICState ProfileTypeAccessor::GetICState() const
         case ICKind::GlobalLoadIC:
         case ICKind::GlobalStoreIC: {
             ASSERT(profileData.IsTaggedArray());
-            TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
+            TaggedArray *array = TaggedArray::Cast(profileData.GetTaggedObject());
             return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
         }
         default:

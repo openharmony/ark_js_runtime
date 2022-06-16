@@ -62,7 +62,7 @@ HWTEST_F_L0(PropertiesCacheTest, SetAndGet)
     JSHandle<JSTaggedValue> handleFunction(factory->NewJSFunction(env));
     JSHandle<JSSymbol> handleSymbol(factory->NewJSSymbol());
     JSHandle<JSTaggedValue> handleKey10(factory->NewFromASCII("10"));
-    JSHClass *FuncClass = JSObject::Cast(handleFunction->GetHeapObject())->GetJSHClass();
+    JSHClass *FuncClass = JSObject::Cast(handleFunction->GetTaggedObject())->GetJSHClass();
 
     PropertiesCache *handleProCache = thread->GetPropertiesCache();
     // key is string
@@ -98,7 +98,7 @@ HWTEST_F_L0(PropertiesCacheTest, Clear)
     
     JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("10"));
     JSHandle<JSTaggedValue> handleFunction(factory->NewJSFunction(env));
-    JSHClass *FuncClass = JSObject::Cast(handleFunction->GetHeapObject())->GetJSHClass();
+    JSHClass *FuncClass = JSObject::Cast(handleFunction->GetTaggedObject())->GetJSHClass();
     PropertiesCache *handleProCache = thread->GetPropertiesCache();
 
     handleProCache->Set(FuncClass, handleKey.GetTaggedValue(), 10);

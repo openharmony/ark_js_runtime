@@ -3263,7 +3263,7 @@ static void DumpObject(TaggedObject *obj,
             JSCjsExports::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_CJS_REQUIRE:
-            JSCjsExports::Cast(obj)->DumpForSnapshot(vec);
+            JSCjsRequire::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_COLLATOR:
             JSCollator::Cast(obj)->DumpForSnapshot(vec);

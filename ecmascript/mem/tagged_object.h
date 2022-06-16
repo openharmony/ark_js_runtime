@@ -17,7 +17,6 @@
 #define ECMASCRIPT_TAGGED_OBJECT_HEADER_H
 
 #include "ecmascript/mem/mark_word.h"
-#include "include/object_header.h"
 
 namespace panda::ecmascript {
 class JSHClass;
@@ -25,9 +24,9 @@ template<typename T>
 class JSHandle;
 class JSThread;
 
-class TaggedObject : public ObjectHeader {
+class TaggedObject {
 public:
-    static TaggedObject *Cast(ObjectHeader *header)
+    static TaggedObject *Cast(TaggedObject *header)
     {
         return static_cast<TaggedObject *>(header);
     }
@@ -47,6 +46,9 @@ public:
     }
 
     JSThread* GetJSThread() const;
+
+private:
+    MarkWordType class_;
 };
 static_assert(TaggedObject::TaggedObjectSize() == sizeof(MarkWordType));
 }  //  namespace panda::ecmascript

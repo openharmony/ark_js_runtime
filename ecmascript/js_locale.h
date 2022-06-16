@@ -150,7 +150,7 @@ public:
         std::string extension;
     };
 
-    static JSLocale *Cast(ObjectHeader *object)
+    static JSLocale *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSLocale());
         return static_cast<JSLocale *>(object);

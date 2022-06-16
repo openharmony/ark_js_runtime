@@ -21,7 +21,7 @@
 namespace panda::ecmascript {
 class JSWeakRef : public JSObject {
 public:
-    static JSWeakRef *Cast(ObjectHeader *object)
+    static JSWeakRef *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSWeakRef());
         return static_cast<JSWeakRef *>(object);

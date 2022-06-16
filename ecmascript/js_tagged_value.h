@@ -113,7 +113,7 @@ public:
     static constexpr size_t DOUBLE_ENCODE_OFFSET_BIT = 48;
     static constexpr JSTaggedType DOUBLE_ENCODE_OFFSET = 1ULL << DOUBLE_ENCODE_OFFSET_BIT;
 
-    static JSTaggedValue Cast(ObjectHeader *object)
+    static JSTaggedValue Cast(TaggedObject *object)
     {
         return JSTaggedValue(object);
     }
@@ -155,8 +155,6 @@ public:
                                           << std::hex << ReinterpretDoubleToTaggedType(v));
         value_ = ReinterpretDoubleToTaggedType(v) + DOUBLE_ENCODE_OFFSET;
     }
-
-    explicit JSTaggedValue(const ObjectHeader *v) : value_(static_cast<JSTaggedType>(ToUintPtr(v))) {}
 
     explicit JSTaggedValue(const TaggedObject *v) : value_(static_cast<JSTaggedType>(ToUintPtr(v))) {}
 
@@ -245,24 +243,17 @@ public:
         return value_;
     }
 
-    inline ObjectHeader *GetHeapObject() const
-    {
-        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_FILTER) == 0U),
-                     "can not convert JSTaggedValue to HeapObject :" << std::hex << value_);
-        return reinterpret_cast<ObjectHeader *>(value_);
-    }
-
     //  This function returns the heap object pointer which may have the weak tag.
-    inline ObjectHeader *GetRawHeapObject() const
+    inline TaggedObject *GetRawHeapObject() const
     {
         ASSERT_PRINT(IsHeapObject(), "can not convert JSTaggedValue to HeapObject :" << std::hex << value_);
-        return reinterpret_cast<ObjectHeader *>(value_);
+        return reinterpret_cast<TaggedObject *>(value_);
     }
 
-    inline ObjectHeader *GetWeakReferent() const
+    inline TaggedObject *GetWeakReferent() const
     {
         ASSERT_PRINT(IsWeak(), "can not convert JSTaggedValue to WeakRef HeapObject :" << std::hex << value_);
-        return reinterpret_cast<ObjectHeader *>(value_ & (~TAG_WEAK_MASK));
+        return reinterpret_cast<TaggedObject *>(value_ & (~TAG_WEAK_MASK));
     }
 
     static inline JSTaggedType Cast(void *ptr)
@@ -364,7 +355,9 @@ public:
 
     inline TaggedObject *GetTaggedObject() const
     {
-        return reinterpret_cast<TaggedObject *>(GetHeapObject());
+        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_FILTER) == 0U),
+                     "can not convert JSTaggedValue to HeapObject :" << std::hex << value_);
+        return reinterpret_cast<TaggedObject *>(value_);
     }
 
     inline TaggedObject *GetRawTaggedObject() const

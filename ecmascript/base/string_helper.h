@@ -30,7 +30,6 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/object_factory.h"
-#include "libpandafile/file_items.h"
 #include "unicode/unistr.h"
 
 namespace panda::ecmascript::base {

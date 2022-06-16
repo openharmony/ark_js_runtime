@@ -49,7 +49,7 @@ public:
 
 class CellRecordVector : public WeakVector {
 public:
-    static CellRecordVector *Cast(ObjectHeader *object)
+    static CellRecordVector *Cast(TaggedObject *object)
     {
         return static_cast<CellRecordVector *>(object);
     }

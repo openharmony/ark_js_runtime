@@ -14,8 +14,8 @@
  */
 
 #include "ecmascript/mem/mem_map_allocator.h"
-#include "mem/runslots.h"
 #if defined(PANDA_TARGET_WINDOWS)
+#include <io.h>
 #include <sysinfoapi.h>
 #elif defined(PANDA_TARGET_MACOS)
 #include "sys/sysctl.h"

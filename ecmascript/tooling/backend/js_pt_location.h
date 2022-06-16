@@ -18,7 +18,7 @@
 
 #include <cstring>
 
-#include "libpandafile/file_items.h"
+#include "libpandafile/file.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {

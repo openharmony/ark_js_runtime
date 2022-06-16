@@ -447,7 +447,7 @@ public:
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
 
     // It is used to provide iterators for non ECMA standard jsapi containers.
-    JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(array_size_t capacity);
+    JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(uint32_t capacity);
     JSHandle<JSAPIPlainArrayIterator> NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
                                                                  IterationKind kind);
     JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);

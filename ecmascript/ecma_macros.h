@@ -405,7 +405,7 @@
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_CAST(TYPE)                           \
-    static TYPE *Cast(ObjectHeader *object)       \
+    static TYPE *Cast(TaggedObject *object)       \
     {                                             \
         ASSERT(JSTaggedValue(object).Is##TYPE()); \
         return reinterpret_cast<TYPE *>(object);  \
@@ -457,14 +457,14 @@
 
 #if ECMASCRIPT_ENABLE_CAST_CHECK
     #define CAST_CHECK(CAST_TYPE, CHECK_METHOD)                                                 \
-        static inline CAST_TYPE *Cast(ObjectHeader *object)                                     \
+        static inline CAST_TYPE *Cast(TaggedObject *object)                                     \
         {                                                                                       \
             if (!JSTaggedValue(object).CHECK_METHOD()) {                                        \
                 std::abort();                                                                   \
             }                                                                                   \
             return static_cast<CAST_TYPE *>(object);                                            \
         }                                                                                       \
-        static inline const CAST_TYPE *ConstCast(const ObjectHeader *object)                    \
+        static inline const CAST_TYPE *ConstCast(const TaggedObject *object)                    \
         {                                                                                       \
             if (!JSTaggedValue(object).CHECK_METHOD()) {                                        \
                 std::abort();                                                                   \
@@ -473,23 +473,23 @@
         }
 # else
     #define CAST_CHECK(CAST_TYPE, CHECK_METHOD)                                                   \
-        static inline CAST_TYPE *Cast(ObjectHeader *object)                                       \
+        static inline CAST_TYPE *Cast(TaggedObject *object)                                       \
         {                                                                                         \
             ASSERT(JSTaggedValue(object).CHECK_METHOD());                                         \
             return static_cast<CAST_TYPE *>(object);                                              \
         }                                                                                         \
-        static const inline CAST_TYPE *ConstCast(const ObjectHeader *object)                      \
+        static const inline CAST_TYPE *ConstCast(const TaggedObject *object)                      \
         {                                                                                         \
             ASSERT(JSTaggedValue(object).CHECK_METHOD());                                         \
             return static_cast<const CAST_TYPE *>(object);                                        \
         }
 
     #define CAST_NO_CHECK(CAST_TYPE)                                                              \
-        static inline CAST_TYPE *Cast(ObjectHeader *object)                                       \
+        static inline CAST_TYPE *Cast(TaggedObject *object)                                       \
         {                                                                                         \
             return static_cast<CAST_TYPE *>(object);                                              \
         }                                                                                         \
-        static const inline CAST_TYPE *ConstCast(const ObjectHeader *object)                      \
+        static const inline CAST_TYPE *ConstCast(const TaggedObject *object)                      \
         {                                                                                         \
             return static_cast<const CAST_TYPE *>(object);                                        \
         }

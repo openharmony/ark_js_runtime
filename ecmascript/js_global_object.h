@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSGlobalObject : public JSObject {
 public:
-    static JSGlobalObject *Cast(ObjectHeader *object)
+    static JSGlobalObject *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsECMAObject());
         return static_cast<JSGlobalObject *>(object);

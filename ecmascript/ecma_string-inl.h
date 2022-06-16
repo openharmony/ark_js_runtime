@@ -24,7 +24,7 @@
 
 namespace panda::ecmascript {
 /* static */
-inline EcmaString *EcmaString::Cast(ObjectHeader *object)
+inline EcmaString *EcmaString::Cast(TaggedObject *object)
 {
     ASSERT(JSTaggedValue(object).IsString());
     return static_cast<EcmaString *>(object);

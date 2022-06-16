@@ -24,7 +24,7 @@ namespace panda::ecmascript {
 class JSAPIList : public JSObject {
 public:
     static constexpr int DEFAULT_CAPACITY_LENGTH = 10;
-    static JSAPIList *Cast(ObjectHeader *object)
+    static JSAPIList *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPIList());
         return static_cast<JSAPIList *>(object);

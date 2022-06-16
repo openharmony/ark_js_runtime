@@ -62,7 +62,7 @@ bool InvokeCache::SetPolyConstuctCacheSlot(JSThread *thread, ProfileTypeInfo *pr
 JSTaggedValue InvokeCache::CheckPolyInvokeCache(JSTaggedValue cachedArray, JSTaggedValue func)
 {
     ASSERT(cachedArray.IsTaggedArray());
-    TaggedArray *array = TaggedArray::Cast(cachedArray.GetHeapObject());
+    TaggedArray *array = TaggedArray::Cast(cachedArray.GetTaggedObject());
     uint32_t length = array->GetLength();
     for (uint32_t index = 0; index < length; index += 2) {  // 2: means one ic, two slot
         auto result = array->Get(index);

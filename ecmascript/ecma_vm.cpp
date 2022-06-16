@@ -491,7 +491,7 @@ void EcmaVM::EnableUserUncaughtErrorHandler()
     isUncaughtExceptionRegistered_ = true;
 }
 
-void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
+void EcmaVM::HandleUncaughtException(TaggedObject *exception)
 {
     if (isUncaughtExceptionRegistered_) {
         return;

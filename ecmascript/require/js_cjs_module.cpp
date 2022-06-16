@@ -145,8 +145,8 @@ JSHandle<EcmaString> JSCjsModule::ResolveFilename(JSThread *thread, JSTaggedValu
         JSHandle<EcmaString> nativeRequireName = ResolveFilenameFromNative(thread, dirname, request);
         return nativeRequireName;
     }
-    std::string modDirname = std::string(ConvertToString(EcmaString::Cast(dirname.GetHeapObject())));
-    std::string modFile = std::string(ConvertToString(EcmaString::Cast(request.GetHeapObject())));
+    std::string modDirname = std::string(ConvertToString(EcmaString::Cast(dirname.GetTaggedObject())));
+    std::string modFile = std::string(ConvertToString(EcmaString::Cast(request.GetTaggedObject())));
     std::string callbackRequireName = resolvePathCallback(modDirname, modFile);
     CString fullname = callbackRequireName.c_str();
     return factory->NewFromUtf8(fullname);
@@ -157,8 +157,8 @@ JSHandle<EcmaString> JSCjsModule::ResolveFilenameFromNative(JSThread *thread, JS
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    CString dirnameStr = ConvertToString(EcmaString::Cast(dirname.GetHeapObject()));
-    CString requestStr = ConvertToString(EcmaString::Cast(request.GetHeapObject()));
+    CString dirnameStr = ConvertToString(EcmaString::Cast(dirname.GetTaggedObject()));
+    CString requestStr = ConvertToString(EcmaString::Cast(request.GetTaggedObject()));
     if (requestStr.find("./") == 0) {
         requestStr = requestStr.substr(2); // 2 : delete './'
     }

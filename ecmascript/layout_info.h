@@ -33,7 +33,7 @@ public:
     static constexpr int NUMBER_OF_PROPERTIES_INDEX = 0;
     static constexpr int ELEMENTS_START_INDEX = 1;
 
-    inline static LayoutInfo *Cast(ObjectHeader *obj)
+    inline static LayoutInfo *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsTaggedArray());
         return reinterpret_cast<LayoutInfo *>(obj);

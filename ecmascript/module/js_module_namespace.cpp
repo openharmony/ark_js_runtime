@@ -92,7 +92,7 @@ OperationResult ModuleNamespace::GetProperty(JSThread *thread, const JSHandle<JS
     JSTaggedValue targetModule = resolvedBind->GetModule();
     // 9. Assert: targetModule is not undefined.
     ASSERT(!targetModule.IsUndefined());
-    JSTaggedValue result = SourceTextModule::Cast(targetModule.GetHeapObject())->
+    JSTaggedValue result = SourceTextModule::Cast(targetModule.GetTaggedObject())->
                                                   GetModuleValue(thread, resolvedBind->GetBindingName(), true);
     return OperationResult(thread, result, PropertyMetaData(true));
 }
@@ -238,7 +238,7 @@ bool ModuleNamespace::ValidateKeysAvailable(JSThread *thread, const JSHandle<Tag
         ASSERT(binding->IsResolvedBinding());
         JSTaggedValue targetModule = JSHandle<ResolvedBinding>::Cast(binding)->GetModule();
         ASSERT(!targetModule.IsUndefined());
-        JSTaggedValue dictionary = SourceTextModule::Cast(targetModule.GetHeapObject())->GetNameDictionary();
+        JSTaggedValue dictionary = SourceTextModule::Cast(targetModule.GetTaggedObject())->GetNameDictionary();
         if (dictionary.IsUndefined()) {
             THROW_REFERENCE_ERROR_AND_RETURN(thread, "module environment is undefined", false);
         }

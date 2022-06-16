@@ -290,7 +290,7 @@ void ParallelEvacuator::UpdateRSet(Region *region)
     auto cb = [this](void *mem) -> bool {
         ObjectSlot slot(ToUintPtr(mem));
         if (UpdateObjectSlot(slot)) {
-            Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
+            Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObject());
             if (!valueRegion->InYoungSpace()) {
                 return false;
             }

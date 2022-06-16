@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSMapIterator : public JSObject {
 public:
-    static JSMapIterator *Cast(ObjectHeader *obj)
+    static JSMapIterator *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsJSMapIterator());
         return static_cast<JSMapIterator *>(obj);

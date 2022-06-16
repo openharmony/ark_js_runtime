@@ -27,7 +27,7 @@
 namespace panda::ecmascript {
 inline void TaggedObject::SetClassWithoutBarrier(JSHClass *hclass)
 {
-    *reinterpret_cast<MarkWordType *>(ToUintPtr(this)) = reinterpret_cast<MarkWordType>(hclass);
+    class_ = reinterpret_cast<MarkWordType>(hclass);
 }
 
 inline void TaggedObject::SetClass(JSHClass *hclass)
@@ -42,7 +42,7 @@ inline void TaggedObject::SetClass(JSHandle<JSHClass> hclass)
 
 inline JSHClass *TaggedObject::GetClass() const
 {
-    return reinterpret_cast<JSHClass *>(*reinterpret_cast<MarkWordType *>(ToUintPtr(this)));
+    return reinterpret_cast<JSHClass *>(class_);
 }
 
 inline void TaggedObject::SynchronizedSetClass(JSHClass *hclass)

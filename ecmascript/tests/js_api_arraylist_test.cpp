@@ -24,7 +24,6 @@
 
 using namespace panda;
 using namespace panda::ecmascript;
-using namespace coretypes;
 
 namespace panda::test {
 class JSAPIArrayListTest : public testing::Test {

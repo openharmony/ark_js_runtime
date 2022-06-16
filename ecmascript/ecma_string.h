@@ -26,6 +26,7 @@
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers.h"
 #include "macros.h"
+#include "securec.h"
 
 namespace panda {
 namespace ecmascript {
@@ -35,7 +36,7 @@ class EcmaVM;
 
 class EcmaString : public TaggedObject {
 public:
-    static EcmaString *Cast(ObjectHeader *object);
+    static EcmaString *Cast(TaggedObject *object);
     static const EcmaString *ConstCast(const TaggedObject *object);
 
     static EcmaString *CreateEmptyString(const EcmaVM *vm);

@@ -3843,7 +3843,7 @@ bool EcmaInterpreter::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, J
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto thisFunc = state->function;
             auto res = SlowRuntimeStub::NotifyInlineCache(
-                thread, JSFunction::Cast(thisFunc.GetHeapObject()), method);
+                thread, JSFunction::Cast(thisFunc.GetTaggedObject()), method);
             state->profileTypeInfo = res;
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             return true;

@@ -29,7 +29,7 @@ This section describes how to develop and test ARK runtime.
 
 	arm32:
 	```
-	./build.sh --product-name rk3568 --build-target libarkruntime --build-target ark_js_runtime --build-target ld-musl-arm.so.1
+	./build.sh --product-name rk3568 --build-target ark_js_runtime --build-target ld-musl-arm.so.1
 	```
 
 **NOTE**:  Run the compilation commands in the project root directory.

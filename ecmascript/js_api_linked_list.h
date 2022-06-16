@@ -24,7 +24,7 @@ namespace panda::ecmascript {
 class JSAPILinkedList : public JSObject {
 public:
     static constexpr int DEFAULT_CAPACITY_LENGTH = 10;
-    static JSAPILinkedList *Cast(ObjectHeader *object)
+    static JSAPILinkedList *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPILinkedList());
         return static_cast<JSAPILinkedList *>(object);

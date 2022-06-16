@@ -26,7 +26,6 @@ class JSArray;
 
 class SlowRuntimeStub {
 public:
-    /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
     static JSTaggedValue CallSpreadDyn(JSThread *thread, JSTaggedValue func, JSTaggedValue obj, JSTaggedValue array);
     static JSTaggedValue NegDyn(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue AsyncFunctionEnter(JSThread *thread);
@@ -161,7 +160,6 @@ public:
     static JSTaggedValue GetModuleNamespace(JSThread *thread, JSTaggedValue localName);
     static JSTaggedValue LdBigInt(JSThread *thread, JSTaggedValue numberBigInt);
     static JSTaggedValue ThrowTypeError(JSThread *thread, const char *message);
-    /* -------------- Common API End, Don't change those interface!!! ----------------- */
 
 private:
     static JSTaggedValue ThrowSyntaxError(JSThread *thread, const char *message);

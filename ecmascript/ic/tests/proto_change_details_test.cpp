@@ -96,7 +96,7 @@ HWTEST_F_L0(ProtoChangeDetailsTest, SetChangeListener)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(1));
     
-    array_size_t weakVectorCapacity = 100;
+    uint32_t weakVectorCapacity = 100;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     JSHandle<ChangeListener> handleChangeListener = JSHandle<ChangeListener>::Cast(weakVector);
     JSHandle<ProtoChangeDetails> handleChangeDetails = factory->NewProtoChangeDetails();
@@ -138,8 +138,8 @@ HWTEST_F_L0(ProtoChangeDetailsTest, Add_001)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> objDynclassVal(thread, handleObj->GetJSHClass());
-    array_size_t weakVectorCapacity = 10;
-    array_size_t index = 2;
+    uint32_t weakVectorCapacity = 10;
+    uint32_t index = 2;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     for (int i = 0; i < 9; i++) {
         weakVector->PushBack(thread, JSTaggedValue(i));
@@ -169,8 +169,8 @@ HWTEST_F_L0(ProtoChangeDetailsTest, Add_002)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> objDynclassVal(thread, handleObj->GetJSHClass());
-    array_size_t weakVectorCapacity = 10;
-    array_size_t index = 2;
+    uint32_t weakVectorCapacity = 10;
+    uint32_t index = 2;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     for (int i = 0; i < 10; i++) {
         weakVector->PushBack(thread, JSTaggedValue(i));
@@ -202,8 +202,8 @@ HWTEST_F_L0(ProtoChangeDetailsTest, Add_003)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSHandle<JSTaggedValue> objDynclassVal(thread, handleObj->GetJSHClass());
-    array_size_t weakVectorCapacity = 10;
-    array_size_t index = 2;
+    uint32_t weakVectorCapacity = 10;
+    uint32_t index = 2;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     for (int i = 0; i < 10; i++) {
         weakVector->PushBack(thread, JSTaggedValue(i));
@@ -229,7 +229,7 @@ HWTEST_F_L0(ProtoChangeDetailsTest, Add_003)
  */
 HWTEST_F_L0(ProtoChangeDetailsTest, CheckHole)
 {
-    array_size_t weakVectorCapacity = 10;
+    uint32_t weakVectorCapacity = 10;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     for (int i = 0; i < 10; i++) {
         weakVector->PushBack(thread, JSTaggedValue(i)); // Set Value and End
@@ -250,7 +250,7 @@ HWTEST_F_L0(ProtoChangeDetailsTest, CheckHole)
  */
 HWTEST_F_L0(ProtoChangeDetailsTest, Get)
 {
-    array_size_t weakVectorCapacity = 3;
+    uint32_t weakVectorCapacity = 3;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();

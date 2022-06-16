@@ -48,6 +48,9 @@
 #undef STRICT
 #endif
 
+#ifdef VOID
+#undef VOID
+#endif
 #endif
 
 namespace panda::ecmascript {
