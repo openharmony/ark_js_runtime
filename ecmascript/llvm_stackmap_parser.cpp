@@ -103,7 +103,8 @@ uintptr_t LLVMStackMapParser::GetStackSlotAddress(const DwarfRegAndOffsetType in
 }
 
 void LLVMStackMapParser::CollectBaseAndDerivedPointers(const CallSiteInfo* infos, std::set<uintptr_t> &baseSet,
-    ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const
+    ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
+    uintptr_t callsiteFp, uintptr_t callSiteSp) const
 {
     bool flag = (infos->size() % 2 != 0);
     size_t j = flag ? 1 : 0; // skip first element when size is odd number
@@ -134,7 +135,7 @@ bool LLVMStackMapParser::CollectGCSlots(uintptr_t callSiteAddr, uintptr_t callsi
         return false;
     }
     ASSERT(callsiteFp != callSiteSp);
-    CollectBaseAndDerivedPointers(infos, baseSet, data, callsiteFp, callSiteSp);
+    CollectBaseAndDerivedPointers(infos, baseSet, data, isVerifying, callsiteFp, callSiteSp);
 
     if (IsLogEnabled()) {
         PrintCallSiteInfo(infos, callsiteFp, callSiteSp);
