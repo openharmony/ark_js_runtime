@@ -137,7 +137,6 @@ config("ark_jsruntime_public_config") {
     "$js_root",
 
     # Dependent on runtime_core include
-    "$ark_root/runtime",
     "$ark_root",
   ]
 }

@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSAPIListIterator : public JSObject {
 public:
-    static JSAPIListIterator *Cast(ObjectHeader *obj)
+    static JSAPIListIterator *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsJSAPIListIterator());
         return static_cast<JSAPIListIterator *>(obj);

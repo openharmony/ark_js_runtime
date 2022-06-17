@@ -25,7 +25,7 @@ namespace panda {
 namespace ecmascript {
 class ProtoChangeMarker : public TaggedObject {
 public:
-    static ProtoChangeMarker *Cast(ObjectHeader *object)
+    static ProtoChangeMarker *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsProtoChangeMarker());
         return static_cast<ProtoChangeMarker *>(object);
@@ -45,7 +45,7 @@ public:
 class ProtoChangeDetails : public TaggedObject {
 public:
     static constexpr int UNREGISTERED = -1;
-    static ProtoChangeDetails *Cast(ObjectHeader *object)
+    static ProtoChangeDetails *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsProtoChangeDetails());
         return static_cast<ProtoChangeDetails *>(object);
@@ -62,7 +62,7 @@ public:
 
 class ChangeListener : public WeakVector {
 public:
-    static ChangeListener *Cast(ObjectHeader *object)
+    static ChangeListener *Cast(TaggedObject *object)
     {
         return static_cast<ChangeListener *>(object);
     }

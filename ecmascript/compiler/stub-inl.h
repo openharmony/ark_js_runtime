@@ -33,7 +33,6 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/visitor.h"
-#include "mem/region_space.h"
 
 namespace panda::ecmascript::kungfu {
 using JSFunction = panda::ecmascript::JSFunction;

@@ -162,14 +162,6 @@ namespace panda::ecmascript {
     V(FastGetPropertyByValue)       \
     V(FastGetPropertyByIndex)       \
     V(NewLexicalEnvDyn)             \
-    V(SetElement)                   \
-    V(SetGlobalOwnProperty)         \
-    V(SetOwnPropertyByName)         \
-    V(SetOwnElement)                \
-    V(FastSetProperty)              \
-    V(FastGetProperty)              \
-    V(FindOwnProperty)              \
-    V(HasOwnProperty)               \
     V(ExecuteNative)                \
     V(Execute)                      \
     V(ToJSTaggedValueWithInt32)     \

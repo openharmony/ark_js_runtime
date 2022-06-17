@@ -25,11 +25,6 @@ class JSCjsRequire final : public JSObject {
 public:
     CAST_CHECK(JSCjsRequire, IsJSCjsRequire);
 
-    inline static JSCjsRequire *Cast(const TaggedObject *object)
-    {
-        return static_cast<JSCjsRequire *>(const_cast<TaggedObject *>(object));
-    }
-
     // Instantiate member
     static constexpr size_t JS_CJS_REQUIRE_OFFSET = JSObject::SIZE;
     ACCESSORS(Cache, JS_CJS_REQUIRE_OFFSET, CACHE_OFFSET)

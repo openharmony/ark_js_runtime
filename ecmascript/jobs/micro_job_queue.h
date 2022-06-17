@@ -33,7 +33,7 @@ enum class QueueType : uint8_t {
 
 class MicroJobQueue final : public Record {
 public:
-    static MicroJobQueue *Cast(ObjectHeader *object)
+    static MicroJobQueue *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsMicroJobQueue());
         return static_cast<MicroJobQueue *>(object);

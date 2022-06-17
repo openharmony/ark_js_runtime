@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSAPIVectorIterator : public JSObject {
 public:
-    static JSAPIVectorIterator *Cast(ObjectHeader *obj)
+    static JSAPIVectorIterator *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsJSAPIVectorIterator());
         return static_cast<JSAPIVectorIterator *>(obj);

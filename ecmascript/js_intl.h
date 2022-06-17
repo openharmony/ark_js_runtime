@@ -21,7 +21,7 @@
 namespace panda::ecmascript {
 class JSIntl : public JSObject {
 public:
-    static JSIntl *Cast(ObjectHeader *object)
+    static JSIntl *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSIntl());
         return static_cast<JSIntl *>(object);

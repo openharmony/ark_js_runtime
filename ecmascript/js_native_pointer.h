@@ -25,7 +25,7 @@ using DeleteEntryPoint = void (*)(void *, void *);
 // Used for the requirement of ACE that wants to associated a registered C++ resource with a JSObject.
 class JSNativePointer : public TaggedObject {
 public:
-    static JSNativePointer *Cast(ObjectHeader *object)
+    static JSNativePointer *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSNativePointer());
         return reinterpret_cast<JSNativePointer *>(object);

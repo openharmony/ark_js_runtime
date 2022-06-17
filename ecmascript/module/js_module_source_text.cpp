@@ -54,7 +54,7 @@ CVector<std::string> SourceTextModule::GetExportedNames(JSThread *thread, const 
             // a. Assert: module provides the direct binding for this export.
             // b. Append e.[[ExportName]] to exportedNames.
             std::string exportName =
-                base::StringHelper::ToStdString(EcmaString::Cast(ee->GetExportName().GetHeapObject()));
+                base::StringHelper::ToStdString(EcmaString::Cast(ee->GetExportName().GetTaggedObject()));
             exportedNames.emplace_back(exportName);
         }
     }
@@ -70,7 +70,7 @@ CVector<std::string> SourceTextModule::GetExportedNames(JSThread *thread, const 
             // a. Assert: module imports a specific binding for this export.
             // b. Append e.[[ExportName]] to exportedNames.
             std::string exportName =
-                base::StringHelper::ToStdString(EcmaString::Cast(ee->GetExportName().GetHeapObject()));
+                base::StringHelper::ToStdString(EcmaString::Cast(ee->GetExportName().GetTaggedObject()));
             exportedNames.emplace_back(exportName);
         }
     }
@@ -112,10 +112,10 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
                                                                        const JSHandle<SourceTextModule> &module,
                                                                        const JSHandle<JSTaggedValue> &moduleRequest)
 {
-    CString moduleFilename = ConvertToString(EcmaString::Cast(moduleRequest->GetHeapObject()));
+    CString moduleFilename = ConvertToString(EcmaString::Cast(moduleRequest->GetTaggedObject()));
     ASSERT(module->GetEcmaModuleFilename().IsHeapObject());
     CString baseFilename =
-        ConvertToString(EcmaString::Cast(module->GetEcmaModuleFilename().GetHeapObject()));
+        ConvertToString(EcmaString::Cast(module->GetEcmaModuleFilename().GetTaggedObject()));
     int suffixEnd = static_cast<int>(moduleFilename.find_last_of('.'));
     if (suffixEnd == -1) {
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
@@ -664,7 +664,7 @@ void SourceTextModule::ModuleExecution(JSThread *thread, const JSHandle<SourceTe
 {
     JSTaggedValue moduleFileName = module->GetEcmaModuleFilename();
     ASSERT(moduleFileName.IsString());
-    CString moduleFilenameStr = ConvertToString(EcmaString::Cast(moduleFileName.GetHeapObject()));
+    CString moduleFilenameStr = ConvertToString(EcmaString::Cast(moduleFileName.GetTaggedObject()));
     const JSPandaFile *jsPandaFile =
         JSPandaFileManager::GetInstance()->LoadJSPandaFile(thread, moduleFilenameStr, JSPandaFile::ENTRY_MAIN_FUNCTION);
     if (jsPandaFile == nullptr) {

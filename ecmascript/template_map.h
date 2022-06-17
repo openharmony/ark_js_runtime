@@ -30,7 +30,7 @@ public:
     static inline int Hash(const JSTaggedValue &obj)
     {
         ASSERT(obj.IsJSArray());
-        JSArray *array = JSArray::Cast(obj.GetHeapObject());
+        JSArray *array = JSArray::Cast(obj.GetTaggedObject());
         uint32_t len = array->GetArrayLength();
         return len;
     }
@@ -50,7 +50,7 @@ public:
     {
         return ENTRY_SIZE;
     }
-    static TemplateMap *Cast(ObjectHeader *object)
+    static TemplateMap *Cast(TaggedObject *object)
     {
         return reinterpret_cast<TemplateMap *>(object);
     }

@@ -453,7 +453,7 @@ protected:
 class TaggedTreeMap : public TaggedTree<TaggedTreeMap> {
 public:
     using RBTree = TaggedTree<TaggedTreeMap>;
-    static TaggedTreeMap *Cast(ObjectHeader *obj)
+    static TaggedTreeMap *Cast(TaggedObject *obj)
     {
         return static_cast<TaggedTreeMap *>(obj);
     }
@@ -521,7 +521,7 @@ public:
 class TaggedTreeSet : public TaggedTree<TaggedTreeSet> {
 public:
     using RBTree = TaggedTree<TaggedTreeSet>;
-    static TaggedTreeSet *Cast(ObjectHeader *obj)
+    static TaggedTreeSet *Cast(TaggedObject *obj)
     {
         return static_cast<TaggedTreeSet *>(obj);
     }

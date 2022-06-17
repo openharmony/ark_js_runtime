@@ -302,7 +302,7 @@ public:
 
 class LinkedHashMap : public LinkedHashTable<LinkedHashMap, LinkedHashMapObject> {
 public:
-    static LinkedHashMap *Cast(ObjectHeader *obj)
+    static LinkedHashMap *Cast(TaggedObject *obj)
     {
         return static_cast<LinkedHashMap *>(obj);
     }
@@ -342,7 +342,7 @@ public:
 
 class LinkedHashSet : public LinkedHashTable<LinkedHashSet, LinkedHashSetObject> {
 public:
-    static LinkedHashSet *Cast(ObjectHeader *obj)
+    static LinkedHashSet *Cast(TaggedObject *obj)
     {
         return static_cast<LinkedHashSet *>(obj);
     }

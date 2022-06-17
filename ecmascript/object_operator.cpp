@@ -392,7 +392,7 @@ void ObjectOperator::TransitionForAttributeChanged(const JSHandle<JSObject> &rec
 bool ObjectOperator::UpdateValueAndDetails(const JSHandle<JSObject> &receiver, const JSHandle<JSTaggedValue> &value,
                                            PropertyAttributes attr, bool attrChanged)
 {
-    bool isInternalAccessor = IsAccessorDescriptor() && AccessorData::Cast(GetValue().GetHeapObject())->IsInternal();
+    bool isInternalAccessor = IsAccessorDescriptor() && AccessorData::Cast(GetValue().GetTaggedObject())->IsInternal();
     if (attrChanged) {
         TransitionForAttributeChanged(receiver, attr);
     }
@@ -423,7 +423,7 @@ bool ObjectOperator::UpdateDataValue(const JSHandle<JSObject> &receiver, const J
     }
 
     if (isInternalAccessor) {
-        auto accessor = AccessorData::Cast(GetValue().GetHeapObject());
+        auto accessor = AccessorData::Cast(GetValue().GetTaggedObject());
         if (accessor->HasSetter()) {
             return accessor->CallInternalSet(thread_, JSHandle<JSObject>(receiver), value, mayThrow);
         }
@@ -471,7 +471,7 @@ bool ObjectOperator::WriteDataProperty(const JSHandle<JSObject> &receiver, const
         }
 
         if (IsAccessorDescriptor()) {
-            auto accessor = AccessorData::Cast(GetValue().GetHeapObject());
+            auto accessor = AccessorData::Cast(GetValue().GetTaggedObject());
             if (!accessor->IsInternal() || !accessor->HasSetter()) {
                 attr.SetIsAccessor(false);
                 attrChanged = true;

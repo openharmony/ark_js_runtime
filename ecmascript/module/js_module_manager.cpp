@@ -45,7 +45,7 @@ JSTaggedValue ModuleManager::GetModuleValueInner(JSTaggedValue key)
     if (currentModule.IsUndefined()) {
         LOG_ECMA(FATAL) << "GetModuleValueInner currentModule failed";
     }
-    return SourceTextModule::Cast(currentModule.GetHeapObject())->GetModuleValue(vm_->GetJSThread(), key, false);
+    return SourceTextModule::Cast(currentModule.GetTaggedObject())->GetModuleValue(vm_->GetJSThread(), key, false);
 }
 
 JSTaggedValue ModuleManager::GetModuleValueOutter(JSTaggedValue key)
@@ -55,7 +55,7 @@ JSTaggedValue ModuleManager::GetModuleValueOutter(JSTaggedValue key)
     if (currentModule.IsUndefined()) {
         LOG_ECMA(FATAL) << "GetModuleValueOutter currentModule failed";
     }
-    JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetHeapObject())->GetEnvironment();
+    JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetTaggedObject())->GetEnvironment();
     ASSERT(!moduleEnvironment.IsUndefined());
     JSTaggedValue resolvedBinding = LinkedHashMap::Cast(moduleEnvironment.GetTaggedObject())->Get(key);
     if (resolvedBinding.IsUndefined()) {
@@ -65,13 +65,13 @@ JSTaggedValue ModuleManager::GetModuleValueOutter(JSTaggedValue key)
     ResolvedBinding *binding = ResolvedBinding::Cast(resolvedBinding.GetTaggedObject());
     JSTaggedValue resolvedModule = binding->GetModule();
     ASSERT(resolvedModule.IsSourceTextModule());
-    SourceTextModule *module = SourceTextModule::Cast(resolvedModule.GetHeapObject());
+    SourceTextModule *module = SourceTextModule::Cast(resolvedModule.GetTaggedObject());
     if (module->GetTypes() == ModuleTypes::CJSMODULE) {
         JSHandle<JSTaggedValue> cjsModuleName(thread, module->GetEcmaModuleFilename());
         return JSCjsModule::SearchFromModuleCache(thread, cjsModuleName).GetTaggedValue();
     }
-    return SourceTextModule::Cast(resolvedModule.GetHeapObject())->GetModuleValue(thread, binding->GetBindingName(),
-                                                                                  false);
+    return SourceTextModule::Cast(resolvedModule.GetTaggedObject())->GetModuleValue(thread,
+                                                                                    binding->GetBindingName(), false);
 }
 
 void ModuleManager::StoreModuleValue(JSTaggedValue key, JSTaggedValue value)
@@ -165,7 +165,7 @@ JSTaggedValue ModuleManager::GetModuleNamespace(JSTaggedValue localName)
     if (currentModule.IsUndefined()) {
         LOG_ECMA(FATAL) << "GetModuleNamespace currentModule failed";
     }
-    JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetHeapObject())->GetEnvironment();
+    JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetTaggedObject())->GetEnvironment();
     ASSERT(!moduleEnvironment.IsUndefined());
     JSTaggedValue moduleNamespace = LinkedHashMap::Cast(moduleEnvironment.GetTaggedObject())->Get(localName);
     if (moduleNamespace.IsUndefined()) {

@@ -39,7 +39,6 @@
 #include "ecmascript/compiler/assembler_module.h"
 
 namespace panda::test {
-using namespace panda::coretypes;
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::kungfu;
 using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
@@ -127,7 +126,7 @@ HWTEST_F_L0(StubTest, FastAddTest)
     int x1 = 2147483647;
     int y1 = 15;
     auto resG = fn(thread->GetGlueAddr(), JSTaggedValue(x1).GetRawData(), JSTaggedValue(y1).GetRawData());
-    auto expectedG = FastRuntimeStub::FastAdd(JSTaggedValue(x1), JSTaggedValue(y1));
+    auto expectedG = SlowRuntimeStub::Add2Dyn(thread, JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(resG, expectedG);
 }
 
@@ -860,8 +859,8 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
     int y = 10;
-    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
-    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
     JSTaggedValue resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 1);
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 10250);
@@ -1025,8 +1024,8 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     int x = 213;
     int y = 10;
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
-    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
 
     JSHandle<JSTaggedValue> strA(factory->NewFromASCII("a"));
     JSHandle<JSTaggedValue> strBig(factory->NewFromASCII("biggest"));
@@ -1209,8 +1208,8 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     // test for obj == obj
     JSHandle<JSObject> obj1 = factory->NewEmptyJSObject();
     JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
-    FastRuntimeStub::SetOwnElement(thread, obj1.GetTaggedValue(), 1, JSTaggedValue(1));
-    FastRuntimeStub::SetOwnElement(thread, obj2.GetTaggedValue(), 1, JSTaggedValue(1));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj1.GetTaggedValue(), 1, JSTaggedValue(1));
+    FastRuntimeStub::SetPropertyByIndex<true>(thread, obj2.GetTaggedValue(), 1, JSTaggedValue(1));
     auto resI = fn(thread->GetGlueAddr(), obj1.GetTaggedValue().GetRawData(), obj2.GetTaggedValue().GetRawData());
     auto expectI = FastRuntimeStub::FastEqual(obj1.GetTaggedValue(), obj2.GetTaggedValue());
     EXPECT_EQ(resI, expectI);

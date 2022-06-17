@@ -16,6 +16,8 @@
 #ifndef ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
 
+#include <stack>
+
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/gate_accessor.h"

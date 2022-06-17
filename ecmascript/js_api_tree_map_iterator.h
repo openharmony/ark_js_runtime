@@ -26,7 +26,7 @@ namespace panda::ecmascript {
  * */
 class JSAPITreeMapIterator : public JSObject {
 public:
-    static JSAPITreeMapIterator *Cast(ObjectHeader *obj)
+    static JSAPITreeMapIterator *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsJSAPITreeMapIterator());
         return static_cast<JSAPITreeMapIterator *>(obj);

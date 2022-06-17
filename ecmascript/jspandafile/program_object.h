@@ -37,7 +37,7 @@ public:
 
 class ConstantPool : public TaggedArray {
 public:
-    static ConstantPool *Cast(ObjectHeader *object)
+    static ConstantPool *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsTaggedArray());
         return static_cast<ConstantPool *>(object);

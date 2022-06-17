@@ -44,7 +44,7 @@ JSTaggedValue JSAPIDequeIterator::Next(EcmaRuntimeCallInfo *argv)
     uint32_t index = iter->GetNextIndex();
 
     JSHandle<TaggedArray> elements(thread, deque->GetElements());
-    array_size_t capacity = elements->GetLength();
+    uint32_t capacity = elements->GetLength();
     uint32_t first = deque->GetFirst();
     uint32_t last = deque->GetLast();
     if (index == last) {

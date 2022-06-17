@@ -2682,7 +2682,7 @@ JSTaggedValue BuiltinsArray::Flat(EcmaRuntimeCallInfo *argv)
     JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
 
     // 2. Let sourceLen be ? LengthOfArrayLike(O).
@@ -2769,7 +2769,7 @@ JSTaggedValue BuiltinsArray::Includes(EcmaRuntimeCallInfo *argv)
     JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
     JSHandle<JSTaggedValue> searchElement = GetCallArg(argv, 0);
 

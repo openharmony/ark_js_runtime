@@ -38,7 +38,7 @@ int32_t ModuleRecord::Evaluate(JSThread *thread, const JSHandle<JSTaggedValue> &
 JSTaggedValue ModuleRecord::GetNamespace(JSTaggedValue module)
 {
     if (module.IsSourceTextModule()) {
-        return SourceTextModule::Cast(module.GetHeapObject())->GetNamespace();
+        return SourceTextModule::Cast(module.GetTaggedObject())->GetNamespace();
     }
     UNREACHABLE();
 }
@@ -46,7 +46,7 @@ JSTaggedValue ModuleRecord::GetNamespace(JSTaggedValue module)
 void ModuleRecord::SetNamespace(JSThread *thread, JSTaggedValue module, JSTaggedValue value)
 {
     if (module.IsSourceTextModule()) {
-        SourceTextModule::Cast(module.GetHeapObject())->SetNamespace(thread, value);
+        SourceTextModule::Cast(module.GetTaggedObject())->SetNamespace(thread, value);
     } else {
         UNREACHABLE();
     }

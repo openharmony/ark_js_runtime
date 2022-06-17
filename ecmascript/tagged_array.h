@@ -28,7 +28,7 @@ public:
     static constexpr uint32_t MAX_ARRAY_INDEX = std::numeric_limits<uint32_t>::max();
     static constexpr uint32_t MAX_END_UNUSED = 4;
 
-    inline static TaggedArray *Cast(ObjectHeader *obj)
+    inline static TaggedArray *Cast(TaggedObject *obj)
     {
         ASSERT(JSTaggedValue(obj).IsTaggedArray());
         return static_cast<TaggedArray *>(obj);

@@ -52,7 +52,7 @@ public:
 
     // CVector pushed with JSTaggedValue made from compatible input value for the JSType
     const CVector<JSTaggedValue> cVecHandleTagValValueForTypedArray {
-        // Use "(S)(...)" cast to make v in "JSTaggedValue(T v) : coretypes::TaggedValue(v) {}" compatible with S
+        // Use "(S)(...)" cast to make v in "JSTaggedValue(T v) {}" compatible with S
         JSTaggedValue((int8_t)(-111)), JSTaggedValue((uint8_t)(222)), JSTaggedValue((uint8_t)(222)),
         JSTaggedValue((int16_t)(-31111)), JSTaggedValue((uint16_t)(61111)),
         // int32 : -2147483648->2147483647, uint32 : 0->4294967295
