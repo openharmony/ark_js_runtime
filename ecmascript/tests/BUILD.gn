@@ -17,7 +17,7 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("EcmaVmTest") {
+host_unittest_action("EcmaVm_001_Test") {
   module_out_path = module_output_path
 
   sources = [
@@ -57,6 +57,22 @@ host_unittest_action("EcmaVmTest") {
     "js_array_iterator_test.cpp",
     "js_array_test.cpp",
     "js_bigint_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("EcmaVm_002_Test") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
     "js_collator_test.cpp",
     "js_dataview_test.cpp",
     "js_date_test.cpp",
@@ -110,12 +126,18 @@ group("unittest") {
   testonly = true
 
   # deps file
-  deps = [ ":EcmaVmTest" ]
+  deps = [
+    ":EcmaVm_001_Test",
+    ":EcmaVm_002_Test",
+  ]
 }
 
 group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [ ":EcmaVmTestAction" ]
+  deps = [
+    ":EcmaVm_001_TestAction",
+    ":EcmaVm_002_TestAction",
+  ]
 }

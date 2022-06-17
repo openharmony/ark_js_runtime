@@ -17,7 +17,7 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("BuiltinsInternationalTest") {
+host_unittest_action("BuiltinsInternational_001_Test") {
   module_out_path = module_output_path
 
   sources = [
@@ -26,6 +26,25 @@ host_unittest_action("BuiltinsInternationalTest") {
     "builtins_collator_test.cpp",
     "builtins_date_time_format_test.cpp",
     "builtins_displaynames_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:icu_path_test_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsInternational_002_Test") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
     "builtins_intl_test.cpp",
     "builtins_list_format_test.cpp",
     "builtins_locale_test.cpp",
@@ -94,7 +113,8 @@ group("unittest") {
 
   # deps file
   deps = [
-    ":BuiltinsInternationalTest",
+    ":BuiltinsInternational_001_Test",
+    ":BuiltinsInternational_002_Test",
     ":BuiltinsNaturalTest",
   ]
 }
@@ -104,7 +124,8 @@ group("host_unittest") {
 
   # deps file
   deps = [
-    ":BuiltinsInternationalTestAction",
+    ":BuiltinsInternational_001_TestAction",
+    ":BuiltinsInternational_002_TestAction",
     ":BuiltinsNaturalTestAction",
   ]
 }
