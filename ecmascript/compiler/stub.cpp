@@ -575,7 +575,7 @@ GateRef Stub::CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, G
         }
         Bind(&objNotUndefined);
         {
-            auto retValue = JSCallDispatch(glue, getter, IntPtr(0),
+            auto retValue = JSCallDispatch(glue, getter, Int32(0),
                                            JSCallMode::CALL_GETTER, { receiver });
             Label noPendingException(env);
             Branch(HasPendingException(glue), &exit, &noPendingException);
@@ -623,7 +623,7 @@ GateRef Stub::CallSetterHelper(GateRef glue, GateRef receiver, GateRef accessor,
         }
         Bind(&objNotUndefined);
         {
-            auto retValue = JSCallDispatch(glue, setter, IntPtr(1),
+            auto retValue = JSCallDispatch(glue, setter, Int32(1),
                                            JSCallMode::CALL_SETTER, { receiver, value });
             Label noPendingException(env);
             Branch(HasPendingException(glue), &exit, &noPendingException);
@@ -4010,6 +4010,67 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
         sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
     }
     {
+        if (env->IsAsmInterp()) {
+            Label methodisAot(env);
+            Label methodNotAot(env);
+            GateRef isAotMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsAotCodeBit::START_BIT);
+            Branch(Int64Equal(Int64And(callField, isAotMask), Int64(0)),  &methodNotAot, &methodisAot);
+            Bind(&methodisAot);
+            {
+                GateRef newTarget = Undefined();
+                GateRef thisValue = Undefined();
+                switch (mode) {
+                    case JSCallMode::CALL_ARG0:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs, thisValue, newTarget });
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_ARG1:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs,
+                            thisValue, newTarget, data[0] });
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_ARG2:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs, thisValue, newTarget,  data[0], data[1] });
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_ARG3:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs, thisValue,
+                            newTarget, data[0], data[1], data[2] }); // 2: args2
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_THIS_WITH_ARGV:
+                        thisValue = data[2]; // 2: this input
+                        [[fallthrough]];
+                    case JSCallMode::CALL_WITH_ARGV:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallWithArgV),
+                            { glue, sp, func, actualNumArgs, thisValue, data[1] });
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallWithArgV),
+                            { glue, sp, func, actualNumArgs, data[2], data[1]});
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_GETTER:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs, data[0], newTarget});
+                        Jump(&exit);
+                        break;
+                    case JSCallMode::CALL_SETTER:
+                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                            { glue, sp, func, actualNumArgs, data[1], newTarget, data[0]});
+                        Jump(&exit);
+                        break;
+                    default:
+                        UNREACHABLE();
+                }
+            }
+            Bind(&methodNotAot);
+        }
         switch (mode) {
             case JSCallMode::CALL_ARG0:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs0AndDispatch),

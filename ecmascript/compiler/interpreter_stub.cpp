@@ -353,7 +353,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_3(pc));
     GateRef firstArgOffset = Int16(2);
     GateRef ctor = GetVregValue(sp, ZExtInt16ToPtr(firstArgRegIdx));
-    GateRef actualNumArgs = ZExtInt16ToPtr(Int16Sub(numArgs, firstArgOffset));
+    GateRef actualNumArgs = ZExtInt16ToInt32(Int16Sub(numArgs, firstArgOffset));
 
     Label ctorIsHeapObject(env);
     Label ctorIsJSFunction(env);
@@ -409,7 +409,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
             PtrAdd(firstArgRegIdx, firstArgOffset), IntPtr(8))); // 8: skip function&this
         res = JSCallDispatch(glue, ctor, actualNumArgs,
                              JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV,
-                             { actualNumArgs, argv, *thisObj });
+                             { ChangeInt32ToIntPtr(actualNumArgs), argv, *thisObj });
         Jump(&threadCheck);
     }
     Bind(&slowPath);

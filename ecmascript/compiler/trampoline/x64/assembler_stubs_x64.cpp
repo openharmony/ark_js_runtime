@@ -2029,6 +2029,17 @@ void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssembler *assembler, Regi
     __ Ja(&loopBeginning);
 }
 
+void AssemblerStubsX64::CopyArgumentWithArgV(ExtendedAssembler *assembler, Register argc, Register argV)
+{
+    Label loopBeginning;
+    Register arg = __ AvailableRegister1();
+    __ Bind(&loopBeginning);
+    __ Movq(Operand(argV, argc, Scale::Times8, -8), arg); // -8: stack index
+    __ Pushq(arg);
+    __ Subq(1, argc);
+    __ Ja(&loopBeginning);
+}
+
 void AssemblerStubsX64::HasPendingException([[maybe_unused]] ExtendedAssembler *assembler,
     [[maybe_unused]] Register threadRegister)
 {
@@ -2037,5 +2048,165 @@ void AssemblerStubsX64::HasPendingException([[maybe_unused]] ExtendedAssembler *
 void AssemblerStubsX64::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler)
 {
 }
+
+// AotCallArgs
+// Input:
+//        %rdi - glue
+//        %rsi - sp
+//        %rdx - jsfunc
+//        %rcx - actualNumArgs
+//        %r8  - thisObj
+//        %r9  - newTarget
+//        ...
+void AssemblerStubsX64::AotCallArgs(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(AotCallArgs));
+    Register glue(rdi);
+    Register prevFp(rsi);
+    Register jsfunc(rdx);
+    Register actualNumArgs(rcx);
+    Register thisObj(r8);
+    Register newTarget(r9);
+    Register codeAddr = __ AvailableRegister1();
+    Register expectedNumArgs(r14);
+    Label pushCallThis;
+    TempRegisterScope scope(assembler);
+    Register argV(prevFp);
+
+    __ Movq(rsp, rax);
+    __ Addq(8, rax);  // 8 : 8 means argV offset to rsp
+    PushAotEntryFrame(assembler, prevFp);
+    __ Movq(rax, argV);
+
+    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
+    __ Bind(&pushCallThis);
+    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, expectedNumArgs);  // r14
+    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
+    PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
+    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
+    __ Pushq(actualNumArgs);
+    __ Movq(glue, rax); // mov glue to rax
+    __ Movq(Operand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddr);
+    __ Callq(codeAddr); // then call jsFunction
+    PopAotArgs(assembler, expectedNumArgs);
+    PopAotEntryFrame(assembler, glue);
+    __ Ret();
+}
+
+void AssemblerStubsX64::PushMandatoryJSArgs(ExtendedAssembler *assembler, Register jsfunc,
+                                          Register thisObj, Register newTarget)
+{
+    __ Pushq(thisObj);
+    __ Pushq(newTarget);
+    __ Pushq(jsfunc);
+}
+
+// output expectedNumArgs (r14)
+void AssemblerStubsX64::PushArgsWithArgV(ExtendedAssembler *assembler, Register jsfunc,
+                                         Register actualNumArgs, Register argV, Label *pushCallThis)
+{
+    Register expectedNumArgs(r14); // output
+    Register tmp(rax);
+    Label align16Bytes;
+    Label copyArguments;
+    // get expected num Args
+    __ Movq(Operand(jsfunc, JSFunctionBase::METHOD_OFFSET), tmp);
+    __ Movq(Operand(tmp, JSMethod::GetCallFieldOffset(false)), tmp);
+    __ Shr(JSMethod::NumArgsBits::START_BIT, tmp);
+    __ Andl(((1LU <<  JSMethod::NumArgsBits::SIZE) - 1), tmp);
+
+    __ Mov(tmp, expectedNumArgs);
+    __ Testb(1, expectedNumArgs);
+    __ Jne(&align16Bytes);
+    __ PushAlignBytes();
+
+    __ Bind(&align16Bytes);
+    {
+        __ Cmpq(actualNumArgs, expectedNumArgs);
+        __ Jbe(&copyArguments);
+        __ Subq(actualNumArgs, tmp);
+        PushUndefinedWithArgc(assembler, tmp);
+    }
+    __ Bind(&copyArguments);
+    {
+        __ Cmpq(actualNumArgs, expectedNumArgs);
+        __ Movq(actualNumArgs, tmp);     // rax -> actualNumArgsReg
+        __ CMovbe(expectedNumArgs, tmp);
+        __ Cmpq(0, tmp);
+        __ Je(pushCallThis);
+        CopyArgumentWithArgV(assembler, tmp, argV);
+    }
+}
+
+void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
+{
+    __ Addq(1, expectedNumArgs);
+    __ Andq(~1, expectedNumArgs);
+    __ Leaq(Operand(expectedNumArgs, Scale::Times8, 0), expectedNumArgs);
+    __ Addq(expectedNumArgs, rsp);
+    __ Addq(8, rsp); // 8: skip r14
+}
+
+void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp)
+{
+    __ PushCppCalleeSaveRegisters();
+    __ Pushq(rdi);
+
+    // construct optimized entry frame
+    __ Pushq(rbp);
+    __ Movq(rsp, rbp);
+    __ Pushq(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME));
+    __ Pushq(prevFp);
+}
+
+void AssemblerStubsX64::PopAotEntryFrame(ExtendedAssembler *assembler, Register glue)
+{
+    Register prevFp(rsi);
+    __ Popq(prevFp);
+    __ Addq(8, rsp); // 8: frame type
+    __ Popq(rbp);
+    __ Popq(glue); // caller restore
+    __ PopCppCalleeSaveRegisters(); // callee restore
+    __ Movq(prevFp, Operand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+}
+
+// AotCallArgWithArgV
+// Input:
+//        %rdi - glue
+//        %rsi - sp
+//        %rdx - jsfunc
+//        %rcx - actualNumArgs
+//        %r8  - this
+//        %r9  - argV
+void AssemblerStubsX64::AotCallWithArgV(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(AotCallWithArgV));
+    Register glue(rdi);
+    Register prevFp(rsi);
+    Register jsfunc(rdx);
+    Register actualNumArgs(rcx);
+    Register thisObj(r8);
+    Register argV(r9);
+    Register codeAddr = __ AvailableRegister1();
+    Register expectedNumArgs(r14);
+    Label pushCallThis;
+
+    PushAotEntryFrame(assembler, prevFp);
+    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
+    __ Bind(&pushCallThis);
+    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, expectedNumArgs);  // r14
+    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
+    Register newTarget(r9);
+    __ Movq(JSTaggedValue::VALUE_UNDEFINED, newTarget);
+    PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
+    __ Pushq(actualNumArgs);
+    __ Movq(glue, rax); // mov glue to rax
+    __ Movq(Operand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddr);
+    __ Callq(codeAddr); // then call jsFunction
+    PopAotArgs(assembler, expectedNumArgs);
+    PopAotEntryFrame(assembler, glue);
+    __ Ret();
+}
+
 #undef __
 }  // namespace panda::ecmascript::x64
