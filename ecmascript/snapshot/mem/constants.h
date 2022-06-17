@@ -37,7 +37,8 @@ public:
     static constexpr size_t PAGE_SIZE_ALIGN_UP = 4_KB;
     static constexpr size_t MAX_UINT_16 = 0xFFFF;
     static constexpr size_t MAX_UINT_32 = 0xFFFFFFFF;
-    static constexpr size_t MAX_STRING_SIZE = 0x0FFFFFFF;
+    static constexpr size_t MAX_OBJECT_INDEX = 0x0FFFFFFF;
+    static constexpr size_t REGION_INDEX_MASK = 0x3FF; // 10 bits
     static constexpr int UINT_64_BITS_COUNT = 64;
 
     // builtins native method encode

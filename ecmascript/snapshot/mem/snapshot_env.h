@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_ENV_H
 #define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_ENV_H
 
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/visitor.h"
 #include "libpandabase/macros.h"
 
@@ -24,23 +25,32 @@ class EcmaVM;
 
 class SnapshotEnv final {
 public:
-    explicit SnapshotEnv(EcmaVM *vm) : vm_(vm) {}
+    explicit SnapshotEnv(EcmaVM *vm) : vm_(vm), objXRay_(vm) {}
     ~SnapshotEnv() = default;
 
     void Initialize();
+
     void Iterate(const RootVisitor &v);
     
     void ClearEnvMap()
     {
-        envMap_.clear();
+        objectVector_.clear();
     }
 
     size_t GetEnvObjectIndex(uintptr_t objectAddr) const
     {
-        if (envMap_.find(objectAddr) == envMap_.end()) {
+        auto it = std::find(objectVector_.begin(), objectVector_.end(), objectAddr);
+        if (it == objectVector_.end()) {
             return MAX_UINT_32;
+        } else {
+            return std::distance(objectVector_.begin(), it);
         }
-        return envMap_.find(objectAddr)->second;
+    }
+
+    uintptr_t FindEnvObjectByIndex(size_t index)
+    {
+        ASSERT(index < objectVector_.size());
+        return objectVector_.at(index);
     }
 
     static constexpr size_t MAX_UINT_32 = 0xFFFFFFFF;
@@ -49,8 +59,14 @@ private:
     NO_MOVE_SEMANTIC(SnapshotEnv);
     NO_COPY_SEMANTIC(SnapshotEnv);
 
+    void HandleObjectField(TaggedObject *objectHeader, CQueue<TaggedObject *> *objectQueue,
+                           std::set<TaggedObject *> *objectSet);
+    void InitGlobalConst();
+    void InitGlobalEnv();
+
     EcmaVM *vm_;
-    std::unordered_map<uintptr_t, size_t> envMap_;  // Cache global object which can reuse when serialize
+    ObjectXRay objXRay_;
+    CVector<uintptr_t> objectVector_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_ENV_H
