@@ -1113,7 +1113,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     // 26. Let targetByteIndex be targetOffset × targetElementSize + targetByteOffset.
     int32_t targetByteIndex = static_cast<int32_t>(targetOffset * targetElementSize + targetByteOffset);
     // 27. Let limit be targetByteIndex + targetElementSize × srcLength.
-    int32_t limit = targetByteIndex + targetElementSize * srcLength;
+    int32_t limit = targetByteIndex + static_cast<int32_t>(targetElementSize * srcLength);
     // 28. If SameValue(srcType, targetType) is false, then
     //   a. Repeat, while targetByteIndex < limit
     //     i. Let value be GetValueFromBuffer(srcBuffer, srcByteIndex, srcType).
