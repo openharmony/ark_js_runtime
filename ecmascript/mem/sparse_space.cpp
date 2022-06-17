@@ -317,7 +317,6 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->RemoveRegion(region);
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
         AddRegion(region);
-        region->MergeRSetForConcurrentSweeping();
         IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
     });
