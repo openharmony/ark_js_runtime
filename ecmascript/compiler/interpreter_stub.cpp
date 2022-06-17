@@ -4413,7 +4413,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue, *varAcc });
         Return();
     }
     Bind(&pcNotInvalid);

@@ -1315,14 +1315,14 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
 // ResumeUncaughtFrameAndReturn(uintptr_t glue)
 // GHC calling convention
 // X19 - glue
-// X23 - call(default)
+// FP  - acc
 void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
 
     Register glue(X19);
     Register fp(X5);
-    Register acc(X23);
+    Register acc(FP);
     Register cppRet(X0);
 
     __ Ldr(fp, MemoryOperand(glue, JSThread::GlueData::GetLastFpOffset(false)));
