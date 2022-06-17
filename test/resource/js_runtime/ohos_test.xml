@@ -33,12 +33,17 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-    <target name="BuiltinsInternationalTest">
+    <target name="BuiltinsInternational_001_Test">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-        <target name="BuiltinsNaturalTest">
+    <target name="BuiltinsInternational_002_Test">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="BuiltinsNaturalTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
@@ -48,12 +53,12 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-       <target name="ICTest">
+    <target name="ICTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-        <target name="JobTest">
+    <target name="JobTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
@@ -68,12 +73,17 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-        <target name="SnapshotTest">
+    <target name="SnapshotTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-        <target name="EcmaVmTest">
+    <target name="EcmaVm_001_Test">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="EcmaVm_002_Test">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
