@@ -30,6 +30,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "libpandabase/mem/mem.h"
 
@@ -48,7 +49,6 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
 
     SnapshotProcessor processor(vm_);
     processor.Initialize();
-    vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
     CQueue<TaggedObject *> objectQueue;
@@ -61,7 +61,6 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
     size_t rootObjSize = objectQueue.size();
     processor.ProcessObjectQueue(&objectQueue, &data);
     WriteToFile(writer, pf, rootObjSize, processor);
-    vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
 void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileName)
@@ -78,7 +77,6 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
 
     SnapshotProcessor processor(vm_);
     processor.Initialize();
-    vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
     CQueue<TaggedObject *> objectQueue;
@@ -89,7 +87,6 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
 
     processor.ProcessObjectQueue(&objectQueue, &data);
     WriteToFile(writer, nullptr, size, processor);
-    vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
 void Snapshot::SerializeBuiltins(const CString &fileName)
