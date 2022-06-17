@@ -1551,7 +1551,7 @@ void AssemblerStubsX64::PushCallThis(ExtendedAssembler *assembler,
     Label pushNewTarget;
     Label pushCallTarget;
     bool haveThis = kungfu::AssemblerModule::JSModeHaveThisArg(mode);
-    bool haveNewTarget = kungfu::AssemblerModule::JSModeHaveThisArg(mode);
+    bool haveNewTarget = kungfu::AssemblerModule::JSModeHaveNewTargetArg(mode);
     if (!haveThis) {
         __ Testb(CALL_TYPE_MASK, callFieldRegister);
         __ Jz(&pushVregs);
