@@ -24,7 +24,7 @@
 namespace panda::ecmascript {
 class TaggedQueue : public TaggedArray {
 public:
-    static TaggedQueue *Cast(ObjectHeader *object)
+    static TaggedQueue *Cast(TaggedObject *object)
     {
         return reinterpret_cast<TaggedQueue *>(object);
     }

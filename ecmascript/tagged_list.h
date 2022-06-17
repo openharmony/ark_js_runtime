@@ -113,7 +113,7 @@ public:
 class TaggedSingleList : public TaggedList<TaggedSingleList> {
 public:
     static const int ENTRY_SIZE = 2;
-    static TaggedSingleList *Cast(ObjectHeader *obj)
+    static TaggedSingleList *Cast(TaggedObject *obj)
     {
         return static_cast<TaggedSingleList *>(obj);
     }
@@ -152,7 +152,7 @@ public:
 class TaggedDoubleList : public TaggedList<TaggedDoubleList> {
 public:
     static const int ENTRY_SIZE = 3;
-    static TaggedDoubleList *Cast(ObjectHeader *obj)
+    static TaggedDoubleList *Cast(TaggedObject *obj)
     {
         return static_cast<TaggedDoubleList *>(obj);
     }

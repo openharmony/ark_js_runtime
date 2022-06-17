@@ -27,7 +27,7 @@ namespace panda {
 namespace ecmascript {
 class PropertyBox : public TaggedObject {
 public:
-    static PropertyBox *Cast(ObjectHeader *object)
+    static PropertyBox *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsPropertyBox());
         return static_cast<PropertyBox *>(object);

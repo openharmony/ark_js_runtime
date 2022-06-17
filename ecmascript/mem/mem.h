@@ -18,6 +18,10 @@
 
 #include <cstdint>
 
+#ifndef PANDA_TARGET_WINDOWS
+#include <sys/mman.h>
+#endif
+
 #include "ecmascript/ecma_param_configuration.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/mem/mem.h"

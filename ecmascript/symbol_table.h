@@ -27,7 +27,7 @@ namespace panda::ecmascript {
 class SymbolTable : public TaggedHashTable<SymbolTable> {
 public:
     using HashTable = TaggedHashTable<SymbolTable>;
-    static SymbolTable *Cast(ObjectHeader *object)
+    static SymbolTable *Cast(TaggedObject *object)
     {
         return reinterpret_cast<SymbolTable *>(object);
     }

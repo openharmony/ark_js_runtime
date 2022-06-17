@@ -1639,7 +1639,7 @@ bool Serializer::FinalizeTransfer(JSThread *thread, const JSHandle<JSTaggedValue
 {
     for (int idx : arrayBufferIdxs_) {
         JSHandle<JSTaggedValue> element = JSArray::FastGetPropertyByValue(thread, transfer, idx);
-        JSArrayBuffer::Cast(element->GetHeapObject())->Detach(thread);
+        JSArrayBuffer::Cast(element->GetTaggedObject())->Detach(thread);
     }
     return true;
 }

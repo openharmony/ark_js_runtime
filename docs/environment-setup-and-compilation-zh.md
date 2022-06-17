@@ -31,7 +31,7 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 
 	编译arm32版本:
 	```
-	./build.sh --product-name rk3568 --build-target libarkruntime --build-target ark_js_runtime --build-target ld-musl-arm.so.1
+	./build.sh --product-name rk3568 --build-target ark_js_runtime --build-target ld-musl-arm.so.1
 	```
 
 3.  首次编译后增量编译方舟前端：

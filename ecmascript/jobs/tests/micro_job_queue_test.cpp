@@ -62,7 +62,7 @@ public:
 HWTEST_F_L0(MicroJobQueueTest, GetJobQueue)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    array_size_t capacity = 4;
+    uint32_t capacity = 4;
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(123));
 
     JSHandle<TaggedQueue> handlePromiseQueue = factory->NewTaggedQueue(capacity);

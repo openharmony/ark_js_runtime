@@ -68,7 +68,7 @@ JSTaggedValue ICRuntimeStub::CheckPolyHClass(JSTaggedValue cachedValue, JSHClass
 {
     if (!cachedValue.IsWeak()) {
         ASSERT(cachedValue.IsTaggedArray());
-        TaggedArray *array = TaggedArray::Cast(cachedValue.GetHeapObject());
+        TaggedArray *array = TaggedArray::Cast(cachedValue.GetTaggedObject());
         uint32_t length = array->GetLength();
         for (uint32_t i = 0; i < length; i += 2) {  // 2 means one ic, two slot
             auto result = array->Get(i);
@@ -112,7 +112,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::TryLoadICByValue(JSThread *thread, JSTag
         auto hclass = receiver.GetTaggedObject()->GetClass();
         if (firstValue.GetWeakReferentUnChecked() == hclass) {
             ASSERT(HandlerBase::IsElement(secondValue.GetInt()));
-            return LoadElement(JSObject::Cast(receiver.GetHeapObject()), key);
+            return LoadElement(JSObject::Cast(receiver.GetTaggedObject()), key);
         }
         // Check key
         if (firstValue == key) {
@@ -140,7 +140,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::TryStoreICByValue(JSThread *thread, JSTa
     if (receiver.IsHeapObject()) {
         auto hclass = receiver.GetTaggedObject()->GetClass();
         if (firstValue.GetWeakReferentUnChecked() == hclass) {
-            return StoreElement(thread, JSObject::Cast(receiver.GetHeapObject()), key, value, secondValue);
+            return StoreElement(thread, JSObject::Cast(receiver.GetTaggedObject()), key, value, secondValue);
         }
         // Check key
         if (firstValue == key) {
@@ -196,15 +196,15 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::StoreICWithHandler(JSThread *thread, JST
     if (handler.IsInt()) {
         auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
         if (HandlerBase::IsField(handlerInfo)) {
-            StoreField(thread, JSObject::Cast(receiver.GetHeapObject()), value, handlerInfo);
+            StoreField(thread, JSObject::Cast(receiver.GetTaggedObject()), value, handlerInfo);
             return JSTaggedValue::Undefined();
         }
         ASSERT(HandlerBase::IsAccessor(handlerInfo) || HandlerBase::IsInternalAccessor(handlerInfo));
-        auto accessor = LoadFromField(JSObject::Cast(holder.GetHeapObject()), handlerInfo);
+        auto accessor = LoadFromField(JSObject::Cast(holder.GetTaggedObject()), handlerInfo);
         return FastRuntimeStub::CallSetter(thread, JSTaggedValue(receiver), value, accessor);
     }
     if (handler.IsTransitionHandler()) {
-        StoreWithTransition(thread, JSObject::Cast(receiver.GetHeapObject()), value, handler);
+        StoreWithTransition(thread, JSObject::Cast(receiver.GetTaggedObject()), value, handler);
         return JSTaggedValue::Undefined();
     }
     if (handler.IsPrototypeHandler()) {
@@ -224,7 +224,7 @@ JSTaggedValue ICRuntimeStub::StorePrototype(JSThread *thread, JSTaggedValue rece
     PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
     auto cellValue = prototypeHandler->GetProtoCell();
     ASSERT(cellValue.IsProtoChangeMarker());
-    ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetHeapObject());
+    ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetTaggedObject());
     if (cell->GetHasChanged()) {
         return JSTaggedValue::Hole();
     }
@@ -244,7 +244,7 @@ void ICRuntimeStub::StoreWithTransition(JSThread *thread, JSObject *receiver, JS
     ASSERT(HandlerBase::IsField(handlerInfo));
 
     if (!HandlerBase::IsInlinedProps(handlerInfo)) {
-        TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetHeapObject());
+        TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetTaggedObject());
         int capacity = static_cast<int>(array->GetLength());
         int index = HandlerBase::GetOffset(handlerInfo);
         if (index >= capacity) {
@@ -278,7 +278,7 @@ ARK_INLINE void ICRuntimeStub::StoreField(JSThread *thread, JSObject *receiver, 
         SET_VALUE_WITH_BARRIER(thread, receiver, static_cast<uint32_t>(index) * JSTaggedValue::TaggedTypeSize(), value);
         return;
     }
-    TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetHeapObject());
+    TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetTaggedObject());
     ASSERT(index < static_cast<int>(array->GetLength()));
     array->Set(thread, index, value);
 }
@@ -289,13 +289,13 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadFromField(JSObject *receiver, uint32
     if (HandlerBase::IsInlinedProps(handlerInfo)) {
         return JSTaggedValue(GET_VALUE(receiver, static_cast<size_t>(index) * JSTaggedValue::TaggedTypeSize()));
     }
-    return TaggedArray::Cast(receiver->GetProperties().GetHeapObject())->Get(index);
+    return TaggedArray::Cast(receiver->GetProperties().GetTaggedObject())->Get(index);
 }
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::LoadGlobal(JSTaggedValue handler)
 {
     ASSERT(handler.IsPropertyBox());
-    PropertyBox *cell = PropertyBox::Cast(handler.GetHeapObject());
+    PropertyBox *cell = PropertyBox::Cast(handler.GetTaggedObject());
     if (cell->IsInvalid()) {
         return JSTaggedValue::Hole();
     }
@@ -308,7 +308,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::StoreGlobal(JSThread *thread, JSTaggedVa
 {
     INTERPRETER_TRACE(thread, StoreGlobal);
     ASSERT(handler.IsPropertyBox());
-    PropertyBox *cell = PropertyBox::Cast(handler.GetHeapObject());
+    PropertyBox *cell = PropertyBox::Cast(handler.GetTaggedObject());
     if (cell->IsInvalid()) {
         return JSTaggedValue::Hole();
     }
@@ -324,7 +324,7 @@ JSTaggedValue ICRuntimeStub::LoadPrototype(JSThread *thread, JSTaggedValue recei
     PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
     auto cellValue = prototypeHandler->GetProtoCell();
     ASSERT(cellValue.IsProtoChangeMarker());
-    ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetHeapObject());
+    ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetTaggedObject());
     if (cell->GetHasChanged()) {
         return JSTaggedValue::Hole();
     }
@@ -340,13 +340,13 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadICWithHandler(JSThread *thread, JSTa
     if (LIKELY(handler.IsInt())) {
         auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
         if (LIKELY(HandlerBase::IsField(handlerInfo))) {
-            return LoadFromField(JSObject::Cast(holder.GetHeapObject()), handlerInfo);
+            return LoadFromField(JSObject::Cast(holder.GetTaggedObject()), handlerInfo);
         }
         if (HandlerBase::IsNonExist(handlerInfo)) {
             return JSTaggedValue::Undefined();
         }
         ASSERT(HandlerBase::IsAccessor(handlerInfo) || HandlerBase::IsInternalAccessor(handlerInfo));
-        auto accessor = LoadFromField(JSObject::Cast(holder.GetHeapObject()), handlerInfo);
+        auto accessor = LoadFromField(JSObject::Cast(holder.GetTaggedObject()), handlerInfo);
         return FastRuntimeStub::CallGetter(thread, receiver, holder, accessor);
     }
 
@@ -364,7 +364,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadElement(JSObject *receiver, JSTagged
         return JSTaggedValue::Hole();
     }
     uint32_t elementIndex = static_cast<uint32_t>(index);
-    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetHeapObject());
+    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
     if (elements->GetLength() <= elementIndex) {
         return JSTaggedValue::Hole();
     }
@@ -392,7 +392,7 @@ JSTaggedValue ICRuntimeStub::StoreElement(JSThread *thread, JSObject *receiver, 
                 arr->SetArrayLength(thread, elementIndex + 1);
             }
         }
-        TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetHeapObject());
+        TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
         uint32_t capacity = elements->GetLength();
         if (elementIndex >= capacity) {
             if (JSObject::ShouldTransToDict(capacity, elementIndex)) {
@@ -413,7 +413,7 @@ JSTaggedValue ICRuntimeStub::StoreElement(JSThread *thread, JSObject *receiver, 
         PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
         auto cellValue = prototypeHandler->GetProtoCell();
         ASSERT(cellValue.IsProtoChangeMarker());
-        ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetHeapObject());
+        ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetTaggedObject());
         if (cell->GetHasChanged()) {
             return JSTaggedValue::Hole();
         }

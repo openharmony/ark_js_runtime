@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSWeakMap : public JSObject {
 public:
-    static JSWeakMap *Cast(ObjectHeader *object)
+    static JSWeakMap *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSWeakMap());
         return static_cast<JSWeakMap *>(object);
@@ -48,7 +48,7 @@ public:
 
 class JSWeakSet : public JSObject {
 public:
-    static JSWeakSet *Cast(ObjectHeader *object)
+    static JSWeakSet *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSWeakSet());
         return static_cast<JSWeakSet *>(object);

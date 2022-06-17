@@ -31,7 +31,7 @@
 
 	编译arm32版本:
 	```
-	./build.sh --product-name rk3568 --build-target libarkruntime --build-target ark_js_runtime --build-target ld-musl-arm.so.1
+	./build.sh --product-name rk3568 --build-target ark_js_runtime --build-target ld-musl-arm.so.1
 	```
 
 2.  编译方舟前端，编译命令：

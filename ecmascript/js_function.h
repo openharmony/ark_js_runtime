@@ -58,7 +58,6 @@ public:
     static constexpr int PROTOTYPE_INLINE_PROPERTY_INDEX = 2;
     static constexpr int CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX = 1;
 
-    /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
     CAST_CHECK(JSFunction, IsJSFunction);
 
     static void InitializeJSFunction(JSThread *thread, const JSHandle<GlobalEnv> &env, const JSHandle<JSFunction> &func,
@@ -191,7 +190,6 @@ public:
         GetClass()->SetClassConstructor(flag);
     }
 
-    /* -------------- Common API End, Don't change those interface!!! ----------------- */
     static void InitializeJSFunction(JSThread *thread, const JSHandle<JSFunction> &func,
                                      FunctionKind kind = FunctionKind::NORMAL_FUNCTION, bool strict = true);
     static JSHClass *GetOrCreateInitialJSHClass(JSThread *thread, const JSHandle<JSFunction> &fun);

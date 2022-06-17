@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 class JSAPIDeque : public JSObject {
 public:
     static constexpr int DEFAULT_CAPACITY_LENGTH = 8;
-    static JSAPIDeque *Cast(ObjectHeader *object)
+    static JSAPIDeque *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPIDeque());
         return static_cast<JSAPIDeque *>(object);

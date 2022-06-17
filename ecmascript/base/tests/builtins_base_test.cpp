@@ -59,7 +59,7 @@ public:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetArgsArray)
 {
-    array_size_t argvLength = 10;
+    uint32_t argvLength = 10;
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), argvLength);
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(1));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(2));

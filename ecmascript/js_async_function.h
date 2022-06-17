@@ -43,7 +43,7 @@ public:
 
 class JSAsyncFunction : public JSFunction {
 public:
-    static JSAsyncFunction *Cast(ObjectHeader *object)
+    static JSAsyncFunction *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAsyncFunction());
         return static_cast<JSAsyncFunction *>(object);

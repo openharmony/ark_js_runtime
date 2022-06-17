@@ -26,7 +26,6 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
-#include "file_items.h"
 #include "utils/bit_utils.h"
 
 using namespace panda::ecmascript;

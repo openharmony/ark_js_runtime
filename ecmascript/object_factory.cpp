@@ -2912,7 +2912,7 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     return iter;
 }
 
-JSHandle<JSAPIPlainArray> ObjectFactory::NewJSAPIPlainArray(array_size_t capacity)
+JSHandle<JSAPIPlainArray> ObjectFactory::NewJSAPIPlainArray(uint32_t capacity)
 {
     NewObjectHook();
     JSHandle<JSTaggedValue> builtinObj(thread_, thread_->GlobalConstants()->GetPlainArrayFunction());

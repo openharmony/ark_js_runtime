@@ -40,6 +40,7 @@
 
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/region.h"
+#include "libpandabase/utils/asan_interface.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"

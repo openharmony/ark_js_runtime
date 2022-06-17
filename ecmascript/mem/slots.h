@@ -44,7 +44,7 @@ public:
         *reinterpret_cast<JSTaggedType *>(slotAddress_) = value;
     }
 
-    TaggedObject *GetTaggedObjectHeader() const
+    TaggedObject *GetTaggedObject() const
     {
         return reinterpret_cast<TaggedObject *>(GetTaggedType());
     }

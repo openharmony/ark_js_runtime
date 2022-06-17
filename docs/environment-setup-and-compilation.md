@@ -28,7 +28,7 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 
 	arm32:
 	```
-	./build.sh --product-name rk3568 --build-target libarkruntime --build-target ark_js_runtime --build-target ld-musl-arm.so.1
+	./build.sh --product-name rk3568 --build-target ark_js_runtime --build-target ld-musl-arm.so.1
 	```
 
 3.  Compile the ARK frontend after the first compilation:

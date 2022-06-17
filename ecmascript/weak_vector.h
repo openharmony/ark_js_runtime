@@ -23,7 +23,7 @@
 namespace panda::ecmascript {
 class WeakVector : public TaggedArray {
 public:
-    static WeakVector *Cast(ObjectHeader *object)
+    static WeakVector *Cast(TaggedObject *object)
     {
         return static_cast<WeakVector *>(object);
     }

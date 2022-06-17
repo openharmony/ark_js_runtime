@@ -27,11 +27,6 @@ class JSCjsModule final : public JSObject {
 public:
     CAST_CHECK(JSCjsModule, IsJSCjsModule);
 
-    inline static JSCjsModule *Cast(const TaggedObject *object)
-    {
-        return static_cast<JSCjsModule *>(const_cast<TaggedObject *>(object));
-    }
-
     // Instantiate member
     static constexpr size_t JS_CJS_MODULE_OFFSET = JSObject::SIZE;
     ACCESSORS(Id, JS_CJS_MODULE_OFFSET, ID_OFFSET)

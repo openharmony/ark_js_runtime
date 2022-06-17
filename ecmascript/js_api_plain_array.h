@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 class JSAPIPlainArray : public JSObject {
 public:
     static constexpr int DEFAULT_CAPACITY_LENGTH = 8;
-    static JSAPIPlainArray *Cast(ObjectHeader *object)
+    static JSAPIPlainArray *Cast(TaggedObject *object)
     {
         ASSERT(JSTaggedValue(object).IsJSAPIPlainArray());
         return static_cast<JSAPIPlainArray *>(object);

@@ -1156,16 +1156,16 @@ bool JSObject::CreateMethodProperty(JSThread *thread, const JSHandle<JSObject> &
 JSHandle<JSTaggedValue> JSObject::GetMethod(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                             const JSHandle<JSTaggedValue> &key)
 {
-    JSTaggedValue func = FastRuntimeStub::FastGetProperty(thread, obj.GetTaggedValue(), key.GetTaggedValue());
-    if (func.IsUndefined() || func.IsNull()) {
+    JSHandle<JSTaggedValue> func = GetProperty(thread, obj, key).GetValue();
+    RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+    if (func->IsUndefined() || func->IsNull()) {
         return JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined());
     }
 
-    JSHandle<JSTaggedValue> result(thread, func);
-    if (!result->IsCallable()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not Callable", result);
+    if (!func->IsCallable()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not Callable", func);
     }
-    return result;
+    return func;
 }
 
 // 7.3.14 SetIntegrityLevel (O, level)
@@ -1866,7 +1866,7 @@ void ECMAObject::SetHash(int32_t hash)
     if (value.IsHeapObject()) {
         JSThread *thread = this->GetJSThread();
         ASSERT(value.IsTaggedArray());
-        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        TaggedArray *array = TaggedArray::Cast(value.GetTaggedObject());
         array->Set(thread, 0, JSTaggedValue(hash));
     } else {
         Barriers::SetDynPrimitive<JSTaggedType>(this, HASH_OFFSET, JSTaggedValue(hash).GetRawData());
@@ -1878,7 +1878,7 @@ int32_t ECMAObject::GetHash() const
     JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
     JSTaggedValue value(hashField);
     if (value.IsHeapObject()) {
-        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        TaggedArray *array = TaggedArray::Cast(value.GetTaggedObject());
         return array->Get(0).GetInt();
     }
     JSThread *thread = this->GetJSThread();
@@ -1931,7 +1931,7 @@ int32_t ECMAObject::GetNativePointerFieldCount() const
     JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
     JSTaggedValue value(hashField);
     if (value.IsHeapObject()) {
-        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        TaggedArray *array = TaggedArray::Cast(value.GetTaggedObject());
         len = static_cast<int32_t>(array->GetLength() - 1);
     }
     return len;

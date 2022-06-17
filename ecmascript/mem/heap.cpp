@@ -597,10 +597,10 @@ void Heap::UpdateDerivedObjectInStack()
                 " derived:" << derivedAddr << " old Value: " << *derivedAddr << std::endl;
 #endif
             // derived is always bigger than base
-            *derivedAddr = reinterpret_cast<uintptr_t>(base.GetHeapObject()) + (*derivedAddr - baseOldObject);
+            *derivedAddr = reinterpret_cast<uintptr_t>(base.GetTaggedObject()) + (*derivedAddr - baseOldObject);
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << std::hex << "fix base after:" << baseAddr <<
-                " base New Value: " << base.GetHeapObject() <<
+                " base New Value: " << base.GetTaggedObject() <<
                 " derived:" << derivedAddr << " New Value: " << *derivedAddr << std::endl;
 #endif
         }
