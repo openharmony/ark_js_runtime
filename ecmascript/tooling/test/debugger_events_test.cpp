@@ -84,59 +84,39 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToJsonTest)
     EXPECT_EQ(lineNumber, 99);
 }
 
-#ifdef CHANGE_TOJSON
-HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, PausedToJsonTest)
 {
     Paused paused;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     std::vector<std::unique_ptr<CallFrame>> v;
     paused.SetCallFrames(std::move(v))
         .SetReason(PauseReason::EXCEPTION);
-    Local<ObjectRef> object1 = paused.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
+    
+    std::unique_ptr<PtJson> json = paused.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "reason");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("exception", Local<StringRef>(result)->ToString());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrames");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+    std::string reason;
+    ASSERT_EQ(params->GetString("reason", &reason), Result::SUCCESS);
+    EXPECT_EQ("exception", reason);
+    std::unique_ptr<PtJson> callFrames;
+    ASSERT_EQ(params->GetArray("callFrames", &callFrames), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ResumedToJsonTest)
 {
     Resumed resumed;
-    Local<StringRef> tmpStr;
+    std::unique_ptr<PtJson> json = resumed.ToJson();
 
-    Local<ObjectRef> object = resumed.ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "method");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(resumed.GetName(), Local<StringRef>(result)->ToString());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
+    std::string method;
+    ASSERT_EQ(json->GetString("method", &method), Result::SUCCESS);
+    EXPECT_EQ(resumed.GetName(), method);
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToJsonTest)
 {
     ScriptFailedToParse parsed;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     parsed.SetScriptId(100)
         .SetUrl("use/test.js")
         .SetStartLine(0)
@@ -152,111 +132,63 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
         .SetCodeOffset(432)
         .SetScriptLanguage("JavaScript")
         .SetEmbedderName("hh");
-    Local<ObjectRef> object1 = parsed.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
+    
+    std::unique_ptr<PtJson> json = parsed.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("100", Local<StringRef>(result)->ToString());
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("scriptId", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("100", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("url", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("use/test.js", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 0);
+    int tmpInt;
+    ASSERT_EQ(params->GetInt("startLine", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 0);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "startColumn");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 4);
+    ASSERT_EQ(params->GetInt("startColumn", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 4);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "endLine");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    ASSERT_EQ(params->GetInt("endLine", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "endColumn");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    ASSERT_EQ(params->GetInt("endColumn", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 2);
+    ASSERT_EQ(params->GetInt("executionContextId", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 2);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "hash");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("hash", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("hash0001", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
-    ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
+    ASSERT_EQ(params->GetString("sourceMapURL", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("usr/", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "sourceMapURL");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", Local<StringRef>(result)->ToString());
+    bool tmpBool;
+    ASSERT_EQ(params->GetBool("hasSourceURL", &tmpBool), Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
+    ASSERT_EQ(params->GetBool("isModule", &tmpBool), Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "isModule");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
+    ASSERT_EQ(params->GetInt("length", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 34);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "length");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 34);
+    ASSERT_EQ(params->GetInt("codeOffset", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 432);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "codeOffset");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 432);
+    ASSERT_EQ(params->GetString("scriptLanguage", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("JavaScript", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptLanguage");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", Local<StringRef>(result)->ToString());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("embedderName", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("hh", tmpStr);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToJsonTest)
 {
     ScriptParsed parsed;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     parsed.SetScriptId(10)
         .SetUrl("use/test.js")
         .SetStartLine(0)
@@ -273,116 +205,66 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
         .SetCodeOffset(432)
         .SetScriptLanguage("JavaScript")
         .SetEmbedderName("hh");
-    Local<ObjectRef> object1 = parsed.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
+    
+    std::unique_ptr<PtJson> json = parsed.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("10", Local<StringRef>(result)->ToString());
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("scriptId", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("10", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("url", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("use/test.js", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 0);
+    int tmpInt;
+    ASSERT_EQ(params->GetInt("startLine", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 0);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "startColumn");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 4);
+    ASSERT_EQ(params->GetInt("startColumn", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 4);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "endLine");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    ASSERT_EQ(params->GetInt("endLine", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "endColumn");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    ASSERT_EQ(params->GetInt("endColumn", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 2);
+    ASSERT_EQ(params->GetInt("executionContextId", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 2);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "hash");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("hash", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("hash0001", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
-    ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
+    bool tmpBool;
+    ASSERT_EQ(params->GetBool("isLiveEdit", &tmpBool), Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "isLiveEdit");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
+    ASSERT_EQ(params->GetString("sourceMapURL", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("usr/", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "sourceMapURL");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetBool("hasSourceURL", &tmpBool), Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
+    ASSERT_EQ(params->GetBool("isModule", &tmpBool), Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "isModule");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
+    ASSERT_EQ(params->GetInt("length", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 34);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "length");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 34);
+    ASSERT_EQ(params->GetInt("codeOffset", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 432);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "codeOffset");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 432);
+    ASSERT_EQ(params->GetString("scriptLanguage", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("JavaScript", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptLanguage");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", Local<StringRef>(result)->ToString());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
+    ASSERT_EQ(params->GetString("embedderName", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("hh", tmpStr);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToJsonTest)
 {
     ConsoleProfileFinished consoleProfileFinished;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     auto location = std::make_unique<Location>();
     location->SetScriptId(13).SetLine(20);
@@ -394,173 +276,120 @@ HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
         .SetSamples(std::vector<int32_t>{})
         .SetTimeDeltas(std::vector<int32_t>{});
     consoleProfileFinished.SetId("11").SetLocation(std::move(location)).SetProfile(std::move(profile)).SetTitle("001");
-    Local<ObjectRef> object1 = consoleProfileFinished.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(result)->ToString(), "11");
+    std::unique_ptr<PtJson> json = consoleProfileFinished.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("id", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("11", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
+    std::unique_ptr<PtJson> tmpJson;
+    ASSERT_EQ(params->GetObject("location", &tmpJson), Result::SUCCESS);
+    ASSERT_EQ(params->GetObject("profile", &tmpJson), Result::SUCCESS);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(result)->ToString(), "001");
+    ASSERT_EQ(params->GetString("title", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("001", tmpStr);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToJsonTest)
 {
     ConsoleProfileStarted consoleProfileStarted;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     auto location = std::make_unique<Location>();
     location->SetScriptId(17).SetLine(30);
     consoleProfileStarted.SetId("12").SetLocation(std::move(location)).SetTitle("002");
-    Local<ObjectRef> object1 = consoleProfileStarted.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(result)->ToString(), "12");
+    std::unique_ptr<PtJson> json = consoleProfileStarted.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
 
-    Local<ObjectRef> tmpObject = consoleProfileStarted.GetLocation()->ToObject(ecmaVm);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
-    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> tmpResult = tmpObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(tmpResult)->ToString(), "17");
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
-    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
-    tmpResult = tmpObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(tmpResult)->Value(), 30);
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("id", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("12", tmpStr);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(result)->ToString(), "002");
+    std::unique_ptr<PtJson> tmpJson = consoleProfileStarted.GetLocation()->ToJson();
+    ASSERT_EQ(tmpJson->GetString("scriptId", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("17", tmpStr);
+    int tmpInt;
+    ASSERT_EQ(tmpJson->GetInt("lineNumber", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 30);
+
+    ASSERT_EQ(params->GetString("title", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("002", tmpStr);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToJsonTest)
 {
     PreciseCoverageDeltaUpdate preciseCoverageDeltaUpdate;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     std::vector<std::unique_ptr<ScriptCoverage>> v;
     preciseCoverageDeltaUpdate.SetOccasion("percise")
         .SetResult(std::move(v))
         .SetTimestamp(77);
-    Local<ObjectRef> object1 = preciseCoverageDeltaUpdate.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "occasion");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<StringRef>(result)->ToString(), "percise");
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+    std::unique_ptr<PtJson> json = preciseCoverageDeltaUpdate.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    int64_t tmpInt;
+    ASSERT_EQ(params->GetInt64("timestamp", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 77);
+
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("occasion", &tmpStr), Result::SUCCESS);
+    EXPECT_EQ("percise", tmpStr);
+
+    std::unique_ptr<PtJson> tmpArray;
+    ASSERT_EQ(params->GetArray("result", &tmpArray), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToJsonTest)
 {
     HeapStatsUpdate heapStatsUpdate;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     heapStatsUpdate.SetStatsUpdate(std::vector<int32_t> {});
-    Local<ObjectRef> object1 = heapStatsUpdate.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "statsUpdate");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+    std::unique_ptr<PtJson> json = heapStatsUpdate.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    std::unique_ptr<PtJson> tmpArray;
+    ASSERT_EQ(params->GetArray("statsUpdate", &tmpArray), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToJsonTest)
 {
     LastSeenObjectId lastSeenObjectId;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     lastSeenObjectId.SetLastSeenObjectId(10).SetTimestamp(77);
-    Local<ObjectRef> object1 = lastSeenObjectId.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
+    std::unique_ptr<PtJson> json = lastSeenObjectId.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    int64_t tmpInt64;
+    ASSERT_EQ(params->GetInt64("timestamp", &tmpInt64), Result::SUCCESS);
+    EXPECT_EQ(tmpInt64, 77);
+
+    int tmpInt;
+    ASSERT_EQ(params->GetInt("lastSeenObjectId", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToObjectTest)
+HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToJsonTest)
 {
     ReportHeapSnapshotProgress reportHeapSnapshotProgress;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
     reportHeapSnapshotProgress.SetDone(10).SetTotal(100);
-    Local<ObjectRef> object1 = reportHeapSnapshotProgress.ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "done");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "total");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 100);
+    std::unique_ptr<PtJson> json = reportHeapSnapshotProgress.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    int tmpInt;
+    ASSERT_EQ(params->GetInt("done", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
+
+    ASSERT_EQ(params->GetInt("total", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 100);
 }
-#endif
 }  // namespace panda::test
