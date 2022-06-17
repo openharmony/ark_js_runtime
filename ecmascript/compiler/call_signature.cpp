@@ -677,12 +677,13 @@ DEF_CALL_SIGNATURE(ResumeCaughtFrameAndDispatch)
 
 DEF_CALL_SIGNATURE(ResumeUncaughtFrameAndReturn)
 {
-    // 1 : 1 input parameters
-    CallSignature resumeUncaughtFrameAndReturn("ResumeUncaughtFrameAndReturn", 0, 1,
+    // 2 : 2 input parameters
+    CallSignature resumeUncaughtFrameAndReturn("ResumeUncaughtFrameAndReturn", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = resumeUncaughtFrameAndReturn;
-    std::array<VariableType, 1> params = { // 1 : 1 input parameters
+    std::array<VariableType, 2> params = { // 2 : 2 input parameters
         VariableType::NATIVE_POINTER(),
+        VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
