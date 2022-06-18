@@ -434,11 +434,11 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
     Register taggedValue(X2);
     Label nonCallable;
     Label notJSFunction;
-    __ Mov(taggedValue, JSTaggedValue::TAG_MASK);
+    __ Mov(taggedValue, JSTaggedValue::TAG_MARK);
     __ Cmp(jsfunc, taggedValue);
     __ B(Condition::HS, &nonCallable);
     __ Cbz(jsfunc, &nonCallable);
-    __ Mov(taggedValue, JSTaggedValue::TAG_SPECIAL_VALUE);
+    __ Mov(taggedValue, JSTaggedValue::TAG_SPECIAL);
     __ And(taggedValue, jsfunc, taggedValue);
     __ Cbnz(taggedValue, &nonCallable);
 
@@ -1214,7 +1214,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Bind(&notUndefined);
     {
         Label notEcmaObject;
-        __ Mov(temp, Immediate(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN));
+        __ Mov(temp, Immediate(JSTaggedValue::TAG_HEAPOBJECT_MARK));
         __ And(temp, temp, ret);
         __ Cmp(temp, Immediate(0));
         __ B(Condition::NE, &notEcmaObject);

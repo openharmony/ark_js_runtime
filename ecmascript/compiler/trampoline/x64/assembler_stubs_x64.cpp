@@ -383,7 +383,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
         __ Jne(&lNonCallable);
         __ Cmp(0x0, jsFuncReg); // IsHole
         __ Je(&lNonCallable);
-        __ Movabs(JSTaggedValue::TAG_SPECIAL_VALUE, rdx);
+        __ Movabs(JSTaggedValue::TAG_SPECIAL, rdx);
         __ And(jsFuncReg, rdx);  // IsSpecial
         __ Cmp(0x0, rdx);
         __ Jne(&lNonCallable);
@@ -636,7 +636,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Jne(&lNonCallable);
         __ Cmp(0x0, jsFuncReg); // IsHole
         __ Je(&lNonCallable);
-        __ Movabs(JSTaggedValue::TAG_SPECIAL_VALUE, rdx);
+        __ Movabs(JSTaggedValue::TAG_SPECIAL, rdx);
         __ And(jsFuncReg, rdx);  // IsSpecial
         __ Cmp(0x0, rdx);
         __ Jne(&lNonCallable);
@@ -1879,7 +1879,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Bind(&notUndefined);
     {
         Label notEcmaObject;
-        __ Movabs(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN, temp);
+        __ Movabs(JSTaggedValue::TAG_HEAPOBJECT_MARK, temp);
         __ And(ret, temp);
         __ Cmpq(0, temp);
         __ Jne(&notEcmaObject);

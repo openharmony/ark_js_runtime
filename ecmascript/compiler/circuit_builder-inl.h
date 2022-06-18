@@ -53,7 +53,7 @@ GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 GateRef CircuitBuilder::TaggedCastToInt64(GateRef x)
 {
     GateRef tagged = ChangeTaggedPointerToInt64(x);
-    return Int64And(tagged, Int64(~JSTaggedValue::TAG_MASK));
+    return Int64And(tagged, Int64(~JSTaggedValue::TAG_MARK));
 }
 
 GateRef CircuitBuilder::TaggedCastToInt32(GateRef x)
@@ -91,7 +91,7 @@ GateRef CircuitBuilder::IsSpecial(GateRef x, JSTaggedType type)
 }
 GateRef CircuitBuilder::TaggedIsInt(GateRef x)
 {
-    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MARK)),
                  Int64(JSTaggedValue::TAG_INT));
 }
 
@@ -102,7 +102,7 @@ GateRef CircuitBuilder::TaggedIsDouble(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsObject(GateRef x)
 {
-    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MARK)),
                  Int64(JSTaggedValue::TAG_OBJECT));
 }
 
@@ -133,11 +133,9 @@ GateRef CircuitBuilder::TaggedIsException(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
 {
-    return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(Equal(Int64And(x,
-        Int64(~JSTaggedValue::TAG_SPECIAL_MASK)),
-        Int64(0))), Int32Or(SExtInt1ToInt32(NotEqual(Int64And(x,
-        Int64(JSTaggedValue::TAG_SPECIAL_VALUE)),
-        Int64(0))), SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_HOLE)))));
+    return BoolOr(
+        Equal(Int64And(x, Int64(JSTaggedValue::TAG_SPECIAL_MARK)), Int64(JSTaggedValue::TAG_SPECIAL)),
+        TaggedIsHole(x));
 }
 
 GateRef CircuitBuilder::TaggedIsHeapObject(GateRef x)
@@ -168,7 +166,7 @@ GateRef CircuitBuilder::TaggedIsWeak(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(TaggedIsHeapObject(x)),
         SExtInt1ToInt32(Equal(Int64And(x,
-        Int64(JSTaggedValue::TAG_WEAK_MASK)),
+        Int64(JSTaggedValue::TAG_WEAK)),
         Int64(1)))));
 }
 
@@ -212,7 +210,7 @@ GateRef CircuitBuilder::TaggedIsBoolean(GateRef x)
 
 GateRef CircuitBuilder::TaggedGetInt(GateRef x)
 {
-    return TruncInt64ToInt32(Int64And(x, Int64(~JSTaggedValue::TAG_MASK)));
+    return TruncInt64ToInt32(Int64And(x, Int64(~JSTaggedValue::TAG_MARK)));
 }
 
 GateRef CircuitBuilder::TaggedTypeNGC(GateRef x)
