@@ -1464,6 +1464,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(const uint8_t *pc)
         }
         case EcmaOpcode::COPYRESTARGS_PREF_IMM16: {
             uint16_t restIdx = READ_INST_16_1();
+            info.accOut = true;
             info.offset = BytecodeOffset::FOUR;
             info.inputs.emplace_back(Immediate(restIdx));
             break;

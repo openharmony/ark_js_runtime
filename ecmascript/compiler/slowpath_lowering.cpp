@@ -888,7 +888,7 @@ void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> vec;
-    size_t numArgs = acc_.GetNumValueIn(gate) - 1;
+    size_t numArgs = acc_.GetNumValueIn(gate);
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8));
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef newTarget = builder_.Undefined();
@@ -950,9 +950,28 @@ void SlowPathLowering::LowerThrowPatternNonCoercible(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerThrowIfNotObject(GateRef gate, GateRef glue)
 {
-    const int id = RTSTUB_ID(ThrowIfNotObject);
-    GateRef newGate = LowerCallRuntime(glue, id, {});
-    ReplaceHirToThrowCall(gate, newGate);
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef value = acc_.GetValueIn(gate, 0);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    Label isEcmaObject(&builder_);
+    Label notEcmaObject(&builder_);
+    Label isHeapObject(&builder_);
+    builder_.Branch(builder_.TaggedIsHeapObject(value), &isHeapObject, &notEcmaObject);
+    builder_.Bind(&isHeapObject);
+    builder_.Branch(builder_.TaggedObjectIsEcmaObject(value), &isEcmaObject, &notEcmaObject);
+    builder_.Bind(&isEcmaObject);
+    {
+        builder_.Jump(&successExit);
+    }
+    builder_.Bind(&notEcmaObject);
+    {
+        LowerCallRuntime(glue, RTSTUB_ID(ThrowIfNotObject), {}, true);
+        builder_.Jump(&exceptionExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerThrowUndefinedIfHole(GateRef gate, GateRef glue)
@@ -2968,35 +2987,58 @@ void SlowPathLowering::LowerGetUnmappedArgs(GateRef gate, GateRef glue)
     GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
     GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
     std::vector<GateRef> vec;
+    const size_t fixedArgs = 3;
     GateRef argList = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
     auto uses = acc_.ConstUses(argList);
     for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
         vec.emplace_back(*useIt);
     }
     std::vector<GateRef> args({vec.rbegin() + CommonArgIdx::NUM_OF_ARGS, vec.rend()});
+    size_t argsNum = args.size() + fixedArgs;
     args.insert(args.begin(), taggedArgc);
-    const int id = RTSTUB_ID(GetAotUnmapedArgs);
-    GateRef newGate = LowerCallRuntime(glue, id, args);
-    ReplaceHirToCall(gate, newGate);
+    DEFVAlUE(unmappedObj, (&builder_), VariableType::JS_ANY(), builder_.Undefined());
+    Label normalArgs(&builder_);
+    Label restArgs(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    GateRef result;
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    builder_.Branch(builder_.Int32GreaterThan(actualArgc, builder_.Int32(argsNum)), &restArgs, &normalArgs);
+    builder_.Bind(&restArgs);
+    {
+        unmappedObj = LowerCallRuntime(glue, RTSTUB_ID(GetAotUnmapedArgsWithRestArgs), {taggedArgc}, true);
+        builder_.Branch(builder_.IsSpecial(*unmappedObj, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&normalArgs);
+    {
+        unmappedObj = LowerCallRuntime(glue, RTSTUB_ID(GetAotUnmapedArgs), args, true);
+        builder_.Branch(builder_.IsSpecial(*unmappedObj, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        result = *unmappedObj;
+        successControl.emplace_back(builder_.GetState());
+        successControl.emplace_back(builder_.GetDepend());
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl.emplace_back(builder_.GetState());
+        failControl.emplace_back(builder_.GetDepend());
+    }
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerCopyRestArgs(GateRef gate, GateRef glue)
 {
     GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
     GateRef restIdx = acc_.GetValueIn(gate, 0);
-    size_t restId = acc_.GetImmediateId(restIdx);
-    GateRef restNum = builder_.Int64Sub(builder_.ZExtInt32ToInt64(actualArgc), restIdx);
-    GateRef taggedRestNum = builder_.TaggedTypeNGC(restNum);
-    std::vector<GateRef> vec;
-    GateRef argList = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    auto uses = acc_.ConstUses(argList);
-    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
-        vec.emplace_back(*useIt);
-    }
-    std::vector<GateRef> args({vec.rbegin() + CommonArgIdx::NUM_OF_ARGS + restId, vec.rend()});
-    args.insert(args.begin(), taggedRestNum);
-    const int id = RTSTUB_ID(CopyAotRestArgs);
-    GateRef newGate = LowerCallRuntime(glue, id, args);
+    GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
+    GateRef taggedRestId = builder_.TaggedTypeNGC(restIdx);
+    int id = RTSTUB_ID(CopyAotRestArgs);
+    GateRef newGate = LowerCallRuntime(glue, id, {taggedArgc, taggedRestId});
     ReplaceHirToCall(gate, newGate);
 }
 }  // namespace panda::ecmascript

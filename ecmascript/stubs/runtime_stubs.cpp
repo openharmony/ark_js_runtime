@@ -1545,6 +1545,13 @@ DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
     return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(GetAotUnmapedArgsWithRestArgs)
+{
+    RUNTIME_STUBS_HEADER(GetAotUnmapedArgsWithRestArgs);
+    JSTaggedValue actualNumArgs = GetArg(argv, argc, 0);
+    return RuntimeGetAotUnmapedArgsWithRestArgs(thread, actualNumArgs.GetInt()).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(GetAotLexicalEnv)
 {
     RUNTIME_STUBS_HEADER(GetAotLexicalEnv);
@@ -1573,8 +1580,9 @@ DEF_RUNTIME_STUBS(NewAotLexicalEnvWithNameDyn)
 DEF_RUNTIME_STUBS(CopyAotRestArgs)
 {
     RUNTIME_STUBS_HEADER(CopyAotRestArgs);
-    JSTaggedValue restNumArgs = GetArg(argv, argc, 0);
-    return RuntimeCopyAotRestArgs(thread, restNumArgs.GetInt(), argv).GetRawData();
+    JSTaggedValue actualArgc = GetArg(argv, argc, 0);
+    JSTaggedValue restId = GetArg(argv, argc, 1);
+    return RuntimeCopyAotRestArgs(thread, actualArgc.GetInt(), restId.GetInt()).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(NewAotObjDynRange)

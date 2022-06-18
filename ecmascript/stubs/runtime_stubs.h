@@ -214,6 +214,7 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(LdBigInt)                           \
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
+    V(GetAotUnmapedArgsWithRestArgs)      \
     V(CopyAotRestArgs)                    \
     V(NotifyBytecodePcChanged)            \
     V(GetAotLexicalEnv)                   \
@@ -464,11 +465,14 @@ private:
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
     static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
+    static inline JSTaggedValue RuntimeGetAotUnmapedArgsWithRestArgs(JSThread *thread, uint32_t actualNumArgs);
+    static inline JSTaggedValue RuntimeGetUnmapedJSArgumentObj(JSThread *thread,
+                                                               const JSHandle<TaggedArray> &argumentsList);
     static inline JSTaggedValue RuntimeNewAotLexicalEnvDyn(JSThread *thread, uint16_t numVars,
                                                            JSHandle<JSTaggedValue> &currentLexEnv);
     static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
                                                                    JSHandle<JSTaggedValue> &currentLexEnv);
-    static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv);
+    static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t autualArgc, uint32_t restId);
     static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
                                                            const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc);
