@@ -20,6 +20,16 @@
 #include "ecmascript/interpreter/frame_handler.h"
 
 namespace panda::ecmascript {
+JSTaggedType *OptimizedLeaveFrame::GetJsFuncFrameArgv(JSThread *thread) const
+{
+    auto current = GetPrevFrameFp();
+    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(returnAddr);
+    uintptr_t *preFrameSp = reinterpret_cast<uintptr_t *>(const_cast<JSTaggedType *>(current))
+        + delta / sizeof(uintptr_t);
+    JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
+    return argv;
+}
+
 void FrameIterator::Advance()
 {
     ASSERT(!Done());
