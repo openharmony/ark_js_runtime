@@ -1876,7 +1876,7 @@ void AssemblerStubs::CopyArgumentWithArgV(ExtendedAssembler *assembler, Register
     Label copyArgLoop;
     Register arg = __ TempRegister2();
     __ Sub(argVEnd.W(), argc, Immediate(1));
-    __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));
+    __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));  // 3 : 3 means *8
     __ Bind(&copyArgLoop);
     __ Ldr(arg, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     __ Subs(argc, argc, Immediate(1));
