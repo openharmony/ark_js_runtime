@@ -803,20 +803,20 @@ DEF_CALL_SIGNATURE(CallSetter)
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallSetter)
 }
 
-DEF_CALL_SIGNATURE(AotCallArgs)
+DEF_CALL_SIGNATURE(CallOptimizedJSFunction)
 {
     // 6 : 6 input parameters
-    CallSignature aotCallArgs("AotCallArgs", 0, 6,
+    CallSignature CallOptimizedJSFunction("CallOptimizedJSFunction", 0, 6,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = aotCallArgs;
+    *callSign = CallOptimizedJSFunction;
     // 6 : 6 input parameters
     std::array<VariableType, 6> params = {
         VariableType::NATIVE_POINTER(),   // glue
-        VariableType::NATIVE_POINTER(),   // sp
+        VariableType::NATIVE_POINTER(),   // prevFp
         VariableType::JS_ANY(),           // jsfunc
         VariableType::INT32(),            // actualNumArgs
         VariableType::JS_ANY(),           // this
-        VariableType::JS_ANY(),           // new
+        VariableType::JS_ANY(),           // new_target
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
@@ -824,13 +824,13 @@ DEF_CALL_SIGNATURE(AotCallArgs)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
-DEF_CALL_SIGNATURE(AotCallWithArgV)
+DEF_CALL_SIGNATURE(CallOptimizedJSFunctionWithArgV)
 {
-    // 1 : 1 input parameters
-    CallSignature aotCallWithArgV("AotCallWithArgV", 0, 6,
+    // 6 : 6 input parameters
+    CallSignature CallOptimizedJSFunctionWithArgV("CallOptimizedJSFunctionWithArgV", 0, 6,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = aotCallWithArgV;
-    // 1 : 1 input parameters
+    *callSign = CallOptimizedJSFunctionWithArgV;
+    // 6 : 6 input parameters
     std::array<VariableType, 6> params = {
         VariableType::NATIVE_POINTER(),   // glue
         VariableType::NATIVE_POINTER(),   // sp

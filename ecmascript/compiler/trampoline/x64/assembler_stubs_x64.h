@@ -77,9 +77,9 @@ public:
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 
-    static void AotCallArgs(ExtendedAssembler *assembler);
+    static void CallOptimizedJSFunction(ExtendedAssembler *assembler);
 
-    static void AotCallWithArgV(ExtendedAssembler *assembler);
+    static void CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler);
 
 private:
     static void PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister, Register argcRegister,

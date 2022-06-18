@@ -253,6 +253,7 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     Register undefValue(X8);
     __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
     Label copyUndefined;
+    __ Bind(&copyUndefined);
     __ Sub(count, count, Immediate(1));
     __ Str(undefValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, PREINDEX));
     __ Cmp(count, actualNumArgs);
@@ -1895,7 +1896,7 @@ void AssemblerStubs::PushMandatoryJSArgs(ExtendedAssembler *assembler, Register 
 void AssemblerStubs::PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
 {
     Register sp(SP);
-    __ Add(sp, sp, Operand(expectedNumArgs, UXTW, 3));
+    __ Add(sp, sp, Operand(expectedNumArgs, UXTW, 3));  // 3 : 3 means *8
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
 }
 
@@ -1909,9 +1910,10 @@ void AssemblerStubs::PushAotEntryFrame(ExtendedAssembler *assembler, Register pr
     __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Mov(fp, sp);
 
-    Register frameType = __ TempRegister2();;
+    Register frameType = __ TempRegister2();
     // construct frame
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
+    // 2 : 2 means pairs
     __ Stp(prevFp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
 }
 
@@ -1933,18 +1935,9 @@ void AssemblerStubs::PopAotEntryFrame(ExtendedAssembler *assembler, Register glu
     __ Ldr(Register(X30), MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
 }
 
-// AotCallArgs
-// Input:
-//        x0 - glue
-//        x1 - sp
-//        x2 - jsfunc
-//        x3 - actualNumArgs
-//        x4  - thisObj
-//        x5  - newTarget
-//        ...
-void AssemblerStubs::AotCallArgs(ExtendedAssembler *assembler)
+void AssemblerStubs::CallOptimizedJSFunction(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(AotCallArgs));
+    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunction));
     Register sp(SP);
     Register glue(X0);
     Register prevFp(X1);
@@ -1959,6 +1952,7 @@ void AssemblerStubs::AotCallArgs(ExtendedAssembler *assembler)
     Label pushCallThis;
     Register argV(prevFp);
     // save arg0, arg1 to stack
+    // 2 : 2 means pairs
     __ Stp(arg0, arg1, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     {
         TempRegister1Scope temp1Scope(assembler);
@@ -1979,13 +1973,13 @@ void AssemblerStubs::AotCallArgs(ExtendedAssembler *assembler)
     PopAotArgs(assembler, expectedNumArgs);
     PopAotEntryFrame(assembler, glue);
     // pop arg0, arg1 from stack
-    __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE));
+    __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE)); // 2 : 2 means pairs
     __ Ret();
 }
 
-void AssemblerStubs::AotCallWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubs::CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(AotCallWithArgV));
+    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunctionWithArgV));
     Register sp(SP);
     Register glue(X0);
     Register prevFp(X1);

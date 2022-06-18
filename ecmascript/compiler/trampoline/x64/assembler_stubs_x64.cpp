@@ -2049,18 +2049,9 @@ void AssemblerStubsX64::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *a
 {
 }
 
-// AotCallArgs
-// Input:
-//        %rdi - glue
-//        %rsi - sp
-//        %rdx - jsfunc
-//        %rcx - actualNumArgs
-//        %r8  - thisObj
-//        %r9  - newTarget
-//        ...
-void AssemblerStubsX64::AotCallArgs(ExtendedAssembler *assembler)
+void AssemblerStubsX64::CallOptimizedJSFunction(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(AotCallArgs));
+    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunction));
     Register glue(rdi);
     Register prevFp(rsi);
     Register jsfunc(rdx);
@@ -2094,7 +2085,7 @@ void AssemblerStubsX64::AotCallArgs(ExtendedAssembler *assembler)
 }
 
 void AssemblerStubsX64::PushMandatoryJSArgs(ExtendedAssembler *assembler, Register jsfunc,
-                                          Register thisObj, Register newTarget)
+                                            Register thisObj, Register newTarget)
 {
     __ Pushq(thisObj);
     __ Pushq(newTarget);
@@ -2170,17 +2161,9 @@ void AssemblerStubsX64::PopAotEntryFrame(ExtendedAssembler *assembler, Register 
     __ Movq(prevFp, Operand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
 }
 
-// AotCallArgWithArgV
-// Input:
-//        %rdi - glue
-//        %rsi - sp
-//        %rdx - jsfunc
-//        %rcx - actualNumArgs
-//        %r8  - this
-//        %r9  - argV
-void AssemblerStubsX64::AotCallWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubsX64::CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(AotCallWithArgV));
+    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunctionWithArgV));
     Register glue(rdi);
     Register prevFp(rsi);
     Register jsfunc(rdx);
