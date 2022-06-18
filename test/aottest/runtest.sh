@@ -14,16 +14,14 @@
 
 expect_output="expect_output.txt"
 run_output="run_output.txt"
-build_output="build_output.txt"
 test_name=""
 test_dir=$(dirname $0)
-out_dir="out/hispark_taurus/clang_x64/aottest"
-test_all_mode="no"
+product="hispark_taurus"
 run_args=""
-oat_args=""
 run_mode="aot"
+make_opt=""
 cur_dir=$(pwd)
-test_timeout=120
+timeout=20
 
 check_result_fexit()
 {
@@ -60,7 +58,9 @@ echo_fail()
 run_check()
 {
     timeout $@
+    
     # FIXME: run result can not be checked by $? when run unexpectedly exit, such as segmentation fault
+    ret=0
     ret=$?
     if [ $ret -eq 124 -o $ret -eq 142 ]; then
         echo_fail "Run timeout, be killed!"
@@ -75,9 +75,8 @@ usage()
 {
     echo -e "Usage: runtest.sh [options] test_name
     Options:
-    -mode:aot       run on aot mode, default
-    -mode:int       run on interpret mode
-    -mode:asmint    run on asm interpret mode
+    -mode [opt]     run mode option: aot, int(interpret mode), asmint(asm interpret mode)
+    -make [opt]     pass option to make, supported opt: abc, aot, aotd, run, rund, int, intd, asmint, asmintd
     -debug          run on debug mode
     -timeout n      specify seconds of test timeout, n > 0
     -v              show version
@@ -87,18 +86,22 @@ usage()
 while [ $# -gt 0 ]
 do
     case $1 in
-        -mode:aot)
-            run_mode="aot"
-            shift 1 ;;
-        -mode:asmint)
-            run_mode="asmint"
-            shift 1 ;;
-        -mode:int)
-            run_mode="int"
-            shift 1 ;;
+        -mode)
+            run_mode=$2
+            shift 2 ;;
+        -make)
+            make_opt=$2
+            shift 2 ;;
         -debug)
             run_args="$run_args debug=yes"
             shift 1 ;;
+        -arm)
+            product="rk3568"
+            run_args="$run_args arm=yes"
+            shift 1 ;;
+        -timeout)
+            timeout=$2
+            shift 2 ;;
         -v)
             tail -n +14 $test_dir/version
             exit 0 ;;
@@ -123,29 +126,37 @@ fi
 test_name=$(basename $test_name)
 echo "Run test: $test_dir/$test_name ================="
 
+out_dir="out/$product/clang_x64/aottest"
 if [ ! -f "$out_dir/stub.m" ]; then
     make -n -f $test_dir/makefile $run_args stub
-    run_check $test_timeout make -s -f $test_dir/makefile $run_args stub
+    run_check $timeout make -s -f $test_dir/makefile $run_args stub
 fi
 
 make_cmd="make -f $test_dir/makefile $run_args test=$test_name"
+
+if [ -n "$make_opt" ]; then
+    $make_cmd $make_opt
+    check_result_fexit "make $make_opt FAILED"
+    exit 0
+fi
+
 $make_cmd -n abc
-run_check $test_timeout $make_cmd -s abc
+run_check $timeout $make_cmd -s abc
 
 case "$run_mode" in
     "aot")
         $make_cmd -n aot
-        run_check $test_timeout $make_cmd -s aot
+        run_check $timeout $make_cmd -s aot
         $make_cmd -n run
-        run_check $test_timeout $make_cmd -s run > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s run > $out_dir/$test_name/$run_output
         ;;
     "int")
         $make_cmd -n int
-        run_check $test_timeout $make_cmd -s int > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s int > $out_dir/$test_name/$run_output
         ;;
     "asmint")
         $make_cmd -n asmint
-        run_check $test_timeout $make_cmd -s asmint > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s asmint > $out_dir/$test_name/$run_output
         ;;
 esac
 
