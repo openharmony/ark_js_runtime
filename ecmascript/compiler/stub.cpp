@@ -3994,9 +3994,9 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     }
     // 4. call nonNative
     Bind(&methodNotNative);
+    Label funcIsClassConstructor(env);
+    Label funcNotClassConstructor(env);
     if (mode != JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
-        Label funcIsClassConstructor(env);
-        Label funcNotClassConstructor(env);
         Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
         Bind(&funcIsClassConstructor);
         {
@@ -4009,10 +4009,10 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     if (env->IsAsmInterp()) {
         sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
     }
+    Label methodisAot(env);
+    Label methodNotAot(env);
     {
         if (env->IsAsmInterp()) {
-            Label methodisAot(env);
-            Label methodNotAot(env);
             GateRef isAotMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsAotCodeBit::START_BIT);
             Branch(Int64Equal(Int64And(callField, isAotMask), Int64(0)),  &methodNotAot, &methodisAot);
             Bind(&methodisAot);
@@ -4021,23 +4021,23 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 GateRef thisValue = Undefined();
                 switch (mode) {
                     case JSCallMode::CALL_ARG0:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs, thisValue, newTarget });
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_ARG1:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs,
                             thisValue, newTarget, data[0] });
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_ARG2:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs, thisValue, newTarget,  data[0], data[1] });
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_ARG3:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs, thisValue,
                             newTarget, data[0], data[1], data[2] }); // 2: args2
                         Jump(&exit);
@@ -4046,22 +4046,22 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                         thisValue = data[2]; // 2: this input
                         [[fallthrough]];
                     case JSCallMode::CALL_WITH_ARGV:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallWithArgV),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunctionWithArgV),
                             { glue, sp, func, actualNumArgs, thisValue, data[1] });
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallWithArgV),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunctionWithArgV),
                             { glue, sp, func, actualNumArgs, data[2], data[1]});
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_GETTER:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs, data[0], newTarget});
                         Jump(&exit);
                         break;
                     case JSCallMode::CALL_SETTER:
-                        result = CallNGCRuntime(glue, RTSTUB_ID(AotCallArgs),
+                        result = CallNGCRuntime(glue, RTSTUB_ID(CallOptimizedJSFunction),
                             { glue, sp, func, actualNumArgs, data[1], newTarget, data[0]});
                         Jump(&exit);
                         break;

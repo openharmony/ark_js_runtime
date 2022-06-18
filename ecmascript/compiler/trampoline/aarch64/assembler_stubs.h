@@ -100,9 +100,9 @@ public:
 
     static void CallSetter(ExtendedAssembler *assembler);
 
-    static void AotCallArgs(ExtendedAssembler *assembler);
+    static void CallOptimizedJSFunction(ExtendedAssembler *assembler);
 
-    static void AotCallWithArgV(ExtendedAssembler *assembler);
+    static void CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler);
 
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);

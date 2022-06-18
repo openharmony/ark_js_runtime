@@ -49,8 +49,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(PushCallNewAndDispatchNative)          \
     V(PushCallIRangeAndDispatchNative)       \
     V(PushCallIThisRangeAndDispatch)         \
-    V(AotCallArgs)                           \
-    V(AotCallWithArgV)                       \
+    V(CallOptimizedJSFunction)                           \
+    V(CallOptimizedJSFunctionWithArgV)                       \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
     V(ResumeCaughtFrameAndDispatch)          \
