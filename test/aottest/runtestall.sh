@@ -13,23 +13,18 @@
 # limitations under the License.
 
 expected="expect_output.txt"
-generate_mode="no"
-run_mode="aot"
-test_range=""
 run_args=""
-out_dir=""
 test_dir=$(dirname $0)
 cur_dir=$(pwd)
-time_string=`date +%Y%m%d%H%M%S`
 
 usage()
 {
     echo -e "Usage: runtestall.sh [options]
     Options:
-    -mode:aot       run on aot mode, default
-    -mode:int       run on interpret mode
-    -mode:asmint    run on asm interpret mode
+    -mode [opt]     run mode option: aot, int(interpret mode), asmint(asm interpret mode)
+    -make [opt]     pass option to make, supported opt: abc, aot, aotd, run, rund, int, intd, asmint, asmintd
     -debug          run on debug mode
+    -timeout n      specify seconds of test timeout, n > 0
     -v              show version
     -h              print this usage statement"
 }
@@ -47,18 +42,21 @@ echo_fail()
 while [ $# -gt 0 ]
 do
     case $1 in
-        -mode:aot)
-            run_mode="aot"
-            shift 1 ;;
-        -mode:asmint)
-            run_mode="asmint"
-            shift 1 ;;
-        -mode:int)
-            run_mode="int"
-            shift 1 ;;
+        -mode)
+            run_args="$run_args -mode $2"
+            shift 2 ;;
+        -make)
+            run_args="$run_args -make $2"
+            shift 2 ;;
         -debug)
             run_args="$run_args -debug"
             shift 1 ;;
+        -arm)
+            run_args="$run_args -arm"
+            shift 1 ;;
+        -timeout)
+            run_args="$run_args -timeout $2"
+            shift 2 ;;
         -v)
             tail -n +14 $test_dir/version
             exit 0 ;;
@@ -90,7 +88,7 @@ do
     if [ -d "$test" -a -f "$test/$expected" ]; then
         test_name=$(basename $test)
         echo $test_name
-        $test_dir/runtest.sh -mode:$run_mode $run_args $test_name
+        $test_dir/runtest.sh $run_args $test_name
         if [ $? -ne 0 ]; then
             failed_test_array[failed_count]=$test_name
             let failed_count++

@@ -13,7 +13,15 @@
 
 debug:=no
 log:=no
+arm:=no
 args:=
+product:=
+product_dir:=
+qemu:=
+compiler:=
+compiler_args:=
+stub_compiler:=
+jsvm:=
 root_dir=$(shell pwd)
 ifeq ($(test), )
 	test_name=helloaot
@@ -25,19 +33,43 @@ ifeq ($(log), yes)
 	args+= --log-compiled-methods=all
 endif
 
-ifeq ($(debug), no)
-	export LD_LIBRARY_PATH=$(root_dir)/out/hispark_taurus/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
-	bin_dir=$(root_dir)/out/hispark_taurus/clang_x64/ark/ark_js_runtime
+ifeq ($(arm), no)
+	product=hispark_taurus
+	product_dir=$(root_dir)/out/$(product)
+	ifeq ($(debug), no)
+		export LD_LIBRARY_PATH=$(product_dir)/clang_x64/ark/ark:$(product_dir)/clang_x64/ark/ark_js_runtime:$(product_dir)/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+		compiler=$(product_dir)/clang_x64/ark/ark_js_runtime/ark_aot_compiler
+		stub_compiler=$(product_dir)/clang_x64/ark/ark_js_runtime/ark_stub_compiler
+		jsvm=$(product_dir)/clang_x64/ark/ark_js_runtime/ark_js_vm
+	else
+		export LD_LIBRARY_PATH=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark:$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(product_dir)/clang_x64/lib.unstripped/clang_x64/ark/ark:$(product_dir)/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(product_dir)/clang_x64/lib.unstripped/clang_x64/test/test:$(product_dir)/clang_x64/lib.unstripped/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+		compiler=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime/ark_aot_compiler
+		stub_compiler=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime/ark_stub_compiler
+		jsvm=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime/ark_js_vm
+	endif
 else
-	export LD_LIBRARY_PATH=$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/test/test:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
-	bin_dir=$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime
+	product=rk3568
+	product_dir=$(root_dir)/out/$(product)
+	qemu=qemu-aarch64
+	compiler_args+= --target-triple=aarch64-unknown-linux-gnu
+	ifeq ($(debug), no)
+		export LD_LIBRARY_PATH=$(product_dir)/ark/ark/:$(product_dir)/ark/ark_js_runtime/:prebuilts/clang/ohos/linux-x86_64/llvm/lib/aarch64-linux-ohos/c++/:$(product_dir)/utils/utils_base/:$(product_dir)/thirdparty/icu:$(product_dir)/securec/thirdparty_bounds_checking_function/:$(product_dir)/hiviewdfx/hitrace_native/:$(product_dir)/clang_x64/ark/ark/:$(product_dir)/clang_x64/thirdparty/icu/:$(product_dir)/clang_x64/ark/ark_js_runtime
+		compiler=$(product_dir)/clang_x64/ark/ark_js_runtime/ark_aot_compiler
+		stub_compiler=$(product_dir)/clang_x64/ark/ark_js_runtime/ark_stub_compiler
+		jsvm=$(product_dir)/ark/ark_js_runtime/ark_js_vm
+	else
+		export LD_LIBRARY_PATH=$(product_dir)/lib.unstripped/ark/ark/:$(product_dir)/lib.unstripped/ark/ark_js_runtime/:prebuilts/clang/ohos/linux-x86_64/llvm/lib/aarch64-linux-ohos/c++/:$(product_dir)/lib.unstripped/utils/utils_base/:$(product_dir)/lib.unstripped/thirdparty/icu:$(product_dir)/lib.unstripped/securec/thirdparty_bounds_checking_function/:$(product_dir)/lib.unstripped/hiviewdfx/hitrace_native/:$(product_dir)/lib.unstripped/clang_x64/ark/ark/:$(product_dir)/clang_x64/lib.unstripped/clang_x64/thirdparty/icu/:$(product_dir)/clang_x64/lib.unstripped/clang_x64/ark/ark/:$(product_dir)/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime
+		compiler=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime/ark_aot_compiler
+		stub_compiler=$(product_dir)/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime/ark_stub_compiler
+		jsvm=$(product_dir)/exe.unstripped/ark/ark_js_runtime/ark_js_vm
+	endif
 endif
 
-ts2abc=$(root_dir)/out/hispark_taurus/clang_x64/obj/ark/ts2abc/ts2panda/build/src/index.js
 test_dir=$(root_dir)/ark/js_runtime/test/aottest
-out_dir=$(root_dir)/out/hispark_taurus/clang_x64/aottest
+ts2abc=$(product_dir)/clang_x64/obj/ark/ts2abc/ts2panda/build/src/index.js
+out_dir=$(product_dir)/clang_x64/aottest
 case_dir=$(out_dir)/$(test_name)
-com_stub_args= --asm-interpreter=true --stub-file=$(out_dir)/stub.m
+com_stub_args=--asm-interpreter=true --stub-file=$(out_dir)/stub.m
 
 abc:
 	mkdir -p $(case_dir)
@@ -45,34 +77,53 @@ abc:
 
 stub:
 	mkdir -p $(out_dir)
-	cd $(out_dir) && $(bin_dir)/ark_stub_compiler $(args) --stub-file=stub.m
+	$(stub_compiler) $(compiler_args) $(args) --stub-file=$(out_dir)/stub.m
+	
 aot:
-	cd $(case_dir) && $(bin_dir)/ark_aot_compiler $(args) $(test_name).abc
+	$(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(case_dir)/$(test_name).abc
 
 aotd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_aot_compiler $(args) $(test_name).abc
+	$(gdb) $(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(case_dir)/$(test_name).abc
 
 run:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) --aot-file=aot_file.m $(com_stub_args) $(test_name).abc
+	$(qemu) $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
 
 rund:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) --aot-file=aot_file.m $(com_stub_args) $(test_name).abc
+ifeq ($(arm), no)
+	gdb --args $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
+else
+	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
+	@echo "gdb-server connect: target remote:123456"
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
+endif
 
 int:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) $(test_name).abc
+	$(qemu) $(jsvm) $(args) $(case_dir)/$(test_name).abc
 
 intd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) $(test_name).abc
+ifeq ($(arm), no)
+	gdb --args $(jsvm) $(args) $(case_dir)/$(test_name).abc
+else
+	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
+	@echo "gdb-server connect: target remote:123456"
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(case_dir)/$(test_name).abc
+endif
 
 asmint:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) $(com_stub_args) $(test_name).abc
+	$(qemu) $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
 
 asmintd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) $(com_stub_args) $(test_name).abc
+ifeq ($(arm), no)
+	gdb --args $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
+else
+	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
+	@echo "gdb-server connect: target remote:123456"
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
+endif
 
 env:
 	@echo "root_dir=$(root_dir)"
 	@echo "test_name=$(test_name)"
 	@echo "test_dir=$(test_dir)"
 	@echo "case_dir=$(case_dir)"
-	@echo "LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)"
+	@echo "export LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)"
