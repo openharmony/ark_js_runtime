@@ -16,9 +16,9 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"

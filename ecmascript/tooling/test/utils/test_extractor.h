@@ -16,19 +16,16 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 
-#include "ecmascript/mem/c_string.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 
 namespace panda::ecmascript::tooling::test {
 using EntityId = panda_file::File::EntityId;
-using panda::ecmascript::CString;
-using panda::ecmascript::tooling::PtJSExtractor;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SourceLocation {
-    CString path;  // NOLINT(misc-non-private-member-variables-in-classes)
-    size_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
-    size_t column;
+    std::string path;  // NOLINT(misc-non-private-member-variables-in-classes)
+    int32_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
+    int32_t column;
 
     bool operator==(const SourceLocation &other) const
     {
@@ -41,14 +38,12 @@ struct SourceLocation {
     }
 };
 
-class TestExtractor : public PtJSExtractor {
+class TestExtractor : public JSPtExtractor {
 public:
-    explicit TestExtractor(const panda_file::File *pandaFileData) : PtJSExtractor(pandaFileData) {}
+    explicit TestExtractor(const JSPandaFile *pandaFile) : JSPtExtractor(pandaFile) {}
     ~TestExtractor() = default;
 
     std::pair<EntityId, uint32_t> GetBreakpointAddress(const SourceLocation &sourceLocation);
-
-    std::vector<panda_file::LocalVariableInfo> GetLocalVariableInfo(EntityId methodId, size_t offset);
 
     SourceLocation GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset);
 };

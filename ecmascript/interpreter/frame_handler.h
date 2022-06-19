@@ -31,6 +31,8 @@ class ConstantPool;
 
 class FrameHandler {
 public:
+    explicit FrameHandler(const JSThread *thread)
+        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())) {}
     explicit FrameHandler(JSTaggedType *sp) : sp_(sp) {}
     ~FrameHandler() = default;
     DEFAULT_COPY_SEMANTIC(FrameHandler);

@@ -14,16 +14,17 @@
  */
 
 #include "ecmascript/tooling/debugger_service.h"
-
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/tooling/protocol_handler.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
 void InitializeDebugger(const std::function<void(const std::string &)> &onResponse, ::panda::ecmascript::EcmaVM *vm)
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
-        LOG(FATAL, DEBUGGER) << "JS debugger was initialized";
+        LOG(ERROR, DEBUGGER) << "JS debugger was initialized";
+        return;
     }
     vm->GetJsDebuggerManager()->SetDebuggerHandler(new ProtocolHandler(onResponse, vm));
 }
@@ -39,7 +40,7 @@ void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::s
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
-        handler->ProcessCommand(message.c_str());
+        handler->ProcessCommand(message);
     }
 }
 }  // namespace panda::ecmascript::tooling

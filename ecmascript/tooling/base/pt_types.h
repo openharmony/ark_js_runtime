@@ -19,113 +19,105 @@
 #include <memory>
 #include <optional>
 
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/c_string.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
+#include "ecmascript/tooling/base/pt_json.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::CList;
-using panda::ecmascript::CMap;
-using panda::ecmascript::CQueue;
-using panda::ecmascript::CString;
-using panda::ecmascript::CVector;
-
 // ========== Base types begin
 class PtBaseTypes {
 public:
     PtBaseTypes() = default;
     virtual ~PtBaseTypes() = default;
-    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) = 0;
-
-protected:
-    static Local<ObjectRef> NewObject(const EcmaVM *ecmaVm);
+    virtual std::unique_ptr<PtJson> ToJson() const = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseTypes);
     NO_MOVE_SEMANTIC(PtBaseTypes);
 
     friend class ProtocolHandler;
-    friend class JSBackend;
+    friend class DebuggerImpl;
 };
 
 // ========== Debugger types begin
 // Debugger.BreakpointId
-using BreakpointId = CString;
+using BreakpointId = std::string;
 struct BreakpointDetails {
     static BreakpointId ToString(const BreakpointDetails &metaData)
     {
-        return "id:" + DebuggerApi::ToCString(metaData.line_) + ":" + DebuggerApi::ToCString(metaData.column_) + ":" +
-               metaData.url_;
+        return "id:" + std::to_string(metaData.line_) + ":" + std::to_string(metaData.column_) + ":" +
+            metaData.url_;
     }
 
     static bool ParseBreakpointId(const BreakpointId &id, BreakpointDetails *metaData)
     {
         auto lineStart = id.find(':');
-        if (lineStart == CString::npos) {
+        if (lineStart == std::string::npos) {
             return false;
         }
         auto columnStart = id.find(':', lineStart + 1);
-        if (columnStart == CString::npos) {
+        if (columnStart == std::string::npos) {
             return false;
         }
         auto urlStart = id.find(':', columnStart + 1);
-        if (urlStart == CString::npos) {
+        if (urlStart == std::string::npos) {
             return false;
         }
-        CString lineStr = id.substr(lineStart + 1, columnStart - lineStart - 1);
-        CString columnStr = id.substr(columnStart + 1, urlStart - columnStart - 1);
-        CString url = id.substr(urlStart + 1);
-        metaData->line_ = DebuggerApi::CStringToULL(lineStr);
-        metaData->column_ = DebuggerApi::CStringToULL(columnStr);
+        std::string lineStr = id.substr(lineStart + 1, columnStart - lineStart - 1);
+        std::string columnStr = id.substr(columnStart + 1, urlStart - columnStart - 1);
+        std::string url = id.substr(urlStart + 1);
+        metaData->line_ = std::stoi(lineStr);
+        metaData->column_ = std::stoi(columnStr);
         metaData->url_ = url;
 
         return true;
     }
 
-    size_t line_ {0};
-    size_t column_ {0};
-    CString url_ {};
+    int32_t line_ {0};
+    int32_t column_ {0};
+    std::string url_ {};
 };
 
 // Debugger.CallFrameId
-using CallFrameId = CString;
+using CallFrameId = int32_t;
 
 // ========== Runtime types begin
 // Runtime.ScriptId
-using ScriptId = CString;
+using ScriptId = int32_t;
 
 // Runtime.RemoteObjectId
-using RemoteObjectId = CString;
+
+using RemoteObjectId = int32_t;
 
 // Runtime.ExecutionContextId
 using ExecutionContextId = int32_t;
 
 // Runtime.UnserializableValue
-using UnserializableValue = CString;
+using UnserializableValue = std::string;
 
 // Runtime.UniqueDebuggerId
-using UniqueDebuggerId = CString;
+using UniqueDebuggerId = int32_t;
 
 // Runtime.RemoteObject
 class RemoteObject : public PtBaseTypes {
 public:
     RemoteObject() = default;
-    virtual ~RemoteObject() override = default;
+    ~RemoteObject() override = default;
 
-    static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    static std::unique_ptr<RemoteObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    static std::unique_ptr<RemoteObject> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     /*
      * @see {#ObjectType}
      */
-    CString GetType() const
+    const std::string &GetType() const
     {
         return type_;
     }
 
-    RemoteObject &SetType(const CString &type)
+    RemoteObject &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -133,28 +125,30 @@ public:
     /*
      * @see {#ObjectSubType}
      */
-    CString GetSubType() const
+    const std::string &GetSubType() const
     {
-        return subtype_.value_or("");
+        ASSERT(HasSubType());
+        return subType_.value();
     }
 
-    RemoteObject &SetSubType(const CString &type)
+    RemoteObject &SetSubType(const std::string &type)
     {
-        subtype_ = type;
+        subType_ = type;
         return *this;
     }
 
     bool HasSubType() const
     {
-        return subtype_.has_value();
+        return subType_.has_value();
     }
 
-    CString GetClassName() const
+    const std::string &GetClassName() const
     {
-        return className_.value_or("");
+        ASSERT(HasClassName());
+        return className_.value();
     }
 
-    RemoteObject &SetClassName(const CString &className)
+    RemoteObject &SetClassName(const std::string &className)
     {
         className_ = className;
         return *this;
@@ -170,7 +164,7 @@ public:
         return value_.value_or(Local<JSValueRef>());
     }
 
-    RemoteObject &SetValue(const Local<JSValueRef> &value)
+    RemoteObject &SetValue(Local<JSValueRef> value)
     {
         value_ = value;
         return *this;
@@ -181,9 +175,10 @@ public:
         return value_.has_value();
     }
 
-    UnserializableValue GetUnserializableValue() const
+    const UnserializableValue &GetUnserializableValue() const
     {
-        return unserializableValue_.value_or("");
+        ASSERT(HasUnserializableValue());
+        return unserializableValue_.value();
     }
 
     RemoteObject &SetUnserializableValue(const UnserializableValue &unserializableValue)
@@ -197,12 +192,13 @@ public:
         return unserializableValue_.has_value();
     }
 
-    CString GetDescription() const
+    const std::string &GetDescription() const
     {
-        return description_.value_or("");
+        ASSERT(HasDescription());
+        return description_.value();
     }
 
-    RemoteObject &SetDescription(const CString &description)
+    RemoteObject &SetDescription(const std::string &description)
     {
         description_ = description;
         return *this;
@@ -215,18 +211,12 @@ public:
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value_or("");
+        return objectId_.value_or(0);
     }
 
-    RemoteObject &SetObjectId(const RemoteObjectId &objectId)
+    RemoteObject &SetObjectId(RemoteObjectId objectId)
     {
         objectId_ = objectId;
-        return *this;
-    }
-
-    RemoteObject &SetObjectId(uint32_t objectId)
-    {
-        objectId_ = DebuggerApi::ToCString(objectId);
         return *this;
     }
 
@@ -236,16 +226,16 @@ public:
     }
 
     struct TypeName {
-        static const CString Object;     // NOLINT (readability-identifier-naming)
-        static const CString Function;   // NOLINT (readability-identifier-naming)
-        static const CString Undefined;  // NOLINT (readability-identifier-naming)
-        static const CString String;     // NOLINT (readability-identifier-naming)
-        static const CString Number;     // NOLINT (readability-identifier-naming)
-        static const CString Boolean;    // NOLINT (readability-identifier-naming)
-        static const CString Symbol;     // NOLINT (readability-identifier-naming)
-        static const CString Bigint;     // NOLINT (readability-identifier-naming)
-        static const CString Wasm;       // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Object;     // NOLINT (readability-identifier-naming)
+        static const std::string Function;   // NOLINT (readability-identifier-naming)
+        static const std::string Undefined;  // NOLINT (readability-identifier-naming)
+        static const std::string String;     // NOLINT (readability-identifier-naming)
+        static const std::string Number;     // NOLINT (readability-identifier-naming)
+        static const std::string Boolean;    // NOLINT (readability-identifier-naming)
+        static const std::string Symbol;     // NOLINT (readability-identifier-naming)
+        static const std::string Bigint;     // NOLINT (readability-identifier-naming)
+        static const std::string Wasm;       // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Object || type == Function || type == Undefined || type == String || type == Number ||
                    type == Boolean || type == Symbol || type == Bigint || type == Wasm;
@@ -253,30 +243,30 @@ public:
     };
 
     struct SubTypeName {
-        static const CString Array;        // NOLINT (readability-identifier-naming)
-        static const CString Null;         // NOLINT (readability-identifier-naming)
-        static const CString Node;         // NOLINT (readability-identifier-naming)
-        static const CString Regexp;       // NOLINT (readability-identifier-naming)
-        static const CString Date;         // NOLINT (readability-identifier-naming)
-        static const CString Map;          // NOLINT (readability-identifier-naming)
-        static const CString Set;          // NOLINT (readability-identifier-naming)
-        static const CString Weakmap;      // NOLINT (readability-identifier-naming)
-        static const CString Weakset;      // NOLINT (readability-identifier-naming)
-        static const CString Iterator;     // NOLINT (readability-identifier-naming)
-        static const CString Generator;    // NOLINT (readability-identifier-naming)
-        static const CString Error;        // NOLINT (readability-identifier-naming)
-        static const CString Proxy;        // NOLINT (readability-identifier-naming)
-        static const CString Promise;      // NOLINT (readability-identifier-naming)
-        static const CString Typedarray;   // NOLINT (readability-identifier-naming)
-        static const CString Arraybuffer;  // NOLINT (readability-identifier-naming)
-        static const CString Dataview;     // NOLINT (readability-identifier-naming)
-        static const CString I32;          // NOLINT (readability-identifier-naming)
-        static const CString I64;          // NOLINT (readability-identifier-naming)
-        static const CString F32;          // NOLINT (readability-identifier-naming)
-        static const CString F64;          // NOLINT (readability-identifier-naming)
-        static const CString V128;         // NOLINT (readability-identifier-naming)
-        static const CString Externref;    // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Array;        // NOLINT (readability-identifier-naming)
+        static const std::string Null;         // NOLINT (readability-identifier-naming)
+        static const std::string Node;         // NOLINT (readability-identifier-naming)
+        static const std::string Regexp;       // NOLINT (readability-identifier-naming)
+        static const std::string Date;         // NOLINT (readability-identifier-naming)
+        static const std::string Map;          // NOLINT (readability-identifier-naming)
+        static const std::string Set;          // NOLINT (readability-identifier-naming)
+        static const std::string Weakmap;      // NOLINT (readability-identifier-naming)
+        static const std::string Weakset;      // NOLINT (readability-identifier-naming)
+        static const std::string Iterator;     // NOLINT (readability-identifier-naming)
+        static const std::string Generator;    // NOLINT (readability-identifier-naming)
+        static const std::string Error;        // NOLINT (readability-identifier-naming)
+        static const std::string Proxy;        // NOLINT (readability-identifier-naming)
+        static const std::string Promise;      // NOLINT (readability-identifier-naming)
+        static const std::string Typedarray;   // NOLINT (readability-identifier-naming)
+        static const std::string Arraybuffer;  // NOLINT (readability-identifier-naming)
+        static const std::string Dataview;     // NOLINT (readability-identifier-naming)
+        static const std::string I32;          // NOLINT (readability-identifier-naming)
+        static const std::string I64;          // NOLINT (readability-identifier-naming)
+        static const std::string F32;          // NOLINT (readability-identifier-naming)
+        static const std::string F64;          // NOLINT (readability-identifier-naming)
+        static const std::string V128;         // NOLINT (readability-identifier-naming)
+        static const std::string Externref;    // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Array || type == Null || type == Node || type == Regexp || type == Map || type == Set ||
                    type == Weakmap || type == Iterator || type == Generator || type == Error || type == Proxy ||
@@ -285,27 +275,27 @@ public:
         }
     };
     struct ClassName {
-        static const CString Object;          // NOLINT (readability-identifier-naming)
-        static const CString Function;        // NOLINT (readability-identifier-naming)
-        static const CString Array;           // NOLINT (readability-identifier-naming)
-        static const CString Regexp;          // NOLINT (readability-identifier-naming)
-        static const CString Date;            // NOLINT (readability-identifier-naming)
-        static const CString Map;             // NOLINT (readability-identifier-naming)
-        static const CString Set;             // NOLINT (readability-identifier-naming)
-        static const CString Weakmap;         // NOLINT (readability-identifier-naming)
-        static const CString Weakset;         // NOLINT (readability-identifier-naming)
-        static const CString ArrayIterator;   // NOLINT (readability-identifier-naming)
-        static const CString StringIterator;  // NOLINT (readability-identifier-naming)
-        static const CString SetIterator;     // NOLINT (readability-identifier-naming)
-        static const CString MapIterator;     // NOLINT (readability-identifier-naming)
-        static const CString Iterator;        // NOLINT (readability-identifier-naming)
-        static const CString Error;           // NOLINT (readability-identifier-naming)
-        static const CString Proxy;           // NOLINT (readability-identifier-naming)
-        static const CString Promise;         // NOLINT (readability-identifier-naming)
-        static const CString Typedarray;      // NOLINT (readability-identifier-naming)
-        static const CString Arraybuffer;     // NOLINT (readability-identifier-naming)
-        static const CString Global;          // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Object;          // NOLINT (readability-identifier-naming)
+        static const std::string Function;        // NOLINT (readability-identifier-naming)
+        static const std::string Array;           // NOLINT (readability-identifier-naming)
+        static const std::string Regexp;          // NOLINT (readability-identifier-naming)
+        static const std::string Date;            // NOLINT (readability-identifier-naming)
+        static const std::string Map;             // NOLINT (readability-identifier-naming)
+        static const std::string Set;             // NOLINT (readability-identifier-naming)
+        static const std::string Weakmap;         // NOLINT (readability-identifier-naming)
+        static const std::string Weakset;         // NOLINT (readability-identifier-naming)
+        static const std::string ArrayIterator;   // NOLINT (readability-identifier-naming)
+        static const std::string StringIterator;  // NOLINT (readability-identifier-naming)
+        static const std::string SetIterator;     // NOLINT (readability-identifier-naming)
+        static const std::string MapIterator;     // NOLINT (readability-identifier-naming)
+        static const std::string Iterator;        // NOLINT (readability-identifier-naming)
+        static const std::string Error;           // NOLINT (readability-identifier-naming)
+        static const std::string Proxy;           // NOLINT (readability-identifier-naming)
+        static const std::string Promise;         // NOLINT (readability-identifier-naming)
+        static const std::string Typedarray;      // NOLINT (readability-identifier-naming)
+        static const std::string Arraybuffer;     // NOLINT (readability-identifier-naming)
+        static const std::string Global;          // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Object || type == Array || type == Regexp || type == Date || type == Map || type == Set ||
                    type == Weakmap || type == Weakset || type == ArrayIterator || type == StringIterator ||
@@ -313,98 +303,76 @@ public:
                    type == Promise || type == Typedarray || type == Arraybuffer || type == Function;
         }
     };
-    static const CString ObjectDescription;          // NOLINT (readability-identifier-naming)
-    static const CString GlobalDescription;          // NOLINT (readability-identifier-naming)
-    static const CString ProxyDescription;           // NOLINT (readability-identifier-naming)
-    static const CString PromiseDescription;         // NOLINT (readability-identifier-naming)
-    static const CString ArrayIteratorDescription;   // NOLINT (readability-identifier-naming)
-    static const CString StringIteratorDescription;  // NOLINT (readability-identifier-naming)
-    static const CString SetIteratorDescription;     // NOLINT (readability-identifier-naming)
-    static const CString MapIteratorDescription;     // NOLINT (readability-identifier-naming)
-    static const CString WeakMapDescription;         // NOLINT (readability-identifier-naming)
-    static const CString WeakSetDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string ObjectDescription;          // NOLINT (readability-identifier-naming)
+    static const std::string GlobalDescription;          // NOLINT (readability-identifier-naming)
+    static const std::string ProxyDescription;           // NOLINT (readability-identifier-naming)
+    static const std::string PromiseDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string ArrayIteratorDescription;   // NOLINT (readability-identifier-naming)
+    static const std::string StringIteratorDescription;  // NOLINT (readability-identifier-naming)
+    static const std::string SetIteratorDescription;     // NOLINT (readability-identifier-naming)
+    static const std::string MapIteratorDescription;     // NOLINT (readability-identifier-naming)
+    static const std::string WeakMapDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string WeakSetDescription;         // NOLINT (readability-identifier-naming)
 
 private:
     NO_COPY_SEMANTIC(RemoteObject);
     NO_MOVE_SEMANTIC(RemoteObject);
 
-    CString type_ {};
-    std::optional<CString> subtype_ {};
-    std::optional<CString> className_ {};
+    std::string type_ {};
+    std::optional<std::string> subType_ {};
+    std::optional<std::string> className_ {};
     std::optional<Local<JSValueRef>> value_ {};
     std::optional<UnserializableValue> unserializableValue_ {};
-    std::optional<CString> description_ {};
+    std::optional<std::string> description_ {};
     std::optional<RemoteObjectId> objectId_ {};
 };
 
 class PrimitiveRemoteObject final : public RemoteObject {
 public:
-    explicit PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    virtual ~PrimitiveRemoteObject() override = default;
+    PrimitiveRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    ~PrimitiveRemoteObject() override = default;
 };
 
 class StringRemoteObject final : public RemoteObject {
 public:
-    explicit StringRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::String).SetValue(tagged);
-    }
+    StringRemoteObject(const EcmaVM *ecmaVm, Local<StringRef> tagged);
     virtual ~StringRemoteObject() = default;
 };
 
 class SymbolRemoteObject final : public RemoteObject {
 public:
-    explicit SymbolRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::Symbol).SetDescription(DescriptionForSymbol(ecmaVm, Local<SymbolRef>(tagged)));
-    }
-    virtual ~SymbolRemoteObject() override = default;
+    SymbolRemoteObject(const EcmaVM *ecmaVm, Local<SymbolRef> tagged);
+    ~SymbolRemoteObject() override = default;
 
 private:
-    CString DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const;
+    std::string DescriptionForSymbol(const EcmaVM *ecmaVm, Local<SymbolRef> tagged) const;
 };
 
 class FunctionRemoteObject final : public RemoteObject {
 public:
-    FunctionRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
-    {
-        SetType(RemoteObject::TypeName::Function)
-            .SetClassName(RemoteObject::ClassName::Function)
-            .SetDescription(DescriptionForFunction(ecmaVm, tagged));
-    }
-    virtual ~FunctionRemoteObject() override = default;
+    FunctionRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    ~FunctionRemoteObject() override = default;
 
 private:
-    CString DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const;
+    std::string DescriptionForFunction(const EcmaVM *ecmaVm, Local<FunctionRef> tagged) const;
 };
 
 class ObjectRemoteObject final : public RemoteObject {
 public:
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname)
-    {
-        SetType(RemoteObject::TypeName::Object)
-            .SetClassName(classname)
-            .SetDescription(DescriptionForObject(ecmaVm, tagged));
-    }
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname,
-        const CString &subtype)
-    {
-        SetType(RemoteObject::TypeName::Object)
-            .SetSubType(subtype)
-            .SetClassName(classname)
-            .SetDescription(DescriptionForObject(ecmaVm, tagged));
-    }
-    virtual ~ObjectRemoteObject() override = default;
-    static CString DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged, const std::string &classname);
+    ObjectRemoteObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged, const std::string &classname,
+        const std::string &subtype);
+    ~ObjectRemoteObject() override = default;
+    static std::string DescriptionForObject(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
 
 private:
-    static CString DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged);
-    static CString DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged);
-    static CString DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged);
-    static CString DescriptionForMap(const Local<MapRef> &tagged);
-    static CString DescriptionForSet(const Local<SetRef> &tagged);
-    static CString DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    static CString DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged);
+    static std::string DescriptionForArray(const EcmaVM *ecmaVm, Local<ArrayRef> tagged);
+    static std::string DescriptionForRegexp(const EcmaVM *ecmaVm, Local<RegExpRef> tagged);
+    static std::string DescriptionForDate(const EcmaVM *ecmaVm, Local<DateRef> tagged);
+    static std::string DescriptionForMap(Local<MapRef> tagged);
+    static std::string DescriptionForSet(Local<SetRef> tagged);
+    static std::string DescriptionForError(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged);
 };
 
 // Runtime.ExceptionDetails
@@ -412,8 +380,8 @@ class ExceptionDetails final : public PtBaseTypes {
 public:
     ExceptionDetails() = default;
     ~ExceptionDetails() override = default;
-    static std::unique_ptr<ExceptionDetails> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<ExceptionDetails> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetExceptionId() const
     {
@@ -426,12 +394,12 @@ public:
         return *this;
     }
 
-    CString GetText() const
+    const std::string &GetText() const
     {
         return text_;
     }
 
-    ExceptionDetails &SetText(const CString &text)
+    ExceptionDetails &SetText(const std::string &text)
     {
         text_ = text;
         return *this;
@@ -439,32 +407,32 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    ExceptionDetails &SetLine(size_t line)
+    ExceptionDetails &SetLine(int32_t lineNumber)
     {
-        line_ = line;
+        lineNumber_ = lineNumber;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_;
+        return columnNumber_;
     }
 
-    ExceptionDetails &SetColumn(size_t column)
+    ExceptionDetails &SetColumn(int32_t columnNumber)
     {
-        column_ = column;
+        columnNumber_ = columnNumber;
         return *this;
     }
 
     ScriptId GetScriptId() const
     {
-        return scriptId_.value_or("");
+        return scriptId_.value_or(0);
     }
 
-    ExceptionDetails &SetScriptId(const ScriptId &scriptId)
+    ExceptionDetails &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -475,12 +443,13 @@ public:
         return scriptId_.has_value();
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
-        return url_.value_or("");
+        ASSERT(HasUrl());
+        return url_.value();
     }
 
-    ExceptionDetails &SetUrl(const CString &url)
+    ExceptionDetails &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
@@ -531,11 +500,11 @@ private:
     NO_MOVE_SEMANTIC(ExceptionDetails);
 
     int32_t exceptionId_ {0};
-    CString text_ {};
-    size_t line_ {0};
-    size_t column_ {0};
+    std::string text_ {};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
     std::optional<ScriptId> scriptId_ {};
-    std::optional<CString> url_ {};
+    std::optional<std::string> url_ {};
     std::optional<std::unique_ptr<RemoteObject>> exception_ {};
     std::optional<ExecutionContextId> executionContextId_ {0};
 };
@@ -546,15 +515,15 @@ public:
     InternalPropertyDescriptor() = default;
     ~InternalPropertyDescriptor() override = default;
 
-    static std::unique_ptr<InternalPropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<InternalPropertyDescriptor> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    InternalPropertyDescriptor &SetName(const CString &name)
+    InternalPropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -583,7 +552,7 @@ private:
     NO_COPY_SEMANTIC(InternalPropertyDescriptor);
     NO_MOVE_SEMANTIC(InternalPropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
 };
 
@@ -593,15 +562,15 @@ public:
     PrivatePropertyDescriptor() = default;
     ~PrivatePropertyDescriptor() override = default;
 
-    static std::unique_ptr<PrivatePropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<PrivatePropertyDescriptor> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    PrivatePropertyDescriptor &SetName(const CString &name)
+    PrivatePropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -668,7 +637,7 @@ private:
     NO_COPY_SEMANTIC(PrivatePropertyDescriptor);
     NO_MOVE_SEMANTIC(PrivatePropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
     std::optional<std::unique_ptr<RemoteObject>> get_ {};
     std::optional<std::unique_ptr<RemoteObject>> set_ {};
@@ -680,17 +649,17 @@ public:
     PropertyDescriptor() = default;
     ~PropertyDescriptor() override = default;
 
-    static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, const Local<JSValueRef> &name,
+    static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, Local<JSValueRef> name,
         const PropertyAttribute &property);
-    static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<PropertyDescriptor> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    PropertyDescriptor &SetName(const CString &name)
+    PropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -846,7 +815,7 @@ private:
     NO_COPY_SEMANTIC(PropertyDescriptor);
     NO_MOVE_SEMANTIC(PropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
     std::optional<bool> writable_ {};
     std::optional<std::unique_ptr<RemoteObject>> get_ {};
@@ -864,15 +833,15 @@ public:
     CallArgument() = default;
     ~CallArgument() override = default;
 
-    static std::unique_ptr<CallArgument> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<CallArgument> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     Local<JSValueRef> GetValue() const
     {
         return value_.value_or(Local<JSValueRef>());
     }
 
-    CallArgument &SetValue(const Local<JSValueRef> &value)
+    CallArgument &SetValue(Local<JSValueRef> value)
     {
         value_ = value;
         return *this;
@@ -883,9 +852,10 @@ public:
         return value_.has_value();
     }
 
-    UnserializableValue GetUnserializableValue() const
+    const UnserializableValue &GetUnserializableValue() const
     {
-        return unserializableValue_.value_or("");
+        ASSERT(HasUnserializableValue());
+        return unserializableValue_.value();
     }
 
     CallArgument &SetUnserializableValue(const UnserializableValue &unserializableValue)
@@ -901,10 +871,10 @@ public:
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value_or("");
+        return objectId_.value_or(0);
     }
 
-    CallArgument &SetObjectId(const RemoteObjectId &objectId)
+    CallArgument &SetObjectId(RemoteObjectId objectId)
     {
         objectId_ = objectId;
         return *this;
@@ -927,15 +897,15 @@ private:
 // ========== Debugger types begin
 // Debugger.ScriptLanguage
 struct ScriptLanguage {
-    static bool Valid(const CString &language)
+    static bool Valid(const std::string &language)
     {
         return language == JavaScript() || language == WebAssembly();
     }
-    static CString JavaScript()
+    static std::string JavaScript()
     {
         return "JavaScript";
     }
-    static CString WebAssembly()
+    static std::string WebAssembly()
     {
         return "WebAssembly";
     }
@@ -945,17 +915,17 @@ struct ScriptLanguage {
 class Location : public PtBaseTypes {
 public:
     Location() = default;
-    virtual ~Location() override = default;
+    ~Location() override = default;
 
-    static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<Location> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
         return scriptId_;
     }
 
-    Location &SetScriptId(const ScriptId &scriptId)
+    Location &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -963,68 +933,68 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    Location &SetLine(size_t line)
+    Location &SetLine(int32_t line)
     {
-        line_ = line;
+        lineNumber_ = line;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_.value_or(-1);
+        return columnNumber_.value_or(-1);
     }
 
-    Location &SetColumn(size_t column)
+    Location &SetColumn(int32_t column)
     {
-        column_ = column;
+        columnNumber_ = column;
         return *this;
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
 private:
     NO_COPY_SEMANTIC(Location);
     NO_MOVE_SEMANTIC(Location);
 
-    ScriptId scriptId_ {};
-    size_t line_ {0};
-    std::optional<int32_t> column_ {};
+    ScriptId scriptId_ {0};
+    int32_t lineNumber_ {0};
+    std::optional<int32_t> columnNumber_ {};
 };
 
 // Debugger.ScriptPosition
 class ScriptPosition : public PtBaseTypes {
 public:
     ScriptPosition() = default;
-    virtual ~ScriptPosition() override = default;
+    ~ScriptPosition() override = default;
 
-    static std::unique_ptr<ScriptPosition> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<ScriptPosition> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    ScriptPosition &SetLine(size_t line)
+    ScriptPosition &SetLine(int32_t line)
     {
-        line_ = line;
+        lineNumber_ = line;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_;
+        return columnNumber_;
     }
 
-    ScriptPosition &SetColumn(size_t column)
+    ScriptPosition &SetColumn(int32_t column)
     {
-        column_ = column;
+        columnNumber_ = column;
         return *this;
     }
 
@@ -1032,41 +1002,41 @@ private:
     NO_COPY_SEMANTIC(ScriptPosition);
     NO_MOVE_SEMANTIC(ScriptPosition);
 
-    size_t line_ {0};
-    size_t column_ {0};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
 };
 
 // Debugger.SearchMatch
 class SearchMatch : public PtBaseTypes {
 public:
     SearchMatch() = default;
-    virtual ~SearchMatch() override = default;
-    static std::unique_ptr<SearchMatch> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    ~SearchMatch() override = default;
+    static std::unique_ptr<SearchMatch> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     NO_COPY_SEMANTIC(SearchMatch);
     NO_MOVE_SEMANTIC(SearchMatch);
 
-    size_t lineNumber_ {0};
-    CString lineContent_ {};
+    int32_t lineNumber_ {0};
+    std::string lineContent_ {};
 };
 
 // Debugger.LocationRange
 class LocationRange : public PtBaseTypes {
 public:
     LocationRange() = default;
-    virtual ~LocationRange() override = default;
+    ~LocationRange() override = default;
 
-    static std::unique_ptr<LocationRange> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<LocationRange> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
         return scriptId_;
     }
 
-    LocationRange &SetScriptId(const ScriptId &scriptId)
+    LocationRange &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -1098,7 +1068,7 @@ private:
     NO_COPY_SEMANTIC(LocationRange);
     NO_MOVE_SEMANTIC(LocationRange);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     std::unique_ptr<ScriptPosition> start_ {nullptr};
     std::unique_ptr<ScriptPosition> end_ {nullptr};
 };
@@ -1109,15 +1079,15 @@ public:
     BreakLocation() = default;
     ~BreakLocation() override = default;
 
-    static std::unique_ptr<BreakLocation> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<BreakLocation> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
         return scriptId_;
     }
 
-    BreakLocation &SetScriptId(const ScriptId &scriptId)
+    BreakLocation &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -1125,40 +1095,41 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    BreakLocation &SetLine(size_t line)
+    BreakLocation &SetLine(int32_t lineNumber)
     {
-        line_ = line;
+        lineNumber_ = lineNumber;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_.value_or(-1);
+        return columnNumber_.value_or(-1);
     }
 
-    BreakLocation &SetColumn(size_t column)
+    BreakLocation &SetColumn(int32_t columnNumber)
     {
-        column_ = column;
+        columnNumber_ = columnNumber;
         return *this;
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
     /*
      * @see {#BreakType}
      */
-    CString GetType() const
+    const std::string &GetType() const
     {
-        return type_.value_or("");
+        ASSERT(HasType());
+        return type_.value();
     }
 
-    BreakLocation &SetType(const CString &type)
+    BreakLocation &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -1170,19 +1141,19 @@ public:
     }
 
     struct Type {
-        static bool Valid(const CString &type)
+        static bool Valid(const std::string &type)
         {
             return type == DebuggerStatement() || type == Call() || type == Return();
         }
-        static CString DebuggerStatement()
+        static std::string DebuggerStatement()
         {
             return "debuggerStatement";
         }
-        static CString Call()
+        static std::string Call()
         {
             return "call";
         }
-        static CString Return()
+        static std::string Return()
         {
             return "return";
         }
@@ -1192,10 +1163,10 @@ private:
     NO_COPY_SEMANTIC(BreakLocation);
     NO_MOVE_SEMANTIC(BreakLocation);
 
-    ScriptId scriptId_ {};
-    size_t line_ {0};
-    std::optional<int32_t> column_ {};
-    std::optional<CString> type_ {};
+    ScriptId scriptId_ {0};
+    int32_t lineNumber_ {0};
+    std::optional<int32_t> columnNumber_ {};
+    std::optional<std::string> type_ {};
 };
 using BreakType = BreakLocation::Type;
 
@@ -1218,18 +1189,18 @@ public:
     Scope() = default;
     ~Scope() override = default;
 
-    static std::unique_ptr<Scope> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<Scope> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     /*
      * @see {#Scope::Type}
      */
-    CString GetType() const
+    const std::string &GetType() const
     {
         return type_;
     }
 
-    Scope &SetType(const CString &type)
+    Scope &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -1246,12 +1217,13 @@ public:
         return *this;
     }
 
-    CString GetName() const
+    const std::string &GetName() const
     {
-        return name_.value_or("");
+        ASSERT(HasName());
+        return name_.value();
     }
 
-    Scope &SetName(const CString &name)
+    Scope &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -1301,49 +1273,49 @@ public:
     }
 
     struct Type {
-        static bool Valid(const CString &type)
+        static bool Valid(const std::string &type)
         {
             return type == Global() || type == Local() || type == With() || type == Closure() || type == Catch() ||
                    type == Block() || type == Script() || type == Eval() || type == Module() ||
                    type == WasmExpressionStack();
         }
-        static CString Global()
+        static std::string Global()
         {
             return "global";
         }
-        static CString Local()
+        static std::string Local()
         {
             return "local";
         }
-        static CString With()
+        static std::string With()
         {
             return "with";
         }
-        static CString Closure()
+        static std::string Closure()
         {
             return "closure";
         }
-        static CString Catch()
+        static std::string Catch()
         {
             return "catch";
         }
-        static CString Block()
+        static std::string Block()
         {
             return "block";
         }
-        static CString Script()
+        static std::string Script()
         {
             return "script";
         }
-        static CString Eval()
+        static std::string Eval()
         {
             return "eval";
         }
-        static CString Module()
+        static std::string Module()
         {
             return "module";
         }
-        static CString WasmExpressionStack()
+        static std::string WasmExpressionStack()
         {
             return "wasm-expression-stack";
         }
@@ -1353,9 +1325,9 @@ private:
     NO_COPY_SEMANTIC(Scope);
     NO_MOVE_SEMANTIC(Scope);
 
-    CString type_ {};
+    std::string type_ {};
     std::unique_ptr<RemoteObject> object_ {nullptr};
-    std::optional<CString> name_ {};
+    std::optional<std::string> name_ {};
     std::optional<std::unique_ptr<Location>> startLocation_ {};
     std::optional<std::unique_ptr<Location>> endLocation_ {};
 };
@@ -1366,26 +1338,26 @@ public:
     CallFrame() = default;
     ~CallFrame() override = default;
 
-    static std::unique_ptr<CallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<CallFrame> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
 
     CallFrameId GetCallFrameId() const
     {
         return callFrameId_;
     }
 
-    CallFrame &SetCallFrameId(const CallFrameId &callFrameId)
+    CallFrame &SetCallFrameId(CallFrameId callFrameId)
     {
         callFrameId_ = callFrameId;
         return *this;
     }
 
-    CString GetFunctionName() const
+    const std::string &GetFunctionName() const
     {
         return functionName_;
     }
 
-    CallFrame &SetFunctionName(const CString &functionName)
+    CallFrame &SetFunctionName(const std::string &functionName)
     {
         functionName_ = functionName;
         return *this;
@@ -1421,23 +1393,23 @@ public:
         return *this;
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    CallFrame &SetUrl(const CString &url)
+    CallFrame &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    const CVector<std::unique_ptr<Scope>> *GetScopeChain() const
+    const std::vector<std::unique_ptr<Scope>> *GetScopeChain() const
     {
         return &scopeChain_;
     }
 
-    CallFrame &SetScopeChain(CVector<std::unique_ptr<Scope>> scopeChain)
+    CallFrame &SetScopeChain(std::vector<std::unique_ptr<Scope>> scopeChain)
     {
         scopeChain_ = std::move(scopeChain);
         return *this;
@@ -1477,13 +1449,755 @@ private:
     NO_MOVE_SEMANTIC(CallFrame);
 
     CallFrameId callFrameId_ {};
-    CString functionName_ {};
+    std::string functionName_ {};
     std::optional<std::unique_ptr<Location>> functionLocation_ {};
     std::unique_ptr<Location> location_ {nullptr};
-    CString url_ {};
-    CVector<std::unique_ptr<Scope>> scopeChain_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<Scope>> scopeChain_ {};
     std::unique_ptr<RemoteObject> this_ {nullptr};
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
+};
+
+// ========== Heapprofiler types begin
+
+using HeapSnapshotObjectId = int32_t;
+
+class SamplingHeapProfileSample  final :  public PtBaseTypes {
+public:
+    SamplingHeapProfileSample() = default;
+    ~SamplingHeapProfileSample() override = default;
+    static std::unique_ptr<SamplingHeapProfileSample> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    SamplingHeapProfileSample &SetSize(int32_t size)
+    {
+        size_ = size;
+        return *this;
+    }
+    
+    int32_t GetSize() const
+    {
+        return size_;
+    }
+
+    SamplingHeapProfileSample &SetNodeId(int32_t nodeId)
+    {
+        nodeId_ = nodeId;
+        return *this;
+    }
+
+    int32_t GetNodeId() const
+    {
+        return nodeId_;
+    }
+
+    SamplingHeapProfileSample &SetOrdinal(int32_t ordinal)
+    {
+        ordinal_ = ordinal;
+        return *this;
+    }
+
+    int32_t GetOrdinal() const
+    {
+        return ordinal_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfileSample);
+    NO_MOVE_SEMANTIC(SamplingHeapProfileSample);
+
+    int32_t size_ {0};
+    int32_t nodeId_ {0};
+    int32_t ordinal_ {0};
+};
+
+class RuntimeCallFrame  final :  public PtBaseTypes {
+public:
+    RuntimeCallFrame() = default;
+    ~RuntimeCallFrame() override = default;
+    static std::unique_ptr<RuntimeCallFrame> Create(const PtJson &params);
+    static std::unique_ptr<RuntimeCallFrame> FromFrameInfo(const FrameInfo &cpuFrameInfo);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    RuntimeCallFrame &SetFunctionName(const std::string &functionName)
+    {
+        functionName_ = functionName;
+        return *this;
+    }
+
+    const std::string &GetFunctionName() const
+    {
+        return functionName_;
+    }
+
+    RuntimeCallFrame &SetScriptId(const std::string &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
+    }
+
+    const std::string &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    RuntimeCallFrame &SetUrl(const std::string &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
+    const std::string &GetUrl() const
+    {
+        return url_;
+    }
+
+    RuntimeCallFrame &SetLineNumber(int32_t lineNumber)
+    {
+        lineNumber_ = lineNumber;
+        return *this;
+    }
+
+    int32_t GetLineNumber() const
+    {
+        return lineNumber_;
+    }
+
+    RuntimeCallFrame &SetColumnNumber(int32_t columnNumber)
+    {
+        columnNumber_ = columnNumber;
+        return *this;
+    }
+
+    int32_t GetColumnNumber() const
+    {
+        return columnNumber_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(RuntimeCallFrame);
+    NO_MOVE_SEMANTIC(RuntimeCallFrame);
+
+    std::string functionName_ {};
+    std::string scriptId_ {};
+    std::string url_ {};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
+};
+
+class SamplingHeapProfileNode  final :  public PtBaseTypes {
+public:
+    SamplingHeapProfileNode() = default;
+    ~SamplingHeapProfileNode() override = default;
+    static std::unique_ptr<SamplingHeapProfileNode> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
+    {
+        callFrame_ = std::move(callFrame);
+        return *this;
+    }
+
+    RuntimeCallFrame *GetCallFrame() const
+    {
+        return callFrame_.get();
+    }
+
+    SamplingHeapProfileNode &SetSelfSize(int32_t selfSize)
+    {
+        selfSize_ = selfSize;
+        return *this;
+    }
+
+    int32_t GetSelfSize() const
+    {
+        return selfSize_;
+    }
+
+    SamplingHeapProfileNode &SetId(int32_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    int32_t GetId() const
+    {
+        return id_;
+    }
+    
+    SamplingHeapProfileNode &SetChildren(std::vector<std::unique_ptr<SamplingHeapProfileNode>> children)
+    {
+        children_ = std::move(children);
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<SamplingHeapProfileNode>> *GetChildren() const
+    {
+        return &children_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfileNode);
+    NO_MOVE_SEMANTIC(SamplingHeapProfileNode);
+
+    std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
+    int32_t selfSize_ {0};
+    int32_t id_ {0};
+    std::vector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
+};
+
+class SamplingHeapProfile final : public PtBaseTypes {
+public:
+    SamplingHeapProfile() = default;
+    ~SamplingHeapProfile() override = default;
+    static std::unique_ptr<SamplingHeapProfile> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    SamplingHeapProfile &SetHead(std::unique_ptr<SamplingHeapProfileNode> head)
+    {
+        head_ = std::move(head);
+        return *this;
+    }
+
+    SamplingHeapProfileNode *GetHead() const
+    {
+        return head_.get();
+    }
+    
+    SamplingHeapProfile &SetSamples(std::vector<std::unique_ptr<SamplingHeapProfileSample>> samples)
+    {
+        samples_ = std::move(samples);
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<SamplingHeapProfileSample>> *GetSamples() const
+    {
+        return &samples_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfile);
+    NO_MOVE_SEMANTIC(SamplingHeapProfile);
+
+    std::unique_ptr<SamplingHeapProfileNode> head_ {nullptr};
+    std::vector<std::unique_ptr<SamplingHeapProfileSample>> samples_ {};
+};
+
+// ========== Profiler types begin
+// Profiler.PositionTickInfo
+class PositionTickInfo final : public PtBaseTypes {
+public:
+    PositionTickInfo() = default;
+    ~PositionTickInfo() override = default;
+
+    static std::unique_ptr<PositionTickInfo> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    int32_t GetLine() const
+    {
+        return line_;
+    }
+
+    PositionTickInfo &SetLine(int32_t line)
+    {
+        line_ = line;
+        return *this;
+    }
+
+    int32_t GetTicks() const
+    {
+        return ticks_;
+    }
+
+    PositionTickInfo &SetTicks(int32_t ticks)
+    {
+        ticks_ = ticks;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(PositionTickInfo);
+    NO_MOVE_SEMANTIC(PositionTickInfo);
+    int32_t line_ {0};
+    int32_t ticks_ {0};
+};
+
+// Profiler.ProfileNode
+class ProfileNode final : public PtBaseTypes {
+public:
+    ProfileNode() = default;
+    ~ProfileNode() override = default;
+
+    static std::unique_ptr<ProfileNode> Create(const PtJson &params);
+    static std::unique_ptr<ProfileNode> FromCpuProfileNode(const CpuProfileNode &cpuProfileNode);
+    std::unique_ptr<PtJson> ToJson() const override;
+    
+    int32_t GetId() const
+    {
+        return id_;
+    }
+
+    ProfileNode &SetId(int32_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    RuntimeCallFrame *GetCallFrame() const
+    {
+        return callFrame_.get();
+    }
+
+    ProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
+    {
+        callFrame_ = std::move(callFrame);
+        return *this;
+    }
+
+    int32_t GetHitCount() const
+    {
+        ASSERT(HasHitCount());
+        return hitCount_.value();
+    }
+
+    ProfileNode &SetHitCount(int32_t hitCount)
+    {
+        hitCount_ = hitCount;
+        return *this;
+    }
+
+    bool HasHitCount() const
+    {
+        return hitCount_.has_value();
+    }
+
+    const std::vector<int32_t> *GetChildren() const
+    {
+        if (children_) {
+            return &children_.value();
+        }
+        return nullptr;
+    }
+
+    ProfileNode &SetChildren(std::vector<int32_t> children)
+    {
+        children_ = std::move(children);
+        return *this;
+    }
+
+    bool HasChildren() const
+    {
+        return children_.has_value();
+    }
+
+    const std::vector<std::unique_ptr<PositionTickInfo>> *GetPositionTicks() const
+    {
+        if (positionTicks_) {
+            return &positionTicks_.value();
+        }
+        return nullptr;
+    }
+
+    ProfileNode &SetPositionTicks(std::vector<std::unique_ptr<PositionTickInfo>> positionTicks)
+    {
+        positionTicks_ = std::move(positionTicks);
+        return *this;
+    }
+
+    bool HasPositionTicks() const
+    {
+        return positionTicks_.has_value();
+    }
+
+    const std::string &GetDeoptReason() const
+    {
+        ASSERT(HasDeoptReason());
+        return deoptReason_.value();
+    }
+
+    ProfileNode &SetDeoptReason(const std::string &deoptReason)
+    {
+        deoptReason_ = deoptReason;
+        return *this;
+    }
+
+    bool HasDeoptReason() const
+    {
+        return deoptReason_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(ProfileNode);
+    NO_MOVE_SEMANTIC(ProfileNode);
+    int32_t id_ {0};
+    std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
+    std::optional<int32_t> hitCount_ {0};
+    std::optional<std::vector<int32_t>> children_ {};
+    std::optional<std::vector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
+    std::optional<std::string> deoptReason_ {};
+};
+
+// Profiler.Profile
+class Profile final : public PtBaseTypes {
+public:
+    Profile() = default;
+    ~Profile() override = default;
+
+    static std::unique_ptr<Profile> Create(const PtJson &params);
+    static std::unique_ptr<Profile> FromProfileInfo(const ProfileInfo &profileInfo);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    int64_t GetStartTime() const
+    {
+        return startTime_;
+    }
+
+    Profile &SetStartTime(int64_t startTime)
+    {
+        startTime_ = startTime;
+        return *this;
+    }
+
+    int64_t GetEndTime() const
+    {
+        return endTime_;
+    }
+
+    Profile &SetEndTime(int64_t endTime)
+    {
+        endTime_ = endTime;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<ProfileNode>> *GetNodes() const
+    {
+        return &nodes_;
+    }
+
+    Profile &SetNodes(std::vector<std::unique_ptr<ProfileNode>> nodes)
+    {
+        nodes_ = std::move(nodes);
+        return *this;
+    }
+
+    const std::vector<int32_t> *GetSamples() const
+    {
+        if (samples_) {
+            return &samples_.value();
+        }
+        return nullptr;
+    }
+
+    Profile &SetSamples(std::vector<int32_t> samples)
+    {
+        samples_ = std::move(samples);
+        return *this;
+    }
+
+    bool HasSamples() const
+    {
+        return samples_.has_value();
+    }
+
+    const std::vector<int32_t> *GetTimeDeltas() const
+    {
+        if (timeDeltas_) {
+            return &timeDeltas_.value();
+        }
+        return nullptr;
+    }
+
+    Profile &SetTimeDeltas(std::vector<int32_t> timeDeltas)
+    {
+        timeDeltas_ = std::move(timeDeltas);
+        return *this;
+    }
+
+    bool HasTimeDeltas() const
+    {
+        return timeDeltas_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(Profile);
+    NO_MOVE_SEMANTIC(Profile);
+
+    int64_t startTime_ {0};
+    int64_t endTime_ {0};
+    std::vector<std::unique_ptr<ProfileNode>> nodes_ {};
+    std::optional<std::vector<int32_t>> samples_ {};
+    std::optional<std::vector<int32_t>> timeDeltas_ {};
+};
+
+// Profiler.Coverage
+class Coverage final : public PtBaseTypes {
+public:
+    Coverage() = default;
+    ~Coverage() override = default;
+
+    static std::unique_ptr<Coverage> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    int32_t GetStartOffset() const
+    {
+        return startOffset_;
+    }
+
+    Coverage &SetStartOffset(int32_t startOffset)
+    {
+        startOffset_ = startOffset;
+        return *this;
+    }
+
+    int32_t GetEndOffset() const
+    {
+        return endOffset_;
+    }
+
+    Coverage &SetEndOffset(int32_t endOffset)
+    {
+        endOffset_ = endOffset;
+        return *this;
+    }
+
+    int32_t GetCount() const
+    {
+        return count_;
+    }
+
+    Coverage &SetCount(int32_t count)
+    {
+        count_ = count;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(Coverage);
+    NO_MOVE_SEMANTIC(Coverage);
+
+    int32_t startOffset_ {0};
+    int32_t endOffset_ {0};
+    int32_t count_ {0};
+};
+
+// Profiler.FunctionCoverage
+class FunctionCoverage final : public PtBaseTypes {
+public:
+    FunctionCoverage() = default;
+    ~FunctionCoverage() override = default;
+
+    static std::unique_ptr<FunctionCoverage> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    const std::string &GetFunctionName() const
+    {
+        return functionName_;
+    }
+
+    FunctionCoverage &SetFunctionName(const std::string &functionName)
+    {
+        functionName_ = functionName;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<Coverage>> *GetRanges() const
+    {
+        return &ranges_;
+    }
+
+    FunctionCoverage &SetFunctions(std::vector<std::unique_ptr<Coverage>> ranges)
+    {
+        ranges_ = std::move(ranges);
+        return *this;
+    }
+
+    bool GetIsBlockCoverage() const
+    {
+        return isBlockCoverage_;
+    }
+
+    FunctionCoverage &SetisBlockCoverage(bool isBlockCoverage)
+    {
+        isBlockCoverage_ = isBlockCoverage;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(FunctionCoverage);
+    NO_MOVE_SEMANTIC(FunctionCoverage);
+
+    std::string functionName_ {};
+    std::vector<std::unique_ptr<Coverage>> ranges_ {};
+    bool isBlockCoverage_ {};
+};
+
+// Profiler.ScriptCoverage
+// Profiler.GetBestEffortCoverage and Profiler.TakePreciseCoverage share this return value type
+class ScriptCoverage final : public PtBaseTypes {
+public:
+    ScriptCoverage() = default;
+    ~ScriptCoverage() override = default;
+
+    static std::unique_ptr<ScriptCoverage> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    const std::string &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    ScriptCoverage &SetScriptId(const std::string &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
+    }
+
+    const std::string &GetUrl() const
+    {
+        return url_;
+    }
+
+    ScriptCoverage &SetUrl(const std::string &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<FunctionCoverage>> *GetFunctions() const
+    {
+        return &functions_;
+    }
+
+    ScriptCoverage &SetFunctions(std::vector<std::unique_ptr<FunctionCoverage>> functions)
+    {
+        functions_ = std::move(functions);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ScriptCoverage);
+    NO_MOVE_SEMANTIC(ScriptCoverage);
+
+    std::string scriptId_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<FunctionCoverage>> functions_ {};
+};
+
+// Profiler.TypeObject
+class TypeObject final : public PtBaseTypes {
+public:
+    TypeObject() = default;
+    ~TypeObject() override = default;
+
+    static std::unique_ptr<TypeObject> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    const std::string &GetName() const
+    {
+        return name_;
+    }
+
+    TypeObject &SetName(const std::string &name)
+    {
+        name_ = name;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(TypeObject);
+    NO_MOVE_SEMANTIC(TypeObject);
+
+    std::string name_ {};
+};
+
+// Profiler.TypeProfileEntry
+class TypeProfileEntry final : public PtBaseTypes {
+public:
+    TypeProfileEntry() = default;
+    ~TypeProfileEntry() override = default;
+
+    static std::unique_ptr<TypeProfileEntry> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    int32_t GetOffset() const
+    {
+        return offset_;
+    }
+
+    TypeProfileEntry &SetOffset(int32_t offset)
+    {
+        offset_ = offset;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<TypeObject>> *GetTypes() const
+    {
+        return &types_;
+    }
+
+    TypeProfileEntry &SetTypes(std::vector<std::unique_ptr<TypeObject>> types)
+    {
+        types_ = std::move(types);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(TypeProfileEntry);
+    NO_MOVE_SEMANTIC(TypeProfileEntry);
+
+    int32_t offset_ {0};
+    std::vector<std::unique_ptr<TypeObject>> types_ {};
+};
+
+// Profiler.ScriptTypeProfile
+class ScriptTypeProfile final : public PtBaseTypes {
+public:
+    ScriptTypeProfile() = default;
+    ~ScriptTypeProfile() override = default;
+
+    static std::unique_ptr<ScriptTypeProfile> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+    
+    const std::string &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    ScriptTypeProfile &SetScriptId(const std::string &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
+    }
+
+    const std::string &GetUrl() const
+    {
+        return url_;
+    }
+
+    ScriptTypeProfile &SetUrl(const std::string &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<TypeProfileEntry>> *GetEntries() const
+    {
+        return &entries_;
+    }
+
+    ScriptTypeProfile &SetEntries(std::vector<std::unique_ptr<TypeProfileEntry>> entries)
+    {
+        entries_ = std::move(entries);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ScriptTypeProfile);
+    NO_MOVE_SEMANTIC(ScriptTypeProfile);
+
+    std::string scriptId_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<TypeProfileEntry>> entries_ {};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

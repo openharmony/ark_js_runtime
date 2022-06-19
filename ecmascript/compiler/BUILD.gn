@@ -161,7 +161,7 @@ ohos_shared_library("libark_jsoptimizer") {
 ohos_shared_library("libark_jsoptimizer_test") {
   deps = [
     ":libark_jsoptimizer_static",
-    "//ark/js_runtime:libark_jsruntime_test_static",
+    "//ark/js_runtime:libark_jsruntime_test_set",
   ]
 
   if (is_standard_system) {

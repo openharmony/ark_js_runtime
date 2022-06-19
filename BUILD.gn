@@ -338,8 +338,10 @@ ecma_source = [
   "ecmascript/interpreter/slow_runtime_helper.cpp",
   "ecmascript/interpreter/slow_runtime_stub.cpp",
   "ecmascript/jobs/micro_job_queue.cpp",
+  "ecmascript/jspandafile/debug_info_extractor.cpp",
   "ecmascript/jspandafile/js_pandafile.cpp",
   "ecmascript/jspandafile/js_pandafile_manager.cpp",
+  "ecmascript/jspandafile/scope_info_extractor.cpp",
   "ecmascript/js_api_tree_map.cpp",
   "ecmascript/js_api_tree_map_iterator.cpp",
   "ecmascript/js_api_tree_set.cpp",
@@ -415,7 +417,6 @@ ecma_source = [
   "ecmascript/regexp/regexp_parser_cache.cpp",
   "ecmascript/runtime_api.cpp",
   "ecmascript/runtime_trampolines.cpp",
-  "ecmascript/scope_info_extractor.cpp",
   "ecmascript/snapshot/mem/slot_bit.cpp",
   "ecmascript/snapshot/mem/snapshot.cpp",
   "ecmascript/snapshot/mem/snapshot_serialize.cpp",
@@ -435,8 +436,8 @@ ecma_source = [
 ]
 
 ecma_source += [
-  "ecmascript/tooling/interface/debugger_api.cpp",
-  "ecmascript/tooling/interface/js_debugger.cpp",
+  "ecmascript/tooling/backend/debugger_api.cpp",
+  "ecmascript/tooling/backend/js_debugger.cpp",
 ]
 
 if (current_cpu == "arm") {
@@ -447,7 +448,7 @@ if (current_cpu == "arm") {
            current_cpu == "x86_64") {
   ecma_source += [ "ecmascript/trampoline/call_trampoline_amd64.S" ]
 }
-source_set("libark_jsruntime_static") {
+source_set("libark_jsruntime_set") {
   sources = ecma_source
 
   public_configs = [
@@ -479,7 +480,7 @@ source_set("libark_jsruntime_static") {
 ohos_shared_library("libark_jsruntime") {
   deps = [
     ":libark_js_intl_static",
-    ":libark_jsruntime_static",
+    ":libark_jsruntime_set",
   ]
 
   if (!is_linux) {
@@ -503,7 +504,7 @@ ohos_shared_library("libark_jsruntime") {
   subsystem_name = "ark"
 }
 
-source_set("libark_jsruntime_test_static") {
+source_set("libark_jsruntime_test_set") {
   sources = ecma_source
   sources += intl_sources
 
@@ -537,7 +538,7 @@ ohos_shared_library("libark_jsruntime_test") {
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
-  deps = [ ":libark_jsruntime_test_static" ]
+  deps = [ ":libark_jsruntime_test_set" ]
 
   if (!is_linux) {
     if (build_public_version) {

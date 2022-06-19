@@ -31,12 +31,12 @@ public:
 
     static JSTaggedValue ErrorCommonConstructor(EcmaRuntimeCallInfo *argv, const ErrorType &errorType);
 
-    static CString BuildNativeEcmaStackTrace(JSThread *thread);
+    static std::string BuildNativeEcmaStackTrace(JSThread *thread);
 
-    static CString BuildNativeAndJsStackTrace(JSThread *thread);
+    static std::string BuildNativeAndJsStackTrace(JSThread *thread);
 
 private:
-    static CString DecodeFunctionName(const CString &name);
+    static std::string DecodeFunctionName(const std::string &name);
     static JSHandle<EcmaString> BuildEcmaStackTrace(JSThread *thread);
 
     static JSHandle<JSTaggedValue> GetErrorName(JSThread *thread, const JSHandle<JSTaggedValue> &name,

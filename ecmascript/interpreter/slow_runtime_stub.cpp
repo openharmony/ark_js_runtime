@@ -17,7 +17,7 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/builtins/builtins_regexp.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/ic/profile_type_info.h"
@@ -39,7 +39,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/scope_info_extractor.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"

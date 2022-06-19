@@ -16,13 +16,13 @@
 #include "ecmascript/tooling/test/utils/test_entry.h"
 
 namespace panda::ecmascript::tooling::test {
-extern "C" int StartDebugger()
+extern "C" bool StartDebug(const std::string &name, EcmaVM *vm, bool isDebugMode)
 {
-    return StartDebuggerImpl();
+    return StartDebuggerImpl(name, vm, isDebugMode);
 }
 
-extern "C" int StopDebugger()
+extern "C" bool StopDebug(const std::string &name)
 {
-    return StopDebuggerImpl();
+    return StopDebuggerImpl(name);
 }
 }  // namespace panda::ecmascript::tooling::test

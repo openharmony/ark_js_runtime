@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
@@ -93,8 +93,7 @@ void PandaFileTranslator::TranslateClasses(JSPandaFile *jsPandaFile, const CStri
                 jsPandaFile->UpdateMainMethodIndex(mda.GetMethodId().GetOffset());
             }
 
-            panda_file::ProtoDataAccessor pda(*pf, mda.GetProtoId());
-            InitializeMemory(method, nullptr, pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
+            InitializeMemory(method, jsPandaFile, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
                              mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             method->InitializeCallField();
@@ -251,7 +250,7 @@ Program *PandaFileTranslator::GenerateProgram()
     }
     JSHandle<JSNativePointer> jsPandaFilePointer = factory_->NewJSNativePointer(
         const_cast<JSPandaFile *>(jsPandaFile_), JSPandaFileManager::RemoveJSPandaFile,
-        EcmaVM::GetJSPandaFileManager());
+        JSPandaFileManager::GetInstance());
     constpool->Set(thread_, constpoolIndex, jsPandaFilePointer.GetTaggedValue());
 
     DefineClassInConstPool(constpool);
