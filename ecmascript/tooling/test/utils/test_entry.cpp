@@ -24,23 +24,22 @@ namespace panda::ecmascript::tooling::test {
 static std::thread g_debuggerThread;
 static std::unique_ptr<TestHooks> g_hooks = nullptr;
 
-int StartDebuggerImpl()
+bool StartDebuggerImpl([[maybe_unused]] const std::string &name, EcmaVM *vm, [[maybe_unused]] bool isDebugMode)
 {
-    const char *testName = GetCurrentTestName();
-    EcmaVM *vm = EcmaVM::Cast(Runtime::GetCurrent()->GetPandaVM());
+    std::string testName = GetCurrentTestName();
     g_hooks = std::make_unique<TestHooks>(testName, vm);
     g_debuggerThread = std::thread([] {
         TestUtil::WaitForInit();
         g_hooks->Run();
     });
-    return 0;
+    return true;
 }
 
-int StopDebuggerImpl()
+bool StopDebuggerImpl([[maybe_unused]] const std::string &name)
 {
-    g_debuggerThread.join();
     g_hooks->TerminateTest();
+    g_debuggerThread.join();
     g_hooks.reset();
-    return 0;
+    return true;
 }
 }  // namespace panda::ecmascript::tooling::test

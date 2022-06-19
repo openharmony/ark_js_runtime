@@ -34,7 +34,7 @@
 #include "ecmascript/platform/task.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 #include "include/panda_vm.h"
 #include "libpandabase/macros.h"
 
@@ -82,8 +82,6 @@ using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
 using PromiseRejectCallback = void (*)(void* info);
 
 class EcmaVM : public PandaVM {
-    using PtJSExtractor = tooling::PtJSExtractor;
-
 public:
     static EcmaVM *Cast(PandaVM *object)
     {
@@ -111,8 +109,6 @@ public:
     bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
                                            std::vector<BytecodeTranslationInfo> *infoList,
                                            const panda_file::File *&pf);
-
-    PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
     bool IsInitialized() const
     {
@@ -401,8 +397,6 @@ public:
         }
     }
 
-    static JSPandaFileManager *GetJSPandaFileManager();
-
     void SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool);
 
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
@@ -449,7 +443,7 @@ private:
     bool isTestMode_ {false};
 
     // VM startup states.
-    static JSRuntimeOptions options_;
+    PUBLIC_API static JSRuntimeOptions options_;
     bool icEnable_ {true};
     bool vmInitialized_ {false};
     GCStats *gcStats_ {nullptr};

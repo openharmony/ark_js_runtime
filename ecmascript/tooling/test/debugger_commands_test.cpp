@@ -21,11 +21,10 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/debugger_service.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::tooling;
-using namespace panda::tooling;
 
 namespace panda::test {
 class DebuggerCommandsTest : public testing::Test {
@@ -44,8 +43,7 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        ecmaVm = EcmaVM::Cast(instance);
+        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
         // Main logic is JSON parser, so not need trigger GC to decrease execute time
         ecmaVm->SetEnableForceGC(false);
     }
@@ -57,7 +55,6 @@ public:
 
 protected:
     EcmaVM *ecmaVm {nullptr};
-    PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

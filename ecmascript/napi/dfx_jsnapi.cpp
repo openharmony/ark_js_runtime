@@ -43,8 +43,7 @@ void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm,  int dumpFormat, const std::string 
 
 std::string DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm)
 {
-    CString trace = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThreadNoCheck());
-    std::string result = CstringConvertToStdString(trace);
+    std::string result = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThreadNoCheck());
     return result;
 }
 
@@ -93,12 +92,12 @@ size_t DFXJSNApi::GetArrayBufferSize(EcmaVM *vm)
     return vm->GetHeap()->GetArrayBufferSize();
 }
 
-size_t DFXJSNApi::GetHeapTotalSize(EcmaVM *vm)
+size_t DFXJSNApi::GetHeapTotalSize(const EcmaVM *vm)
 {
     return vm->GetHeap()->GetCommittedSize();
 }
 
-size_t DFXJSNApi::GetHeapUsedSize(EcmaVM *vm)
+size_t DFXJSNApi::GetHeapUsedSize(const EcmaVM *vm)
 {
     return vm->GetHeap()->GetHeapObjectSize();
 }

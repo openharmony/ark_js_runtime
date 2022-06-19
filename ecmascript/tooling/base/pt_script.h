@@ -17,13 +17,10 @@
 #define ECMASCRIPT_TOOLING_BASE_PT_SCRIPT_H
 
 #include "libpandabase/macros.h"
-#include "ecmascript/mem/c_string.h"
+#include "ecmascript/tooling/base/pt_types.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::CString;
-
 enum class ScriptMatchType : uint8_t {
-    SCRIPT_ID,
     URL,
     FILE_NAME,
     HASH,
@@ -31,65 +28,65 @@ enum class ScriptMatchType : uint8_t {
 
 class PtScript {
 public:
-    PtScript(int32_t scriptId, CString fileName, CString url, CString source);
+    PtScript(ScriptId scriptId, const std::string &fileName, const std::string &url, const std::string &source);
     ~PtScript() = default;
 
-    CString GetScriptId() const
+    ScriptId GetScriptId() const
     {
         return scriptId_;
     }
 
-    void SetScriptId(const CString &scriptId)
+    void SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
     }
 
-    CString GetFileName() const
+    const std::string &GetFileName() const
     {
         return fileName_;
     }
 
-    void SetFileName(const CString &fileName)
+    void SetFileName(const std::string &fileName)
     {
         fileName_ = fileName;
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    void SetUrl(const CString &url)
+    void SetUrl(const std::string &url)
     {
         url_ = url;
     }
 
-    CString GetHash() const
+    const std::string &GetHash() const
     {
         return hash_;
     }
 
-    void SetHash(const CString &hash)
+    void SetHash(const std::string &hash)
     {
         hash_ = hash;
     }
 
-    CString GetScriptSource() const
+    const std::string &GetScriptSource() const
     {
         return scriptSource_;
     }
 
-    void SetScriptSource(const CString &scriptSource)
+    void SetScriptSource(const std::string &scriptSource)
     {
         scriptSource_ = scriptSource;
     }
 
-    CString GetSourceMapUrl() const
+    const std::string &GetSourceMapUrl() const
     {
         return sourceMapUrl_;
     }
 
-    void SetSourceMapUrl(const CString &sourceMapUrl)
+    void SetSourceMapUrl(const std::string &sourceMapUrl)
     {
         sourceMapUrl_ = sourceMapUrl;
     }
@@ -108,12 +105,12 @@ private:
     NO_COPY_SEMANTIC(PtScript);
     NO_MOVE_SEMANTIC(PtScript);
 
-    CString scriptId_ {};      // start from 0, such as "0","1","2"...
-    CString fileName_ {};      // binary file name, such as xx.bin
-    CString url_ {};           // source file name, such as xx.js
-    CString hash_ {};          // js source file hash code
-    CString scriptSource_ {};  // js source code
-    CString sourceMapUrl_ {};  // source map url
+    ScriptId scriptId_ {0};        // start from 0, such as "0","1","2"...
+    std::string fileName_ {};      // binary file name, such as xx.bin
+    std::string url_ {};           // source file name, such as xx.js
+    std::string hash_ {};          // js source file hash code
+    std::string scriptSource_ {};  // js source code
+    std::string sourceMapUrl_ {};  // source map url
     int32_t endLine_ {0};      // total line number of source file
 };
 }  // namespace panda::ecmascript::tooling

@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,18 +15,28 @@ import("//ark/js_runtime/js_runtime_config.gni")
 import("//build/ohos.gni")
 
 config("ark_ecma_debugger_config") {
+  configs = [
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
+  ]
+
   include_dirs = [
-    "//ark/js_runtime/ecmascript/tooling",
+    ".",
     "//third_party/boost",
+    "//third_party/cJSON",
   ]
 }
 
 debugger_sources = [
   "agent/debugger_impl.cpp",
-  "agent/js_backend.cpp",
-  "agent/js_pt_hooks.cpp",
+  "agent/heapprofiler_impl.cpp",
+  "agent/profiler_impl.cpp",
   "agent/runtime_impl.cpp",
+  "backend/debugger_executor.cpp",
+  "backend/js_pt_extractor.cpp",
+  "backend/js_pt_hooks.cpp",
   "base/pt_events.cpp",
+  "base/pt_json.cpp",
   "base/pt_params.cpp",
   "base/pt_returns.cpp",
   "base/pt_script.cpp",
@@ -34,23 +44,17 @@ debugger_sources = [
   "debugger_service.cpp",
   "dispatcher.cpp",
   "protocol_handler.cpp",
-  "pt_js_extractor.cpp",
 ]
 
-source_set("libark_ecma_debugger_static") {
+source_set("libark_ecma_debugger_set") {
   sources = debugger_sources
 
-  public_configs = [
-    ":ark_ecma_debugger_config",
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  public_configs = [ ":ark_ecma_debugger_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "$ark_root/runtime:arkruntime_header_deps",
+    "//third_party/cJSON:cjson_static",
   ]
 
   cflags_cc = [ "-fvisibility=hidden" ]
@@ -58,48 +62,41 @@ source_set("libark_ecma_debugger_static") {
 
 ohos_shared_library("libark_ecma_debugger") {
   deps = [
-    ":libark_ecma_debugger_static",
+    ":libark_ecma_debugger_set",
     "//ark/js_runtime:libark_jsruntime",
   ]
 
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-
   install_enable = true
-  part_name = "ark_js_runtime"
 
   output_extension = "so"
   if (!is_standard_system) {
     relative_install_dir = "ark"
   }
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }
 
-source_set("libark_ecma_debugger_test_static") {
+source_set("libark_ecma_debugger_test_set") {
   sources = debugger_sources
 
-  public_configs = [
-    ":ark_ecma_debugger_config",
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  public_configs = [ ":ark_ecma_debugger_config" ]
+
+  defines = [ "DEBUGGER_TEST" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "$ark_root/runtime:arkruntime_header_deps",
+    "//third_party/cJSON:cjson_static",
   ]
 }
 
 ohos_shared_library("libark_ecma_debugger_test") {
   deps = [
-    ":libark_ecma_debugger_test_static",
-    "//ark/js_runtime:libark_jsruntime_test_static",
+    ":libark_ecma_debugger_test_set",
+    "//ark/js_runtime:libark_jsruntime_test_set",
   ]
 
-  if (!is_linux) {
+  if (is_ohos && is_standard_system) {
     if (build_public_version) {
       external_deps = [
         "bytrace_standard:bytrace_core",
@@ -108,18 +105,9 @@ ohos_shared_library("libark_ecma_debugger_test") {
     }
   }
 
-  configs = [
-    ":ark_ecma_debugger_config",
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  public_configs = [ ":ark_ecma_debugger_config" ]
 
-  if (is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime_static" ]
-  } else {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
+  install_enable = false
 
   output_extension = "so"
   subsystem_name = "test"

@@ -53,7 +53,7 @@
 #include "ecmascript/builtins/builtins_typedarray.h"
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_treemap.h"
 #include "ecmascript/containers/containers_treeset.h"

@@ -14,18 +14,28 @@
  */
 
 #include "js_method.h"
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "libpandafile/method_data_accessor-inl.h"
 
 namespace panda::ecmascript {
-// It's not allowed '#' token appear in ECMA function(method) name, which discriminates same names in panda methods.
-CString JSMethod::ParseFunctionName() const
+JSMethod::JSMethod(const JSPandaFile *jsPandaFile,  panda_file::File::EntityId fileId,
+                   panda_file::File::EntityId codeId, uint32_t accessFlags, uint32_t numArgs, const uint16_t *shorty)
+    : Method(nullptr, jsPandaFile == nullptr ? nullptr : jsPandaFile->GetPandaFile(), fileId, codeId, accessFlags, numArgs, shorty)
 {
-    CString methodName(utf::Mutf8AsCString(GetName().data));
+    bytecodeArray_ = JSMethod::GetInstructions();
+    bytecodeArraySize_ = JSMethod::GetCodeSize();
+    jsPandaFile_ = jsPandaFile;
+}
+
+// It's not allowed '#' token appear in ECMA function(method) name, which discriminates same names in panda methods.
+std::string JSMethod::ParseFunctionName() const
+{
+    std::string methodName(utf::Mutf8AsCString(GetName().data));
     if (LIKELY(methodName[0] != '#')) {
         return methodName;
     }
     size_t index = methodName.find_last_of('#');
-    return CString(methodName.substr(index + 1));
+    return methodName.substr(index + 1);
 }
 
 void JSMethod::InitializeCallField()

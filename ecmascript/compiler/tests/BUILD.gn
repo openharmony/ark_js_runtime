@@ -122,5 +122,5 @@ group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [ ":StubTestAction" ]
+  # deps = [ ":StubTestAction" ]
 }

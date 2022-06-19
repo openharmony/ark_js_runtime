@@ -23,11 +23,12 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 
 namespace panda::ecmascript::base {
-using panda::ecmascript::tooling::PtJSExtractor;
+using panda::ecmascript::tooling::JSPtExtractor;
 
 JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const ErrorType &errorType)
 {
@@ -172,7 +173,7 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
     return nativeInstanceObj.GetTaggedValue();
 }
 
-CString ErrorHelper::DecodeFunctionName(const CString &name)
+std::string ErrorHelper::DecodeFunctionName(const std::string &name)
 {
     if (name.empty()) {
         return "anonymous";
@@ -182,16 +183,15 @@ CString ErrorHelper::DecodeFunctionName(const CString &name)
 
 JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 {
-    CString data = BuildNativeEcmaStackTrace(thread);
+    std::string data = BuildNativeEcmaStackTrace(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     LOG(DEBUG, ECMASCRIPT) << data;
-    return factory->NewFromString(data);
+    return factory->NewFromStdString(data);
 }
 
-CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
+std::string ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
-    auto ecmaVm = thread->GetEcmaVM();
-    CString data;
+    std::string data;
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrameHandler frameHandler(sp);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
@@ -204,8 +204,9 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
-            PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
-            const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
+            tooling::JSPtExtractor *debugExtractor =
+                JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
+            const std::string &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
             if (sourceFile.empty()) {
                 data.push_back('?');
             } else {
@@ -213,13 +214,19 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             }
             data.push_back(':');
             // line number and column number
-            auto callbackFunc = [&data](size_t line, size_t column) -> bool {
-                data += ToCString(static_cast<int>(line) + 1);
+            auto callbackLineFunc = [&data](int32_t line) -> bool {
+                data += ToCString(line + 1);
                 data.push_back(':');
-                data += ToCString(static_cast<int>(column) + 1);
                 return true;
             };
-            if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+            auto callbackColumnFunc = [&data](int32_t column) -> bool {
+                data += ToCString(column + 1);
+                return true;
+            };
+            panda_file::File::EntityId methodId = method->GetFileId();
+            uint32_t offset = frameHandler.GetBytecodeOffset();
+            if (!debugExtractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+                !debugExtractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
                 data.push_back('?');
             }
             data.push_back(')');
@@ -230,9 +237,9 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
     return data;
 }
 
-CString ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
+std::string ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
 {
-    CString stack = BuildNativeEcmaStackTrace(thread);
+    std::string stack = BuildNativeEcmaStackTrace(thread);
     return stack;
 }
 }  // namespace panda::ecmascript::base

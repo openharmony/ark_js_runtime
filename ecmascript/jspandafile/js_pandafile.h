@@ -19,7 +19,7 @@
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
 
@@ -36,7 +36,7 @@ public:
     JSPandaFile(const panda_file::File *pf, const CString &descriptor);
     ~JSPandaFile();
 
-    tooling::PtJSExtractor *GetOrCreatePtJSExtractor();
+    tooling::JSPtExtractor *GetJSPtExtractor();
 
     CString GetJSPandaFileDesc() const
     {
@@ -104,7 +104,7 @@ private:
     JSMethod *methods_ {nullptr};
     CUnorderedMap<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
-    std::unique_ptr<tooling::PtJSExtractor> ptJSExtractor_;
+    std::unique_ptr<tooling::JSPtExtractor> JSPtExtractor_;
     CString desc_;
 };
 }  // namespace ecmascript
