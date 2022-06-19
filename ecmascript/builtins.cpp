@@ -824,7 +824,7 @@ void Builtins::InitializeBigInt(const JSHandle<GlobalEnv> &env, const JSHandle<J
 void Builtins::InitializeDate(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    const int utcLength = 7;
+    constexpr int utcLength = 7;
     // Date.prototype
     JSHandle<JSObject> dateFuncPrototype = factory_->NewJSObjectWithInit(objFuncDynclass);
     JSHandle<JSTaggedValue> dateFuncPrototypeValue(dateFuncPrototype);
@@ -1892,7 +1892,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
         CreateGetter(env, BuiltinsArray::Species, "[Symbol.species]", FunctionLength::ZERO);
     SetGetter(JSHandle<JSObject>(arrayFunction), speciesSymbol, speciesGetter);
 
-    const int arrProtoLen = 0;
+    constexpr int arrProtoLen = 0;
     JSHandle<JSTaggedValue> key_string = thread_->GlobalConstants()->GetHandledLengthString();
     PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(thread_, JSTaggedValue(arrProtoLen)), true, false,
                                   false);
@@ -2049,7 +2049,7 @@ void Builtins::InitializeInt8Array(const JSHandle<GlobalEnv> &env, const JSHandl
 
     int8ArrayFunction->SetProtoOrDynClass(thread_, int8ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 1;
+    constexpr int bytesPerElement = 1;
     SetConstant(int8ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(int8ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetInt8ArrayFunction(thread_, int8ArrayFunction);
@@ -2073,7 +2073,7 @@ void Builtins::InitializeUint8Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     uint8ArrayFunction->SetProtoOrDynClass(thread_, uint8ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 1;
+    constexpr int bytesPerElement = 1;
     SetConstant(uint8ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(uint8ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetUint8ArrayFunction(thread_, uint8ArrayFunction);
@@ -2100,7 +2100,7 @@ void Builtins::InitializeUint8ClampedArray(const JSHandle<GlobalEnv> &env,
 
     uint8ClampedArrayFunction->SetProtoOrDynClass(thread_, uint8ClampedArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 1;
+    constexpr int bytesPerElement = 1;
     SetConstant(uint8ClampedArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(uint8ClampedArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetUint8ClampedArrayFunction(thread_, uint8ClampedArrayFunction);
@@ -2124,7 +2124,7 @@ void Builtins::InitializeInt16Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     int16ArrayFunction->SetProtoOrDynClass(thread_, int16ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 2;
+    constexpr int bytesPerElement = 2;
     SetConstant(int16ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(int16ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetInt16ArrayFunction(thread_, int16ArrayFunction);
@@ -2148,7 +2148,7 @@ void Builtins::InitializeUint16Array(const JSHandle<GlobalEnv> &env, const JSHan
 
     uint16ArrayFunction->SetProtoOrDynClass(thread_, uint16ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 2;
+    constexpr int bytesPerElement = 2;
     SetConstant(uint16ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(uint16ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetUint16ArrayFunction(thread_, uint16ArrayFunction);
@@ -2172,7 +2172,7 @@ void Builtins::InitializeInt32Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     int32ArrayFunction->SetProtoOrDynClass(thread_, int32ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 4;
+    constexpr int bytesPerElement = 4;
     SetConstant(int32ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(int32ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetInt32ArrayFunction(thread_, int32ArrayFunction);
@@ -2196,7 +2196,7 @@ void Builtins::InitializeUint32Array(const JSHandle<GlobalEnv> &env, const JSHan
 
     uint32ArrayFunction->SetProtoOrDynClass(thread_, uint32ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 4;
+    constexpr int bytesPerElement = 4;
     SetConstant(uint32ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(uint32ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetUint32ArrayFunction(thread_, uint32ArrayFunction);
@@ -2220,7 +2220,7 @@ void Builtins::InitializeFloat32Array(const JSHandle<GlobalEnv> &env, const JSHa
 
     float32ArrayFunction->SetProtoOrDynClass(thread_, float32ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 4;
+    constexpr int bytesPerElement = 4;
     SetConstant(float32ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(float32ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetFloat32ArrayFunction(thread_, float32ArrayFunction);
@@ -2244,7 +2244,7 @@ void Builtins::InitializeFloat64Array(const JSHandle<GlobalEnv> &env, const JSHa
 
     float64ArrayFunction->SetProtoOrDynClass(thread_, float64ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 8;
+    constexpr int bytesPerElement = 8;
     SetConstant(float64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(float64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetFloat64ArrayFunction(thread_, float64ArrayFunction);
@@ -2268,7 +2268,7 @@ void Builtins::InitializeBigInt64Array(const JSHandle<GlobalEnv> &env, const JSH
 
     bigInt64ArrayFunction->SetProtoOrDynClass(thread_, bigInt64ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 8;
+    constexpr int bytesPerElement = 8;
     SetConstant(bigInt64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(bigInt64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetBigInt64ArrayFunction(thread_, bigInt64ArrayFunction);
@@ -2292,7 +2292,7 @@ void Builtins::InitializeBigUint64Array(const JSHandle<GlobalEnv> &env, const JS
 
     bigUint64ArrayFunction->SetProtoOrDynClass(thread_, bigUint64ArrFuncInstanceDynclass.GetTaggedValue());
 
-    const int bytesPerElement = 8;
+    constexpr int bytesPerElement = 8;
     SetConstant(bigUint64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(bigUint64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetBigUint64ArrayFunction(thread_, bigUint64ArrayFunction);
