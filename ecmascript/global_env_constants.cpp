@@ -284,6 +284,11 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::PROXY_CALL_STRING_INDEX, factory->NewFromASCIINonMovable("call"));
     SetConstant(ConstantIndex::PROMISE_THEN_STRING_INDEX, factory->NewFromASCIINonMovable("then"));
     SetConstant(ConstantIndex::PROMISE_CATCH_STRING_INDEX, factory->NewFromASCIINonMovable("catch"));
+    SetConstant(ConstantIndex::PROMISE_FINALLY_STRING_INDEX, factory->NewFromASCII("finally"));
+    SetConstant(ConstantIndex::PROMISE_STATUS_STRING_INDEX, factory->NewFromASCII("status"));
+    SetConstant(ConstantIndex::PROMISE_FULFILLED_STRING_INDEX, factory->NewFromASCII("fulfilled"));
+    SetConstant(ConstantIndex::PROMISE_REJECTED_STRING_INDEX, factory->NewFromASCII("rejected"));
+    SetConstant(ConstantIndex::PROMISE_REASON_STRING_INDEX, factory->NewFromASCII("reason"));
     SetConstant(ConstantIndex::SCRIPT_JOB_STRING_INDEX, factory->NewFromASCIINonMovable("ScriptJobs"));
     SetConstant(ConstantIndex::PROMISE_STRING_INDEX, factory->NewFromASCIINonMovable("PrimiseJobs"));
     SetConstant(ConstantIndex::THROWER_STRING_INDEX, factory->NewFromASCIINonMovable("Thrower"));
@@ -312,6 +317,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::GLOBAL_STRING_INDEX, factory->NewFromASCIINonMovable("global"));
     SetConstant(ConstantIndex::MESSAGE_STRING_INDEX, factory->NewFromASCIINonMovable("message"));
     SetConstant(ConstantIndex::ERROR_STRING_INDEX, factory->NewFromASCIINonMovable("Error"));
+    SetConstant(ConstantIndex::ERRORS_STRING_INDEX, factory->NewFromASCII("errors"));
+    SetConstant(ConstantIndex::AGGREGATE_ERROR_STRING_INDEX, factory->NewFromASCII("AggregateError"));
     SetConstant(ConstantIndex::RANGE_ERROR_STRING_INDEX, factory->NewFromASCIINonMovable("RangeError"));
     SetConstant(ConstantIndex::REFERENCE_ERROR_STRING_INDEX, factory->NewFromASCIINonMovable("ReferenceError"));
     SetConstant(ConstantIndex::TYPE_ERROR_STRING_INDEX, factory->NewFromASCIINonMovable("TypeError"));

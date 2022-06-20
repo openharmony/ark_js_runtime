@@ -233,6 +233,8 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("Range Error");
         case JSType::JS_TYPE_ERROR:
             return GetString("Type Error");
+        case JSType::JS_AGGREGATE_ERROR:
+            return GetString("Aggregate Error");
         case JSType::JS_REFERENCE_ERROR:
             return GetString("Reference Error");
         case JSType::JS_URI_ERROR:
@@ -332,6 +334,14 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("PromiseExecutorFunction");
         case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
             return GetString("PromiseAllResolveElementFunction");
+        case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION:
+            return GetString("PromiseAnyRejectElementFunction");
+        case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION:
+            return GetString("PromiseAllSettledElementFunction");
+        case JSType::JS_PROMISE_FINALLY_FUNCTION:
+            return GetString("PromiseFinallyFunction");
+        case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION:
+            return GetString("PromiseValueThunkOrThrowerFunction");
         case JSType::JS_GENERATOR_FUNCTION:
             return GetString("JSGeneratorFunction");
         case JSType::SYMBOL:

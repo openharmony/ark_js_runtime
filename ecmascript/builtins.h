@@ -180,6 +180,8 @@ private:
 
     void InitializeDataView(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const;
 
+    void InitializeForPromiseFuncClass(const JSHandle<GlobalEnv> &env);
+
     void InitializeProxy(const JSHandle<GlobalEnv> &env);
 
     void InitializeReflect(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;

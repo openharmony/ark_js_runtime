@@ -124,6 +124,7 @@ using Error = builtins::BuiltinsError;
 using RangeError = builtins::BuiltinsRangeError;
 using ReferenceError = builtins::BuiltinsReferenceError;
 using TypeError = builtins::BuiltinsTypeError;
+using AggregateError = builtins::BuiltinsAggregateError;
 using URIError = builtins::BuiltinsURIError;
 using SyntaxError = builtins::BuiltinsSyntaxError;
 using EvalError = builtins::BuiltinsEvalError;
@@ -209,7 +210,14 @@ void * ObjectFactory::InternalMethodTable[] = {
     reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::ResolveElementFunction),
     reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Resolve),
     reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Reject),
-    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Executor)
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Executor),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::AnyRejectElementFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::AllSettledResolveElementFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::AllSettledRejectElementFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::ThenFinally),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::CatchFinally),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::valueThunkFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::throwerFunction)
 };
 
 void ObjectFactory::GenerateInternalNativeMethods()
@@ -854,6 +862,14 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
     return handleNativeInstanceObj;
 }
 
+JSHandle<JSObject> ObjectFactory::NewJSAggregateError()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSFunction> constructor(env->GetAggregateErrorFunction());
+    JSHandle<JSTaggedValue> newTarget(constructor);
+    return NewJSObjectByConstructor(constructor, newTarget);
+}
+
 JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,
                                                            const JSHandle<JSTaggedValue> &newTarget)
 {
@@ -887,6 +903,7 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         case JSType::JS_RANGE_ERROR:
         case JSType::JS_REFERENCE_ERROR:
         case JSType::JS_TYPE_ERROR:
+        case JSType::JS_AGGREGATE_ERROR:
         case JSType::JS_URI_ERROR:
         case JSType::JS_SYNTAX_ERROR:
         case JSType::JS_ITERATOR: {
@@ -1149,6 +1166,31 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             JSPromiseAllResolveElementFunction::Cast(*obj)->SetCapabilities(JSTaggedValue::Undefined());
             JSPromiseAllResolveElementFunction::Cast(*obj)->SetRemainingElements(JSTaggedValue::Undefined());
             JSPromiseAllResolveElementFunction::Cast(*obj)->SetAlreadyCalled(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseAnyRejectElementFunction::Cast(*obj)->SetIndex(0);
+            JSPromiseAnyRejectElementFunction::Cast(*obj)->SetErrors(JSTaggedValue::Undefined());
+            JSPromiseAnyRejectElementFunction::Cast(*obj)->SetCapability(JSTaggedValue::Undefined());
+            JSPromiseAnyRejectElementFunction::Cast(*obj)->SetRemainingElements(JSTaggedValue::Undefined());
+            JSPromiseAnyRejectElementFunction::Cast(*obj)->SetAlreadyCalled(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseAllSettledElementFunction::Cast(*obj)->SetIndex(0);
+            JSPromiseAllSettledElementFunction::Cast(*obj)->SetValues(JSTaggedValue::Undefined());
+            JSPromiseAllSettledElementFunction::Cast(*obj)->SetCapability(JSTaggedValue::Undefined());
+            JSPromiseAllSettledElementFunction::Cast(*obj)->SetRemainingElements(JSTaggedValue::Undefined());
+            JSPromiseAllSettledElementFunction::Cast(*obj)->SetAlreadyCalled(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_FINALLY_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseFinallyFunction::Cast(*obj)->SetOnFinally(JSTaggedValue::Undefined());
+            JSPromiseFinallyFunction::Cast(*obj)->SetConstructor(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseValueThunkOrThrowerFunction::Cast(*obj)->SetResult(JSTaggedValue::Undefined());
             break;
         case JSType::JS_INTL_BOUND_FUNCTION:
             JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
@@ -2403,6 +2445,111 @@ JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResol
     function->SetRemainingElements(JSTaggedValue::Undefined());
     function->SetAlreadyCalled(JSTaggedValue::Undefined());
     JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseAnyRejectElementFunction> ObjectFactory::NewJSPromiseAnyRejectElementFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseAnyRejectElementFunctionClass());
+    JSHandle<JSPromiseAnyRejectElementFunction> function =
+        JSHandle<JSPromiseAnyRejectElementFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_ANY_REJECT_ELEMENT_FUNCTION));
+    function->SetIndex(0);
+    function->SetErrors(JSTaggedValue::Undefined());
+    function->SetCapability(JSTaggedValue::Undefined());
+    function->SetRemainingElements(JSTaggedValue::Undefined());
+    function->SetAlreadyCalled(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseAllSettledElementFunction> ObjectFactory::NewJSPromiseAllSettledResolveElementFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseAllSettledElementFunctionClass());
+    JSHandle<JSPromiseAllSettledElementFunction> function =
+        JSHandle<JSPromiseAllSettledElementFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_ALL_SETTLED_RESOLVE_ELEMENT_FUNCTION));
+    function->SetIndex(0);
+    function->SetValues(JSTaggedValue::Undefined());
+    function->SetCapability(JSTaggedValue::Undefined());
+    function->SetRemainingElements(JSTaggedValue::Undefined());
+    function->SetAlreadyCalled(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseAllSettledElementFunction> ObjectFactory::NewJSPromiseAllSettledRejectElementFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseAllSettledElementFunctionClass());
+    JSHandle<JSPromiseAllSettledElementFunction> function =
+        JSHandle<JSPromiseAllSettledElementFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_ALL_SETTLED_REJECT_ELEMENT_FUNCTION));
+    function->SetIndex(0);
+    function->SetValues(JSTaggedValue::Undefined());
+    function->SetCapability(JSTaggedValue::Undefined());
+    function->SetRemainingElements(JSTaggedValue::Undefined());
+    function->SetAlreadyCalled(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseFinallyFunction> ObjectFactory::NewJSPromiseThenFinallyFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseFinallyFunctionClass());
+    JSHandle<JSPromiseFinallyFunction> function =
+        JSHandle<JSPromiseFinallyFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_THEN_FINALLY_FUNCTION));
+    function->SetConstructor(JSTaggedValue::Undefined());
+    function->SetOnFinally(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseFinallyFunction> ObjectFactory::NewJSPromiseCatchFinallyFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseFinallyFunctionClass());
+    JSHandle<JSPromiseFinallyFunction> function =
+        JSHandle<JSPromiseFinallyFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_CATCH_FINALLY_FUNCTION));
+    function->SetConstructor(JSTaggedValue::Undefined());
+    function->SetOnFinally(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
+    return function;
+}
+
+JSHandle<JSPromiseValueThunkOrThrowerFunction> ObjectFactory::NewJSPromiseValueThunkFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseValueThunkOrThrowerFunctionClass());
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> function =
+        JSHandle<JSPromiseValueThunkOrThrowerFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_VALUE_THUNK_FUNCTION));
+    function->SetResult(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(0));
+    return function;
+}
+
+JSHandle<JSPromiseValueThunkOrThrowerFunction> ObjectFactory::NewJSPromiseThrowerFunction()
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseValueThunkOrThrowerFunctionClass());
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> function =
+        JSHandle<JSPromiseValueThunkOrThrowerFunction>::Cast(NewJSObject(dynclass));
+    JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_THROWER_FUNCTION));
+    function->SetResult(JSTaggedValue::Undefined());
+    JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(0));
     return function;
 }
 
