@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
   import("//ark/js_runtime/js_runtime_config.gni")
   import("//build/ohos.gni")
 } else {
@@ -33,7 +33,7 @@ source_set("ark_js_vm_set") {
   ]
 }
 
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
   ohos_executable("ark_js_vm") {
     deps = [ ":ark_js_vm_set" ]
 
