@@ -18,14 +18,15 @@ if (globalThis["ArkPrivate"] != undefined) {
     List = ArkPrivate.Load(ArkPrivate.List);
     let list = new List();
     const testArray = []
+    let map = new Map();
     for(let i = 0; i < 10; i++) {
         list.add(i)
         testArray.push(i)
     }
 
-    print("test list get 1:", list.get(1) === 1)
-    print("test list has:",  list.has(8))
-    print("test list not has:", list.has(123) === false)
+    map.set("test list get 1:", list.get(1) === 1)
+    map.set("test list has:",  list.has(8))
+    map.set("test list not has:", list.has(123) === false)
 
     let list1 = new List();
     const testArray2 = []
@@ -33,13 +34,13 @@ if (globalThis["ArkPrivate"] != undefined) {
         list1.add(i)
         testArray2.push(i)
     }
-    
-    print("test list equal:", list.equal(list1))
+
+    map.set("test list equal:", list.equal(list1))
     list.add(10)
     testArray.push(10)
-    print("test list equal:", list.equal(list1) === false)
-    print("test list getLastIndexOf:", list.getLastIndexOf(1) === 1)
-    print("test list getIndexOf:", list.getIndexOf(5) === 5)
+    map.set("test list equal:", list.equal(list1) === false)
+    map.set("test list getLastIndexOf:", list.getLastIndexOf(1) === 1)
+    map.set("test list getIndexOf:", list.getIndexOf(5) === 5)
 
     list.removeByIndex(10)
     testArray.splice(10, 1)
@@ -49,7 +50,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list removeByIndex:", res)
+    map.set("test list removeByIndex:", res)
 
     list.remove(9)
     testArray.splice(9, 1)
@@ -60,7 +61,7 @@ if (globalThis["ArkPrivate"] != undefined) {
         }
         testArray[i] = testArray[i] * 2
     }
-    print("test list remove:", res)
+    map.set("test list remove:", res)
 
     list.replaceAllElements((item, index) => {
         return item * 2
@@ -71,9 +72,9 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list replaceAllElements:", res)
-    print("test list getFirst:", list.getFirst() === 0)
-    print("test list getLast:", list.getLast() === 16)
+    map.set("test list replaceAllElements:", res)
+    map.set("test list getFirst:", list.getFirst() === 0)
+    map.set("test list getLast:", list.getLast() === 16)
     list.insert(999, 3)
     testArray.splice(3, 0, 999)
     res = true
@@ -82,8 +83,8 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list insert:", res)
-    
+    map.set("test list insert:", res)
+
     list.set(5, 888)
     testArray[5] = 888
     res = true
@@ -92,7 +93,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list set:", res)
+    map.set("test list set:", res)
 
     let list2 = new List();
     list2.add(4);
@@ -107,7 +108,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list sort:", res)
+    map.set("test list sort:", res)
 
     res = true
     let subList = list.getSubList(1, 3)
@@ -117,7 +118,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res =  false
         }
     }
-    print("test list getSubList:", res)
+    map.set("test list getSubList:", res)
 
     res = true
     const arr = list.convertToArray()
@@ -126,7 +127,7 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     }
-    print("test list convertToArray:", res)
+    map.set("test list convertToArray:", res)
 
     res = true
     let i = 0
@@ -136,7 +137,7 @@ if (globalThis["ArkPrivate"] != undefined) {
         }
         i++;
     }
-    print("test list itertor:", res)
+    map.set("test list itertor:", res)
 
     res = true
     list1.forEach((i, d) => {
@@ -144,17 +145,34 @@ if (globalThis["ArkPrivate"] != undefined) {
             res = false
         }
     })
-    print("test list forEach:", res)
+    map.set("test list forEach:", res)
     list2.clear()
-    print("test list clear:", list2.length === 0)
-    print("test list get:", list1.get(200) === undefined)
-    print("test list getLastIndexOf:", list1.getLastIndexOf('abc') === -1)
+    map.set("test list clear:", list2.length === 0)
+    map.set("test list get:", list1.get(200) === undefined)
+    map.set("test list getLastIndexOf:", list1.getLastIndexOf('abc') === -1)
+    let flag = false;
     try {
         list1.removeByIndex(99)
     } catch (error) {
-        print("test list removeByIndex:", 'There is no such element to delete')
+        flag = true;
     }
+    map.set("test list removeByIndex:", flag)
     res = list1.remove(888)
-    print("test list remove:", res)
-}
+    map.set("test list remove:", !res)
 
+    flag = undefined;
+    function elements(value, key, map) {
+        if (!value) {
+            if (!flag) {
+                flag = [];
+            }
+            flag.push(key);
+        }
+    }
+    map.forEach(elements);
+    if (!flag) {
+        print("Test List success!!!");
+    } else {
+        print("Test List fail: " + flag);
+    }
+}
