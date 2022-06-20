@@ -1156,7 +1156,7 @@ bool JSObject::CreateMethodProperty(JSThread *thread, const JSHandle<JSObject> &
 JSHandle<JSTaggedValue> JSObject::GetMethod(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                             const JSHandle<JSTaggedValue> &key)
 {
-    JSHandle<JSTaggedValue> func = GetProperty(thread, obj, key).GetValue();
+    JSHandle<JSTaggedValue> func = JSTaggedValue::GetProperty(thread, obj, key).GetValue();
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     if (func->IsUndefined() || func->IsNull()) {
         return JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined());

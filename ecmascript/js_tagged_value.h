@@ -82,33 +82,34 @@ static inline double ReinterpretTaggedTypeToDouble(JSTaggedType value)
 
 class JSTaggedValue {
 public:
-    static constexpr size_t TAG_BITS_SIZE = 16;
+    static constexpr size_t TAG_BITS_SIZE = 16;  // 16 means bit numbers of 0xFFFF
     static constexpr size_t TAG_BITS_SHIFT = BitNumbers<JSTaggedType>() - TAG_BITS_SIZE;
     static_assert((TAG_BITS_SHIFT + TAG_BITS_SIZE) == sizeof(JSTaggedType) * CHAR_BIT, "Insufficient bits!");
-    static constexpr JSTaggedType TAG_MASK = ((1ULL << TAG_BITS_SIZE) - 1ULL) << TAG_BITS_SHIFT;
-    static constexpr JSTaggedType TAG_INT = 0xFFFFULL << TAG_BITS_SHIFT;
+    static constexpr JSTaggedType TAG_MARK = 0xFFFFULL << TAG_BITS_SHIFT;
+    // int tag
+    static constexpr JSTaggedType TAG_INT = TAG_MARK;
+    // object tag
     static constexpr JSTaggedType TAG_OBJECT = 0x0000ULL << TAG_BITS_SHIFT;
-
-    static constexpr JSTaggedType TAG_SPECIAL_MASK = 0xFFULL;
-    static constexpr TaggedType TAG_HEAPOBJECT_BOOLEAN = TAG_INT | 0x06ULL;
-    static constexpr TaggedType TAG_WEAK = TAG_INT | 0x07ULL;
-    static constexpr TaggedType TAG_SPECIAL_MARK = TAG_INT | 0x02ULL;
-    static constexpr JSTaggedType TAG_SPECIAL_VALUE = 0x02ULL;
+    // weak object tag
+    static constexpr JSTaggedType TAG_WEAK = TAG_OBJECT | 0x01ULL;
+    // special tag
+    static constexpr JSTaggedType TAG_NULL = 0x01ULL;
+    static constexpr JSTaggedType TAG_SPECIAL = 0x02ULL;
     static constexpr JSTaggedType TAG_BOOLEAN = 0x04ULL;
-    static constexpr JSTaggedType TAG_BOOLEAN_MASK = 0x06ULL;
-    static constexpr TaggedType TAG_NULL = 0x01ULL;
-    static constexpr TaggedType TAG_EXCEPTION = 0x08ULL;
-    static constexpr JSTaggedType TAG_WEAK_FILTER = 0x03ULL;
-    static constexpr JSTaggedType VALUE_HOLE = TAG_OBJECT | 0x05ULL;
-    static constexpr JSTaggedType TAG_WEAK_MASK = TAG_OBJECT | 0x01ULL;
-    static constexpr JSTaggedType VALUE_NULL = TAG_OBJECT | TAG_SPECIAL_VALUE | TAG_NULL;
-    static constexpr JSTaggedType VALUE_FALSE =
-        TAG_OBJECT | TAG_BOOLEAN | TAG_SPECIAL_VALUE | static_cast<JSTaggedType>(false);
-    static constexpr JSTaggedType VALUE_TRUE =
-        TAG_OBJECT | TAG_BOOLEAN | TAG_SPECIAL_VALUE | static_cast<JSTaggedType>(true);
+    static constexpr JSTaggedType TAG_EXCEPTION = 0x08ULL;
+    // tag mark
+    static constexpr JSTaggedType TAG_SPECIAL_MARK = TAG_MARK | TAG_SPECIAL;
+    static constexpr JSTaggedType TAG_BOOLEAN_MARK = TAG_SPECIAL | TAG_BOOLEAN;
+    static constexpr JSTaggedType TAG_HEAPOBJECT_MARK = TAG_MARK | TAG_SPECIAL | TAG_BOOLEAN;
+    static constexpr JSTaggedType TAG_WEAK_MARK = TAG_HEAPOBJECT_MARK | TAG_WEAK;
+    // special value
+    static constexpr JSTaggedType VALUE_HOLE = 0x05ULL;
+    static constexpr JSTaggedType VALUE_NULL = TAG_OBJECT | TAG_SPECIAL | TAG_NULL;
+    static constexpr JSTaggedType VALUE_FALSE = TAG_BOOLEAN_MARK | static_cast<JSTaggedType>(false);
+    static constexpr JSTaggedType VALUE_TRUE = TAG_BOOLEAN_MARK | static_cast<JSTaggedType>(true);
+    static constexpr JSTaggedType VALUE_UNDEFINED = TAG_SPECIAL;
+    static constexpr JSTaggedType VALUE_EXCEPTION = TAG_SPECIAL | TAG_EXCEPTION;
     static constexpr JSTaggedType VALUE_ZERO = TAG_INT | 0x00ULL;
-    static constexpr JSTaggedType VALUE_UNDEFINED = TAG_OBJECT | TAG_SPECIAL_VALUE;
-    static constexpr JSTaggedType VALUE_EXCEPTION = TAG_OBJECT | TAG_SPECIAL_VALUE | TAG_EXCEPTION;
 
     static constexpr size_t DOUBLE_ENCODE_OFFSET_BIT = 48;
     static constexpr JSTaggedType DOUBLE_ENCODE_OFFSET = 1ULL << DOUBLE_ENCODE_OFFSET_BIT;
@@ -145,9 +146,7 @@ public:
     }
 
     constexpr explicit JSTaggedValue(bool v)
-        : value_(static_cast<JSTaggedType>(v) | TAG_OBJECT | TAG_BOOLEAN | TAG_SPECIAL_VALUE)
-    {
-    }
+        : value_(static_cast<JSTaggedType>(v) | TAG_BOOLEAN_MARK) {}
 
     explicit JSTaggedValue(double v)
     {
@@ -173,27 +172,27 @@ public:
 
     inline void CreateWeakRef()
     {
-        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_FILTER) == 0U),
+        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK) == 0U),
                      "The least significant two bits of JSTaggedValue are not zero.");
-        value_ = value_ | TAG_WEAK_MASK;
+        value_ = value_ | TAG_WEAK;
     }
 
     inline void RemoveWeakTag()
     {
-        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_MASK) == 1U), "The tagged value is not a weak ref.");
-        value_ = value_ & (~TAG_WEAK_FILTER);
+        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK) == TAG_WEAK), "The tagged value is not a weak ref.");
+        value_ = value_ & (~TAG_WEAK);
     }
 
     inline JSTaggedValue CreateAndGetWeakRef()
     {
-        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_FILTER) == 0U),
+        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK) == 0U),
                      "The least significant two bits of JSTaggedValue are not zero.");
-        return JSTaggedValue(value_ | TAG_WEAK_MASK);
+        return JSTaggedValue(value_ | TAG_WEAK);
     }
 
     inline bool IsWeak() const
     {
-        return ((value_ & TAG_WEAK) == 0x01ULL);;
+        return ((value_ & TAG_WEAK_MARK) == TAG_WEAK);
     }
 
     inline bool IsDouble() const
@@ -203,27 +202,27 @@ public:
 
     inline bool IsInt() const
     {
-        return (value_ & TAG_MASK) == TAG_INT;
+        return (value_ & TAG_MARK) == TAG_INT;
     }
 
     inline bool IsSpecial() const
     {
-        return ((value_ & TAG_SPECIAL_MARK) == TAG_SPECIAL_VALUE) || IsHole();
+        return ((value_ & TAG_SPECIAL_MARK) == TAG_SPECIAL) || IsHole();
     }
 
     inline bool IsObject() const
     {
-        return ((value_ & TAG_MASK) == TAG_OBJECT);
+        return ((value_ & TAG_MARK) == TAG_OBJECT);
     }
 
     inline TaggedObject *GetWeakReferentUnChecked() const
     {
-        return reinterpret_cast<TaggedObject *>(GetRawData() & (~TAG_WEAK_MASK));
+        return reinterpret_cast<TaggedObject *>(value_ & (~TAG_WEAK));
     }
 
     inline bool IsHeapObject() const
     {
-        return ((value_ & TAG_HEAPOBJECT_BOOLEAN) == 0U);
+        return ((value_ & TAG_HEAPOBJECT_MARK) == 0U);
     }
 
     inline double GetDouble() const
@@ -235,7 +234,7 @@ public:
     inline int GetInt() const
     {
         ASSERT_PRINT(IsInt(), "can not convert JSTaggedValue to Int :" << std::hex << value_);
-        return static_cast<int>(value_ & (~TAG_MASK));
+        return static_cast<int>(value_ & (~TAG_MARK));
     }
 
     inline JSTaggedType GetRawData() const
@@ -253,7 +252,7 @@ public:
     inline TaggedObject *GetWeakReferent() const
     {
         ASSERT_PRINT(IsWeak(), "can not convert JSTaggedValue to WeakRef HeapObject :" << std::hex << value_);
-        return reinterpret_cast<TaggedObject *>(value_ & (~TAG_WEAK_MASK));
+        return reinterpret_cast<TaggedObject *>(value_ & (~TAG_WEAK));
     }
 
     static inline JSTaggedType Cast(void *ptr)
@@ -284,7 +283,7 @@ public:
 
     inline bool IsUndefinedOrNull() const
     {
-        return ((value_ & TAG_HEAPOBJECT_BOOLEAN) == TAG_SPECIAL_VALUE);
+        return ((value_ & TAG_HEAPOBJECT_MARK) == TAG_SPECIAL);
     }
 
     inline bool IsHole() const
@@ -315,7 +314,7 @@ public:
 
     inline bool IsWeakForHeapObject() const
     {
-        return (GetRawData() & TAG_WEAK_MASK) == 1U;
+        return (value_ & TAG_WEAK) == 1U;
     }
 
     static inline constexpr JSTaggedValue False()
@@ -355,7 +354,7 @@ public:
 
     inline TaggedObject *GetTaggedObject() const
     {
-        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK_FILTER) == 0U),
+        ASSERT_PRINT(IsHeapObject() && ((value_ & TAG_WEAK) == 0U),
                      "can not convert JSTaggedValue to HeapObject :" << std::hex << value_);
         return reinterpret_cast<TaggedObject *>(value_);
     }
