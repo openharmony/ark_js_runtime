@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (defined(ark_independent_build)) {
+if (defined(ark_standalone_build)) {
   import("//js_runtime/js_runtime_config.gni")
   import("$build_root/ark.gni")
 } else {
@@ -193,20 +193,20 @@ source_set("ark_aot_compiler_set") {
   ]
 }
 
-if (!defined(ark_independent_build)) {
-  ohos_shared_library("libark_jsoptimizer") {
-    deps = [
-      ":libark_jsoptimizer_set",
-      "$js_root:libark_jsruntime",
-    ]
+ohos_shared_library("libark_jsoptimizer") {
+  deps = [
+    ":libark_jsoptimizer_set",
+    "$js_root:libark_jsruntime",
+  ]
 
-    install_enable = false
+  install_enable = false
 
-    output_extension = "so"
-    part_name = "ark_js_runtime"
-    subsystem_name = "ark"
-  }
+  output_extension = "so"
+  part_name = "ark_js_runtime"
+  subsystem_name = "ark"
+}
 
+if (!defined(ark_standalone_build)) {
   ohos_shared_library("libark_jsoptimizer_test") {
     deps = [
       ":libark_jsoptimizer_set",
@@ -261,14 +261,6 @@ if (!defined(ark_independent_build)) {
     ]
 
     outputs = [ "$stub_file_gen_dir/stub.m" ]
-  }
-} else {
-  ark_shared_library("libark_jsoptimizer") {
-    deps = [
-      ":libark_jsoptimizer_set",
-      "$js_root:libark_jsruntime",
-    ]
-    output_extension = "so"
   }
 }
 

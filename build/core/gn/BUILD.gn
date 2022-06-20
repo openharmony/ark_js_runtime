@@ -27,7 +27,7 @@ print()
 
 # /js_runtime/ecmascript/js_vm/BUILD.gn
 
-ark_executable("ark_js_vm") {
+ohos_executable("ark_js_vm") {
   deps = [ "//js_runtime/ecmascript/js_vm:ark_js_vm_set" ]
   ldflags = [
     "-pie",
@@ -40,8 +40,20 @@ ark_executable("ark_js_vm") {
   output_name = "ark_js_vm"
 }
 
-ark_executable("ts2abc") {
-  deps = [ "//ts2abc/ts2panda/ts2abc:ts2abc_static" ]
+enable_bytecode_optimizer = false
+ohos_executable("ts2abc") {
+  sources = [
+    "//ts2abc/ts2panda/ts2abc/main.cpp",
+    "//ts2abc/ts2panda/ts2abc/ts2abc.cpp",
+  ]
+
+  configs = [ "//ts2abc/ts2panda/ts2abc:ts2abc_config" ]
+
+  cflags = [
+    "-Wno-c++20-designator",
+    "-Wno-c99-extensions",
+    "-Wno-unknown-warning-option",
+  ]
   ldflags = [
     "-fPIE",
     "-ldl",
@@ -50,6 +62,38 @@ ark_executable("ts2abc") {
     "-lc++",
     "-latomic",
   ]
+  deps = [ sdk_libc_secshared_dep ]
+
+  if (is_linux || is_mingw || is_mac) {
+    deps += [
+      "$ark_root/assembler:libarkassembler_frontend_static",
+      "$ark_root/libpandabase:libarkbase_frontend_static",
+      "$ark_root/libpandafile:libarkfile_frontend_static",
+      "$ark_root/libziparchive:libarkziparchive_frontend_static",
+      "$third_party_gn_path/jsoncpp:jsoncpp_static",
+    ]
+    if (enable_bytecode_optimizer) {
+      deps += [
+        "ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
+        "ark_root/compiler:libarkcompiler_frontend_static",
+      ]
+    }
+  } else {
+    deps += [
+      "$ark_root/assembler:libarkassembler",
+      "$ark_root/libpandabase:libarkbase",
+      "$ark_root/libpandafile:libarkfile",
+      "$ark_root/libziparchive:libarkziparchive",
+      "$third_party_gn_path/jsoncpp:jsoncpp",
+    ]
+    if (enable_bytecode_optimizer) {
+      deps += [
+        "$ark_root/bytecode_optimizer:libarkbytecodeopt",
+        "$ark_root/compiler:libarkcompiler",
+      ]
+    }
+  }
+
   if (is_linux) {
     if (build_public_version) {
       ldflags += [ "-static-libstdc++" ]
@@ -57,6 +101,7 @@ ark_executable("ts2abc") {
       libs = [ libcpp_static_lib ]
     }
   }
+
   output_dir = "${root_out_dir}/ark/ark/"
   output_name = "js2abc"
 }
@@ -65,18 +110,18 @@ ark_executable("ts2abc") {
 
 src_dir = target_out_dir + "/src"
 
-ark_copy("ts2abc_src") {
+ohos_copy("ts2abc_src") {
   sources = [ "${ts2abc_root}/src" ]
   outputs = [ src_dir ]
 }
 
-ark_copy("node_modules") {
+ohos_copy("node_modules") {
   sources = [ rebase_path("${node_modules}") ]
   print("sources=$sources")
   outputs = [ target_out_dir + "/node_modules" ]
 }
 
-ark_copy("config_files") {
+ohos_copy("config_files") {
   sources = [
     "${ts2abc_root}/package-lock.json",
     "${ts2abc_root}/package.json",
@@ -188,13 +233,13 @@ action("npm_run_build") {
   }
 }
 
-ark_copy("ts2abc_build") {
+ohos_copy("ts2abc_build") {
   deps = [ ":npm_run_build" ]
   sources = [ "${root_out_dir}/ark/ark/build" ]
   outputs = [ "${target_out_dir}/build-tmp" ]
 }
 
-ark_copy("ts2abc_build_ets") {
+ohos_copy("ts2abc_build_ets") {
   deps = [ ":npm_run_build" ]
   sources = [ "${root_out_dir}/ark/ark/build" ]
   outputs = [ "${root_out_dir}/ark/ark/build-ets" ]
