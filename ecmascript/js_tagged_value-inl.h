@@ -474,7 +474,7 @@ inline bool JSTaggedValue::IsJSProxy() const
 
 inline bool JSTaggedValue::IsBoolean() const
 {
-    return ((value_ & TAG_HEAPOBJECT_BOOLEAN) == TAG_BOOLEAN_MASK);
+    return ((value_ & TAG_HEAPOBJECT_MARK) == TAG_BOOLEAN_MARK);
 }
 
 inline bool JSTaggedValue::IsJSObject() const
