@@ -42,7 +42,8 @@ public:
     {
         JSRuntimeOptions options;
         options.SetEnableForceGC(true);
-        ecmaVm = EcmaVM::Create(options);
+        auto config = ecmascript::EcmaParamConfiguration(false, MemMapAllocator::GetInstance()->GetCapacity());
+        ecmaVm = EcmaVM::Create(options, config);
         ecmaVm->SetEnableForceGC(true);
         EXPECT_TRUE(ecmaVm != nullptr) << "Cannot create Runtime";
         thread = ecmaVm->GetJSThread();

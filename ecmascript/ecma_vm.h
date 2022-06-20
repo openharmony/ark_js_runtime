@@ -87,11 +87,11 @@ using ResolvePathCallback = std::function<std::string(std::string dirPath, std::
 
 class EcmaVM {
 public:
-    static EcmaVM *Create(const JSRuntimeOptions &options);
+    static EcmaVM *Create(const JSRuntimeOptions &options, EcmaParamConfiguration &config);
 
     static bool Destroy(EcmaVM *vm);
 
-    explicit EcmaVM(JSRuntimeOptions options);
+    explicit EcmaVM(JSRuntimeOptions options, EcmaParamConfiguration config);
 
     EcmaVM();
 
@@ -129,6 +129,11 @@ public:
     const JSRuntimeOptions &GetJSOptions() const
     {
         return options_;
+    }
+
+    const EcmaParamConfiguration &GetEcmaParamConfiguration() const
+    {
+        return ecmaParamConfiguration_;
     }
 
     JSHandle<GlobalEnv> GetGlobalEnv() const;
@@ -440,6 +445,9 @@ private:
 
     // CJS resolve path Callbacks
     ResolvePathCallback resolvePathCallback_ {nullptr};
+
+    // vm parameter configurations
+    EcmaParamConfiguration ecmaParamConfiguration_;
 
     friend class Snapshot;
     friend class SnapshotProcessor;

@@ -95,21 +95,21 @@ HWTEST_F_L0(HugeObjectTest, MultipleArrays)
     auto heap = ecmaVm->GetHeap();
     {
         [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 14; i++) {
             JSHandle<TaggedArray> array1(thread, LargeArrayTestCreate(thread));
         }
     }
 
     {
         [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 14; i++) {
             JSHandle<TaggedArray> array2(thread, LargeArrayTestCreate(thread));
         }
     }
 
     {
         [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 14; i++) {
             JSHandle<TaggedArray> array2(thread, LargeArrayTestCreate(thread));
         }
     }

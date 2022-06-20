@@ -354,6 +354,16 @@ public:
         return heap_size_limit_.WasSet();
     }
 
+    void SetIsWorker(bool isWorker)
+    {
+        isWorker_.SetValue(isWorker);
+    }
+
+    bool IsWorker() const
+    {
+        return isWorker_.GetValue();
+    }
+
     bool EnableIC() const
     {
         return enableIC_.GetValue();
@@ -508,6 +518,8 @@ private:
         R"(enable statistics of runtime state. Default: false)"};
     PandArg<bool> logTypeInfer_ {"log-Type-Infer", false,
         R"(print aot type infer log. Default: false)"};
+    PandArg<bool> isWorker_ {"IsWorker", false,
+        R"(whether is worker vm)"};
 };
 }  // namespace panda::ecmascript
 
