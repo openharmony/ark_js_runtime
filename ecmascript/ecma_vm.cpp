@@ -79,7 +79,12 @@ namespace panda::ecmascript {
 /* static */
 EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options, EcmaParamConfiguration &config)
 {
-    auto vm = new EcmaVM(options, config);
+    JSRuntimeOptions newOptions = options;
+    // windows or mac disable asm interpreter and use c interpreter
+#if defined(PANDA_TARGET_WINDOWS) || defined(PANDA_TARGET_MACOS)
+    newOptions.SetEnableAsmInterpreter(false);
+#endif
+    auto vm = new EcmaVM(newOptions, config);
     if (UNLIKELY(vm == nullptr)) {
         LOG_ECMA(ERROR) << "Failed to create jsvm";
         return nullptr;
