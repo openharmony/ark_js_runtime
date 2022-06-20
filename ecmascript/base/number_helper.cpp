@@ -219,7 +219,7 @@ JSTaggedValue NumberHelper::StringToDoubleWithRadix(const uint8_t *start, const 
         for (; p != end; ++p) {
             // The maximum value to ensure that uint32_t will not overflow
             const uint32_t MAX_MULTIPER = 0xffffffffU / 36;
-            uint32_t m = multiplier * radix;
+            uint32_t m = multiplier * static_cast<uint32_t>(radix);
             if (m > MAX_MULTIPER) {
                 break;
             }
@@ -633,7 +633,7 @@ int32_t NumberHelper::DoubleToInt(double d, size_t bits)
         // Still has significand bits after mod 2^<bits>
         // Get low <bits> bits by shift left <64 - bits> and shift right <64 - bits>
         uint64_t value = (((u64 & DOUBLE_SIGNIFICAND_MASK) | DOUBLE_HIDDEN_BIT)
-                          << (exp - DOUBLE_SIGNIFICAND_SIZE + INT64_BITS - bits)) >>
+                          << (static_cast<uint32_t>(exp) - DOUBLE_SIGNIFICAND_SIZE + INT64_BITS - bits)) >>
                          (INT64_BITS - bits);
         ret = static_cast<int32_t>(value);
         if ((u64 & DOUBLE_SIGN_MASK) == DOUBLE_SIGN_MASK && ret != INT32_MIN) {

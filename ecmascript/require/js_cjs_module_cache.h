@@ -84,7 +84,7 @@ public:
         int size = Size();
         int count = 1;
         JSTaggedValue keyValue;
-        int32_t hash = Hash(key);
+        uint32_t hash = Hash(key);
 
         for (uint32_t entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
             keyValue = GetKey(entry);

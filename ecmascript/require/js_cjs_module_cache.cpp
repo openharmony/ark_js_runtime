@@ -24,7 +24,7 @@ JSHandle<CjsModuleCache> CjsModuleCache::PutIfAbsent(const JSThread *thread,
                                                      const JSHandle<JSTaggedValue> &key,
                                                      const JSHandle<JSTaggedValue> &value)
 {
-    int hash = Hash(key.GetTaggedValue());
+    int hash = static_cast<int>(Hash(key.GetTaggedValue()));
 
     int entry = dictionary->FindEntry(key.GetTaggedValue());
     if (entry != -1) {

@@ -778,7 +778,7 @@ JSTaggedValue BuiltinsString::PadStart(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> lengthTag = GetCallArg(argv, 0);
     int32_t intMaxLength = JSTaggedValue::ToInt32(thread, lengthTag);
-    int32_t stringLength = thisHandle->GetLength();
+    int32_t stringLength = static_cast<int32_t>(thisHandle->GetLength());
     if (intMaxLength < stringLength) {
         return thisHandle.GetTaggedValue();
     }
@@ -808,7 +808,7 @@ JSTaggedValue BuiltinsString::PadStart(EcmaRuntimeCallInfo *argv)
     }
 
     int32_t fillLen = intMaxLength - stringLength;
-    int32_t len = stringBuilder.length();
+    int32_t len = static_cast<int32_t>(stringBuilder.length());
     std::u16string fiString;
     for (int32_t i = 0; i < fillLen; ++i) {
         if (len == 0) {
@@ -835,7 +835,7 @@ JSTaggedValue BuiltinsString::PadEnd(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> lengthTag = GetCallArg(argv, 0);
     int32_t intMaxLength = JSTaggedValue::ToInt32(thread, lengthTag);
-    int32_t stringLength = thisHandle->GetLength();
+    int32_t stringLength = static_cast<int32_t>(thisHandle->GetLength());
     if (intMaxLength < stringLength) {
         return thisHandle.GetTaggedValue();
     }
@@ -865,7 +865,7 @@ JSTaggedValue BuiltinsString::PadEnd(EcmaRuntimeCallInfo *argv)
     }
 
     int32_t fillLen = intMaxLength - stringLength;
-    int32_t len = stringBuilder.length();
+    int32_t len = static_cast<int32_t>(stringBuilder.length());
     std::u16string fiString;
     for (int32_t i = 0; i < fillLen; ++i) {
         if (len == 0) {
