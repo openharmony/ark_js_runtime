@@ -52,7 +52,7 @@ public:
 
     static void CallBuiltinTrampoline(ExtendedAssembler *assembler);
 
-    static void JSCallWithArgV(ExtendedAssembler *assembler);
+    static void JSProxyCallInternalWithArgV(ExtendedAssembler *assembler);
 
     static void JSCall(ExtendedAssembler *assembler);
 
@@ -102,7 +102,7 @@ public:
 
     static void CallOptimizedJSFunction(ExtendedAssembler *assembler);
 
-    static void CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler);
+    static void JSCallWithArgV(ExtendedAssembler *assembler);
 
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
@@ -176,6 +176,8 @@ private:
     static void PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs);
     static void PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp);
     static void PopAotEntryFrame(ExtendedAssembler *assembler, Register glue);
+    static void PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp);
+    static void PopOptimizedFrame(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

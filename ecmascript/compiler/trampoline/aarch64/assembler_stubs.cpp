@@ -638,9 +638,9 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
     }
 }
 
-void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubs::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
+    __ BindAssemblerStub(RTSTUB_ID(JSProxyCallInternalWithArgV));
     Register jsfunc(X1);
     Register argv(X3);
     __ Mov(jsfunc, Register(X2));
@@ -1904,7 +1904,7 @@ void AssemblerStubs::PushAotEntryFrame(ExtendedAssembler *assembler, Register pr
 {
     Register fp(X29);
     Register sp(SP);
-    TempRegister2Scope temp1Scope(assembler);
+    TempRegister2Scope temp2Scope(assembler);
     __ Str(Register(X30), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ CalleeSave();
     __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
@@ -1977,36 +1977,54 @@ void AssemblerStubs::CallOptimizedJSFunction(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-void AssemblerStubs::CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubs::PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunctionWithArgV));
+    Register sp(SP);
+    TempRegister2Scope temp2Scope(assembler);
+    Register frameType = __ TempRegister2();
+    __ SaveFpAndLr();
+    // construct frame
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
+    // 2 : 2 means pairs
+    __ Stp(callSiteSp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+}
+
+void AssemblerStubs::PopOptimizedFrame(ExtendedAssembler *assembler)
+{
+    Register fp(X29);
+    Register sp(SP);
+    Register prevFp(X1);
+    // 2 : 2 means pop call site sp and type
+    __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE));
+    __ RestoreFpAndLr();
+}
+
+void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
     Register sp(SP);
     Register glue(X0);
-    Register prevFp(X1);
+    Register actualNumArgs(X1);
     Register jsfunc(X2);
-    Register actualNumArgs(X3);
+    Register newTarget(X3);
     Register thisObj(X4);
     Register argV(X5);
-    Register codeAddr = __ AvailableRegister1();
-    Register expectedNumArgs(X19);
+    Register callsiteSp = __ AvailableRegister2();
     Label pushCallThis;
 
-    PushAotEntryFrame(assembler, prevFp);
-    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
+    __ Mov(callsiteSp, sp);
+    PushOptimizedFrame(assembler, callsiteSp);
+    __ Cbz(actualNumArgs, &pushCallThis);
+    CopyArgumentWithArgV(assembler, actualNumArgs, argV);
     __ Bind(&pushCallThis);
-    __ Add(expectedNumArgs, expectedNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
+    PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Add(actualNumArgs, actualNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
-    {
-        [[maybe_unused]] TempRegister1Scope scope1(assembler);
-        Register newTarget = __ TempRegister1();
-        __ Mov(newTarget, JSTaggedValue::VALUE_UNDEFINED);
-        PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
-    }
     __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Ldr(codeAddr, MemoryOperand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET));
-    __ Blr(codeAddr); // then call jsFunction
-    PopAotArgs(assembler, expectedNumArgs);
-    PopAotEntryFrame(assembler, glue);
+
+    __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
+    __ Ldr(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+    PopAotArgs(assembler, actualNumArgs);
+    PopOptimizedFrame(assembler);
     __ Ret();
 }
 }  // panda::ecmascript::aarch64

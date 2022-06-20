@@ -390,9 +390,14 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     }
 
     if (jsPandaFile->IsLoadedAOT()) {
-        thread_->SetPrintBCOffset(true);
-        result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
-    } else {
+        fileLoader_->UpdateJSMethods(func, jsPandaFile);
+    }
+
+    // if (jsPandaFile->IsLoadedAOT()) {
+    //     thread_->SetPrintBCOffset(true);
+    //     result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
+    // } else
+    {
         if (jsPandaFile->IsCjs()) {
             CJSExecution(func, jsPandaFile);
         } else {

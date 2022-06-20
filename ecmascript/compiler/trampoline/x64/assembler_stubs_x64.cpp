@@ -337,15 +337,15 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[])
+// uint64_t JSProxyCallInternalWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[])
 // c++ calling convention call js function
 // Input: %rdi - glue
 //        %rsi - argc
 //        %rdx - calltarget
 //        %rcx - argV (calltarget, newtarget, thisObj, ...)
-void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
+    __ BindAssemblerStub(RTSTUB_ID(JSProxyCallInternalWithArgV));
     Label jsCall;
     Label lJSCallStart;
     Label lNotJSFunction;
@@ -2135,7 +2135,7 @@ void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expect
     __ Andq(~1, expectedNumArgs);
     __ Leaq(Operand(expectedNumArgs, Scale::Times8, 0), expectedNumArgs);
     __ Addq(expectedNumArgs, rsp);
-    __ Addq(8, rsp); // 8: skip r14
+    __ Addq(8, rsp); // 8: skip expectedNumArgs
 }
 
 void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp)
@@ -2161,33 +2161,56 @@ void AssemblerStubsX64::PopAotEntryFrame(ExtendedAssembler *assembler, Register 
     __ Movq(prevFp, Operand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
 }
 
-void AssemblerStubsX64::CallOptimizedJSFunctionWithArgV(ExtendedAssembler *assembler)
+void AssemblerStubsX64::PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunctionWithArgV));
+    __ Pushq(rbp);
+    __ Movq(rsp, rbp);
+    // construct frame
+    __ Pushq(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME));
+    __ Pushq(callSiteSp);
+}
+
+void AssemblerStubsX64::PopOptimizedFrame(ExtendedAssembler *assembler)
+{
+    Register sp(rsp);
+    // 16 : 16 means pop call site sp and type
+    __ Addq(Immediate(16), sp);
+    __ Popq(rbp);
+}
+
+void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
+    Register sp(rsp);
     Register glue(rdi);
-    Register prevFp(rsi);
+    Register actualNumArgs(rsi);
     Register jsfunc(rdx);
-    Register actualNumArgs(rcx);
+    Register newTarget(rcx);
     Register thisObj(r8);
     Register argV(r9);
-    Register codeAddr = __ AvailableRegister1();
-    Register expectedNumArgs(r14);
+    Register callsiteSp = __ AvailableRegister2();
+    Label align16Bytes;
     Label pushCallThis;
 
-    PushAotEntryFrame(assembler, prevFp);
-    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
+    __ Mov(sp, callsiteSp);
+    __ Addq(Immediate(-8), callsiteSp);   // 8 : 8 means skip pc to get last callsitesp
+    PushOptimizedFrame(assembler, callsiteSp);
+    __ Testb(1, actualNumArgs);
+    __ Jne(&align16Bytes);
+    __ PushAlignBytes();
+    __ Bind(&align16Bytes);
+    __ Cmp(Immediate(0), actualNumArgs);
+    __ Jz(&pushCallThis);
+    CopyArgumentWithArgV(assembler, actualNumArgs, argV);
     __ Bind(&pushCallThis);
-    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, expectedNumArgs);  // r14
-    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
-    Register newTarget(r9);
-    __ Movq(JSTaggedValue::VALUE_UNDEFINED, newTarget);
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
+    __ Addq(Immediate(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);
     __ Pushq(actualNumArgs);
-    __ Movq(glue, rax); // mov glue to rax
-    __ Movq(Operand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddr);
-    __ Callq(codeAddr); // then call jsFunction
-    PopAotArgs(assembler, expectedNumArgs);
-    PopAotEntryFrame(assembler, glue);
+    __ Movq(glue, rax);
+    __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
+    __ Mov(Operand(sp, 0), actualNumArgs);
+    PopAotArgs(assembler, actualNumArgs);
+    PopOptimizedFrame(assembler);
     __ Ret();
 }
 
