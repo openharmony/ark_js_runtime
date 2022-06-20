@@ -59,7 +59,8 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetEnableCpuprofiler(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
     // A non-production gc strategy. Prohibit stw-gc 10 times.
-    EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
+    auto config = ecmascript::EcmaParamConfiguration(false, MemMapAllocator::GetInstance()->GetCapacity());
+    EcmaVM *ecmaVm2 = EcmaVM::Create(options2, config);
 
     EXPECT_TRUE(ecmaVm1 != ecmaVm2);
 

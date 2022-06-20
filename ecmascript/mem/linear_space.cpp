@@ -41,7 +41,7 @@ uintptr_t LinearSpace::Allocate(size_t size, bool isPromoted)
         object = allocator_.Allocate(size);
     } else if (heap_->GetJSThread()->IsMarking()) {
         // Temporary adjust semi space capacity
-        overShootSize_ = SEMI_SPACE_OVERSHOOT_SIZE;
+        overShootSize_ = heap_->GetEcmaVM()->GetEcmaParamConfiguration().GetSemiSpaceOvershootSize();
         if (Expand(isPromoted)) {
             object = allocator_.Allocate(size);
         }

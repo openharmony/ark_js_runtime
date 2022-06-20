@@ -20,19 +20,21 @@
 #include "ecmascript/mem/parallel_evacuator.h"
 
 namespace panda::ecmascript {
-MemController::MemController(Heap *heap) : heap_(heap), allocTimeMs_(GetSystemTimeInMs()) {}
+MemController::MemController(Heap *heap) : heap_(heap), allocTimeMs_(GetSystemTimeInMs())
+{
+    minAllocLimitGrowingStep_ = heap->GetEcmaVM()->GetEcmaParamConfiguration().GetMinAllocLimitGrowingStep();
+}
 
 double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, size_t maxSize, size_t newSpaceCapacity,
                                           double factor) const
 {
     const uint64_t limit = std::max(static_cast<uint64_t>(currentSize * factor),
-                                    static_cast<uint64_t>(currentSize) + MIN_AllOC_LIMIT_GROWING_STEP) +
+                                    static_cast<uint64_t>(currentSize) + minAllocLimitGrowingStep_) +
                            newSpaceCapacity;
 
     const uint64_t limitAboveMinSize = std::max<uint64_t>(limit, minSize);
     const uint64_t halfToMaxSize = (static_cast<uint64_t>(currentSize) + maxSize) / 2;
     auto result = static_cast<size_t>(std::min(limitAboveMinSize, halfToMaxSize));
-    // Avoid the limit is larger than maxSize - newSpaceCapacity. It may cause old space merge OOM.
     result = static_cast<size_t>(std::min(result, maxSize));
     return result;
 }

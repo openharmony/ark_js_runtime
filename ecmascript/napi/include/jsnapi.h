@@ -945,6 +945,16 @@ public:
         asmOpcodeDisableRange_ = value;
     }
 
+    void SetIsWorker()
+    {
+        isWorker_ = true;
+    }
+
+    bool GetIsWorker() const
+    {
+        return isWorker_;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -1053,6 +1063,7 @@ private:
     size_t gcThreadNum_ {DEFAULT_GC_THREAD_NUM};
     size_t longPauseTime_ {DEFAULT_LONG_PAUSE_TIME};
     bool enableAsmInterpreter_ {false};
+    bool isWorker_ {false};
     std::string asmOpcodeDisableRange_ {""};
     friend JSNApi;
 };

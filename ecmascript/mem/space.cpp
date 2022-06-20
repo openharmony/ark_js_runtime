@@ -70,7 +70,7 @@ HugeObjectSpace::HugeObjectSpace(HeapRegionAllocator *heapRegionAllocator,
 
 uintptr_t HugeObjectSpace::Allocate(size_t objectSize, JSThread *thread)
 {
-    if (committedSize_ >= maximumCapacity_) {
+    if (committedSize_ + objectSize >= maximumCapacity_) {
         LOG_ECMA_MEM(INFO) << "Committed size " << committedSize_ << " of huge object space is too big.";
         return 0;
     }

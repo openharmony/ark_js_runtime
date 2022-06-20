@@ -220,6 +220,27 @@ public:
         memMapPool_.Finalize();
     }
 
+    size_t GetCapacity()
+    {
+        return capacity_;
+    }
+
+    void IncreaseAndCheckReserved(size_t size)
+    {
+        if (reserved_ + size > capacity_) {
+            LOG(ERROR, RUNTIME) << "pool is empty, reserved = " << reserved_ << ", capacity_ = "
+                                << capacity_ << ", size = " << size;
+        }
+        reserved_ += size;
+        LOG(DEBUG, RUNTIME) << "Ark IncreaseAndCheckReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
+    }
+
+    void DecreaseReserved(size_t size)
+    {
+        reserved_ -= size;
+        LOG(DEBUG, RUNTIME) << "Ark DecreaseReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
+    }
+
     static MemMapAllocator *GetInstance()
     {
         static MemMapAllocator vmAllocator_;
@@ -259,6 +280,7 @@ private:
     MemMapFreeList memMapFreeList_;
     std::atomic_size_t memMapTotalSize_ {0};
     size_t capacity_ {0};
+    size_t reserved_ {0};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_MEM_MAP_ALLOCATOR_H

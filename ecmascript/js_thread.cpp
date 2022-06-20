@@ -34,9 +34,10 @@ JSThread *JSThread::Create(EcmaVM *vm)
     jsThread->nativeAreaAllocator_ = vm->GetNativeAreaAllocator();
     jsThread->heapRegionAllocator_ = vm->GetHeapRegionAllocator();
     // algin with 16
+    size_t maxStackSize = vm->GetEcmaParamConfiguration().GetMaxStackSize();
     jsThread->glueData_.frameBase_ = static_cast<JSTaggedType *>(
-        vm->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
-    jsThread->glueData_.currentFrame_ = jsThread->glueData_.frameBase_ + MAX_STACK_SIZE;
+        vm->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * maxStackSize));
+    jsThread->glueData_.currentFrame_ = jsThread->glueData_.frameBase_ + maxStackSize;
     EcmaInterpreter::InitStackFrame(jsThread);
     return jsThread;
 }
@@ -60,7 +61,8 @@ JSThread::~JSThread()
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
     GetEcmaVM()->GetChunk()->Delete(globalStorage_);
 
-    GetNativeAreaAllocator()->Free(glueData_.frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
+    GetNativeAreaAllocator()->Free(glueData_.frameBase_, sizeof(JSTaggedType) *
+        vm_->GetEcmaParamConfiguration().GetMaxStackSize());
     glueData_.frameBase_ = nullptr;
     nativeAreaAllocator_ = nullptr;
     heapRegionAllocator_ = nullptr;

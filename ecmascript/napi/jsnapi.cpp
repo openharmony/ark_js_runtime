@@ -129,6 +129,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     runtimeOptions.SetArkProperties(option.GetArkProperties());
     runtimeOptions.SetLongPauseTime(option.GetLongPauseTime());
     runtimeOptions.SetGcThreadNum(option.GetGcThreadNum());
+    runtimeOptions.SetIsWorker(option.GetIsWorker());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     // asmInterpreter
@@ -145,7 +146,6 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     if (option.GetLogBufPrint() != nullptr) {
         Logger::SetMobileLogPrintEntryPointByPtr(reinterpret_cast<void *>(option.GetLogBufPrint()));
     }
-
     runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
     return CreateEcmaVM(runtimeOptions);
 }
@@ -160,7 +160,11 @@ EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
             initialize_ = true;
         }
     }
-    return EcmaVM::Create(options);
+    auto config = ecmascript::EcmaParamConfiguration(options.IsWorker(),
+        MemMapAllocator::GetInstance()->GetCapacity());
+    LOG(INFO, RUNTIME) << "CreateEcmaVM: isWorker = " << options.IsWorker() << ", vmCount = " << vmCount_;
+    MemMapAllocator::GetInstance()->IncreaseAndCheckReserved(config.GetMaxHeapSize());
+    return EcmaVM::Create(options, config);
 }
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
@@ -169,6 +173,8 @@ void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
     if (!initialize_) {
         return;
     }
+    auto &config = ecmaVm->GetEcmaParamConfiguration();
+    MemMapAllocator::GetInstance()->DecreaseReserved(config.GetMaxHeapSize());
     EcmaVM::Destroy(ecmaVm);
     vmCount_--;
     if (vmCount_ <= 0) {
