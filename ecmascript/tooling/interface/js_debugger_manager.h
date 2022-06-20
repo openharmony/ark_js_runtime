@@ -28,7 +28,7 @@ class JsDebuggerManager {
 public:
     using LibraryHandle = os::library_loader::LibraryHandle;
     using ObjectUpdaterFunc =
-        std::function<void(const FrameHandler *, std::string_view, Local<JSValueRef>)>;
+        std::function<void(const InterpretedFrameHandler *, std::string_view, Local<JSValueRef>)>;
 
     JsDebuggerManager() = default;
     ~JsDebuggerManager()
@@ -79,12 +79,12 @@ public:
         return debuggerLibraryHandle_;
     }
 
-    void SetEvalFrameHandler(std::shared_ptr<FrameHandler> frameHandler)
+    void SetEvalFrameHandler(std::shared_ptr<InterpretedFrameHandler> frameHandler)
     {
         frameHandler_ = frameHandler;
     }
 
-    const std::shared_ptr<FrameHandler> &GetEvalFrameHandler() const
+    const std::shared_ptr<InterpretedFrameHandler> &GetEvalFrameHandler() const
     {
         return frameHandler_;
     }
@@ -108,7 +108,7 @@ private:
     NotificationManager *notificationManager_ {nullptr};
     ObjectUpdaterFunc *updaterFunc_ {nullptr};
 
-    std::shared_ptr<FrameHandler> frameHandler_;
+    std::shared_ptr<InterpretedFrameHandler> frameHandler_;
 };
 }  // panda::ecmascript::tooling
 

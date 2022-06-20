@@ -112,7 +112,7 @@ public:
 
     static JSPtLocation GetLocation(const char *sourceFile, int32_t line, int32_t column, const char *pandaFile)
     {
-        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->LoadPfAbc(pandaFile);
         if (jsPandaFile == nullptr) {
             return JSPtLocation("", EntityId(0), 0);
         }
@@ -123,7 +123,7 @@ public:
 
     static SourceLocation GetSourceLocation(const JSPtLocation &location, const char *pandaFile)
     {
-        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->LoadPfAbc(pandaFile);
         if (jsPandaFile == nullptr) {
             return SourceLocation();
         }

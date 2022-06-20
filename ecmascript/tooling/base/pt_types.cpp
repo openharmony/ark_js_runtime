@@ -15,7 +15,9 @@
 
 #include "pt_types.h"
 
+#ifdef SUPPORT_PROFILER_CDP
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
+#endif
 
 namespace panda::ecmascript::tooling {
 using ObjectType = RemoteObject::TypeName;
@@ -1413,6 +1415,7 @@ std::unique_ptr<PtJson> CallFrame::ToJson() const
     return result;
 }
 
+#ifdef SUPPORT_PROFILER_CDP
 std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const PtJson &params)
 {
     std::string error;
@@ -2322,4 +2325,5 @@ std::unique_ptr<PtJson> ScriptTypeProfile::ToJson() const
     
     return result;
 }
+#endif
 }  // namespace panda::ecmascript::tooling

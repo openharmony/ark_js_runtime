@@ -37,16 +37,18 @@ public:
     {
         SetCurrentTestName(GetParam());
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        JSNApi::StartDebugger(DEBUGGER_TEST_LIBRARY, instance, true);
+        ecmaVm = static_cast<EcmaVM *>(instance);
+        JSNApi::StartDebugger(DEBUGGER_TEST_LIBRARY, ecmaVm, true);
     }
 
     void TearDown() override
     {
-        JSNApi::StopDebugger(instance);
-        TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        JSNApi::StopDebugger(ecmaVm);
+        TestHelper::DestroyEcmaVMWithScope(ecmaVm, scope);
     }
 
-    EcmaVM *instance {nullptr};
+    EcmaVM *ecmaVm {nullptr};
+    PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -55,9 +57,9 @@ HWTEST_P_L0(DebuggerEntryTest, DebuggerSuite)
 {
     std::string testName = GetCurrentTestName();
     std::cout << "Running " << testName << std::endl;
-    ASSERT_NE(instance, nullptr);
+    ASSERT_NE(ecmaVm, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
-    auto res = JSNApi::Execute(instance, pandaFile.c_str(), entryPoint.c_str());
+    auto res = JSNApi::Execute(ecmaVm, pandaFile.c_str(), entryPoint.c_str());
     ASSERT_TRUE(res);
 }
 

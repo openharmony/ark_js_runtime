@@ -250,8 +250,6 @@ void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
     if ((arrayBufferByteLength % NumberSize::BYTES_OF_64BITS) == 0) {
         typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_64BITS;
         AddTypedArrayRef<Float64ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float64Array]]", outPropertyDesc);
-        AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
-        AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);
     }
 }
 

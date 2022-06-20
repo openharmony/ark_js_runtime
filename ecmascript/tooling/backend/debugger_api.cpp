@@ -19,12 +19,11 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
-#include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/napi/jsnapi_helper.h"
+#include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "ecmascript/tooling/backend/js_debugger.h"
 
 namespace panda::ecmascript::tooling {
@@ -33,13 +32,13 @@ using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
 using panda::ecmascript::base::NumberHelper;
 
-// FrameHandler
+// InterpretedFrameHandler
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
 {
     uint32_t count = 0;
-    FrameHandler frameHandler(ecmaVm->GetJSThread());
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
+        if (frameHandler.IsBreakFrame()) {
             continue;
         }
         ++count;
@@ -47,16 +46,16 @@ uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
     return count;
 }
 
-std::shared_ptr<FrameHandler> DebuggerApi::NewFrameHandler(const EcmaVM *ecmaVm)
+std::shared_ptr<InterpretedFrameHandler> DebuggerApi::NewFrameHandler(const EcmaVM *ecmaVm)
 {
-    return std::make_shared<FrameHandler>(ecmaVm->GetJSThread());
+    return std::make_shared<InterpretedFrameHandler>(ecmaVm->GetJSThread());
 }
 
-bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func)
+bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func)
 {
-    FrameHandler frameHandler(ecmaVm->GetJSThread());
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
+        if (frameHandler.IsBreakFrame()) {
             continue;
         }
         StackState state = func(&frameHandler);
@@ -73,40 +72,40 @@ bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(con
 
 uint32_t DebuggerApi::GetBytecodeOffset(const EcmaVM *ecmaVm)
 {
-    return FrameHandler(ecmaVm->GetJSThread()).GetBytecodeOffset();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetBytecodeOffset();
 }
 
 JSMethod *DebuggerApi::GetMethod(const EcmaVM *ecmaVm)
 {
-    return FrameHandler(ecmaVm->GetJSThread()).GetMethod();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetMethod();
 }
 
-void DebuggerApi::SetVRegValue(FrameHandler *frameHandler, size_t index, Local<JSValueRef> value)
+void DebuggerApi::SetVRegValue(InterpretedFrameHandler *frameHandler, size_t index, Local<JSValueRef> value)
 {
     return frameHandler->SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
 }
 
-uint32_t DebuggerApi::GetBytecodeOffset(const FrameHandler *frameHandler)
+uint32_t DebuggerApi::GetBytecodeOffset(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetBytecodeOffset();
 }
 
-JSMethod *DebuggerApi::GetMethod(const FrameHandler *frameHandler)
+JSMethod *DebuggerApi::GetMethod(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetMethod();
 }
 
-JSTaggedValue DebuggerApi::GetEnv(const FrameHandler *frameHandler)
+JSTaggedValue DebuggerApi::GetEnv(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetEnv();
 }
 
-JSTaggedType *DebuggerApi::GetSp(const FrameHandler *frameHandler)
+JSTaggedType *DebuggerApi::GetSp(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetSp();
 }
 
-int32_t DebuggerApi::GetVregIndex(const FrameHandler *frameHandler, std::string_view name)
+int32_t DebuggerApi::GetVregIndex(const InterpretedFrameHandler *frameHandler, std::string_view name)
 {
     JSMethod *method = frameHandler->GetMethod();
     if (method->IsNativeWithCallField()) {
@@ -127,7 +126,7 @@ int32_t DebuggerApi::GetVregIndex(const FrameHandler *frameHandler, std::string_
 }
 
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
-    const FrameHandler *frameHandler, size_t index)
+    const InterpretedFrameHandler *frameHandler, size_t index)
 {
     auto value = frameHandler->GetVRegValue(index);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
@@ -193,7 +192,7 @@ std::string DebuggerApi::ParseFunctionName(const JSMethod *method)
 }
 
 // ScopeInfo
-Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                              int32_t level, uint32_t slot)
 {
     JSTaggedValue env = frameHandler->GetEnv();
@@ -207,7 +206,7 @@ Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *vm, const FrameHandle
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
-void DebuggerApi::SetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+void DebuggerApi::SetProperties(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                 int32_t level, uint32_t slot, Local<JSValueRef> value)
 {
     JSTaggedValue env = frameHandler->GetEnv();
@@ -220,10 +219,10 @@ void DebuggerApi::SetProperties(const EcmaVM *vm, const FrameHandler *frameHandl
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(vm->GetJSThread(), slot, target);
 }
 
-std::pair<int32_t, uint32_t> DebuggerApi::GetLevelSlot(const FrameHandler *frameHandler, std::string_view name)
+std::pair<int32_t, uint32_t> DebuggerApi::GetLevelSlot(const InterpretedFrameHandler *frameHandler,
+                                                       std::string_view name)
 {
     int32_t level = 0;
-    uint32_t slot = 0;
     JSTaggedValue curEnv = frameHandler->GetEnv();
     for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv(), level++) {
         LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
@@ -232,12 +231,11 @@ std::pair<int32_t, uint32_t> DebuggerApi::GetLevelSlot(const FrameHandler *frame
         }
         auto result = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
         ScopeDebugInfo *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(result);
-        auto iter = scopeDebugInfo->scopeInfo.find(name.data());
-        if (iter == scopeDebugInfo->scopeInfo.end()) {
-            continue;
+        for (const auto &info : scopeDebugInfo->scopeInfo) {
+            if (info.name == name.data()) {
+                return std::make_pair(level, info.slot);
+            }
         }
-        slot = iter->second;
-        return std::make_pair(level, slot);
     }
     return std::make_pair(-1, 0);
 }
@@ -310,11 +308,10 @@ void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, std::string &mes
     thread->ClearException();
 }
 
-Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer,
-                                                       size_t size, std::string_view entryPoint)
+Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size)
 {
     JSPandaFileManager *mgr = JSPandaFileManager::GetInstance();
-    const auto *jsPandaFile = mgr->LoadJSPandaFile(ecmaVm->GetJSThread(), "", entryPoint, buffer, size);
+    const auto *jsPandaFile = mgr->LoadBufferAbc("", buffer, size);
     if (jsPandaFile == nullptr) {
         return JSValueRef::Undefined(ecmaVm);
     }
@@ -325,7 +322,7 @@ Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, con
 }
 
 Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, Local<FunctionRef> funcRef,
-    std::shared_ptr<FrameHandler> &frameHandler)
+    std::shared_ptr<InterpretedFrameHandler> &frameHandler)
 {
     JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);
 

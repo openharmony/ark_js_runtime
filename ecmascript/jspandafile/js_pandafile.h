@@ -38,7 +38,7 @@ public:
 
     tooling::JSPtExtractor *GetJSPtExtractor();
 
-    CString GetJSPandaFileDesc() const
+    const CString &GetJSPandaFileDesc() const
     {
         return desc_;
     }

@@ -158,6 +158,7 @@ std::unique_ptr<PtJson> ScriptParsed::ToJson() const
     return object;
 }
 
+#ifdef SUPPORT_PROFILER_CDP
 std::unique_ptr<PtJson> AddHeapSnapshotChunk::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -279,4 +280,5 @@ std::unique_ptr<PtJson> ReportHeapSnapshotProgress::ToJson() const
 
     return object;
 }
+#endif
 }  // namespace panda::ecmascript::tooling

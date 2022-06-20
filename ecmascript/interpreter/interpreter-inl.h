@@ -136,6 +136,19 @@ namespace panda::ecmascript {
         RESTORE_ACC();                   \
     } while (false)
 
+/*
+ * reasons of set acc with hole:
+ * 1. acc will become illegal when new error
+ * 2. debugger logic will save acc, so illegal acc will set to frame
+ * 3. when debugger trigger gc, will mark an invalid acc and crash
+ * 4. acc will set to exception later, so it can set to hole template
+ */
+#define NOTIFY_DEBUGGER_EXCEPTION_EVENT() \
+    do {                                  \
+        SET_ACC(JSTaggedValue::Hole());   \
+        NOTIFY_DEBUGGER_EVENT();          \
+    } while (false)
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_INITIALIZE()                                             \
     do {                                                              \

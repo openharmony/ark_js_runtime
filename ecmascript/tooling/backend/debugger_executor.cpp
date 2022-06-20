@@ -24,23 +24,23 @@ void DebuggerExecutor::Initialize(const EcmaVM *vm)
 {
     Local<ObjectRef> globalObj = JSNApi::GetGlobalObject(vm);
     globalObj->Set(vm, StringRef::NewFromUtf8(vm, "debuggerSetValue"), FunctionRef::New(
-        const_cast<panda::EcmaVM*>(vm), DebuggerExecutor::DebuggerSetValue));
+        const_cast<panda::EcmaVM*>(vm), DebuggerExecutor::DebuggerSetValue, nullptr));
     globalObj->Set(vm, StringRef::NewFromUtf8(vm, "debuggerGetValue"), FunctionRef::New(
-        const_cast<panda::EcmaVM*>(vm), DebuggerExecutor::DebuggerGetValue));
+        const_cast<panda::EcmaVM*>(vm), DebuggerExecutor::DebuggerGetValue, nullptr));
 }
 
-Local<JSValueRef> DebuggerExecutor::DebuggerGetValue(JsiRuntimeCallInfo *runtimeCallInfo)
+Local<JSValueRef> DebuggerExecutor::DebuggerGetValue(EcmaVM *vm, [[maybe_unused]] Local<JSValueRef> thisArg,
+                                                     const Local<JSValueRef> *argv,
+                                                     int32_t length, [[maybe_unused]] void *data)
 {
-    EcmaVM *vm = runtimeCallInfo->GetVM();
-    size_t argc = runtimeCallInfo->GetArgsNumber();
-    if (argc != NUM_ARGS) {
+    if (length != NUM_ARGS) {
         return JSValueRef::Undefined(vm);
     }
-    Local<JSValueRef> name = runtimeCallInfo->GetCallArgRef(0);
+    Local<JSValueRef> name = argv[0];
     if (!name->IsString()) {
         return JSValueRef::Undefined(vm);
     }
-    Local<JSValueRef> isThrow = runtimeCallInfo->GetCallArgRef(1);
+    Local<JSValueRef> isThrow = argv[1];
 
     auto &frameHandler = vm->GetJsDebuggerManager()->GetEvalFrameHandler();
     ASSERT(frameHandler);
@@ -60,18 +60,18 @@ Local<JSValueRef> DebuggerExecutor::DebuggerGetValue(JsiRuntimeCallInfo *runtime
     return JSValueRef::Exception(vm);
 }
 
-Local<JSValueRef> DebuggerExecutor::DebuggerSetValue(JsiRuntimeCallInfo *runtimeCallInfo)
+Local<JSValueRef> DebuggerExecutor::DebuggerSetValue(EcmaVM *vm, [[maybe_unused]] Local<JSValueRef> thisArg,
+                                                     const Local<JSValueRef> *argv,
+                                                     int32_t length, [[maybe_unused]] void *data)
 {
-    EcmaVM *vm = runtimeCallInfo->GetVM();
-    size_t argc = runtimeCallInfo->GetArgsNumber();
-    if (argc != NUM_ARGS) {
+    if (length != NUM_ARGS) {
         return JSValueRef::Undefined(vm);
     }
-    Local<JSValueRef> name = runtimeCallInfo->GetCallArgRef(0);
+    Local<JSValueRef> name = argv[0];
     if (!name->IsString()) {
         return JSValueRef::Undefined(vm);
     }
-    Local<JSValueRef> value = runtimeCallInfo->GetCallArgRef(1);
+    Local<JSValueRef> value = argv[1];
 
     auto &frameHandler = vm->GetJsDebuggerManager()->GetEvalFrameHandler();
     ASSERT(frameHandler);
@@ -85,7 +85,8 @@ Local<JSValueRef> DebuggerExecutor::DebuggerSetValue(JsiRuntimeCallInfo *runtime
     return JSValueRef::Exception(vm);
 }
 
-Local<JSValueRef> DebuggerExecutor::GetValue(const EcmaVM *vm, const FrameHandler *frameHandler, Local<StringRef> name)
+Local<JSValueRef> DebuggerExecutor::GetValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
+                                             Local<StringRef> name)
 {
     Local<JSValueRef> value;
     value = GetLocalValue(vm, frameHandler, name);
@@ -104,7 +105,7 @@ Local<JSValueRef> DebuggerExecutor::GetValue(const EcmaVM *vm, const FrameHandle
     return Local<JSValueRef>();
 }
 
-bool DebuggerExecutor::SetValue(const EcmaVM *vm, FrameHandler *frameHandler,
+bool DebuggerExecutor::SetValue(const EcmaVM *vm, InterpretedFrameHandler *frameHandler,
                                 Local<StringRef> name, Local<JSValueRef> value)
 {
     if (SetLocalValue(vm, frameHandler, name, value)) {
@@ -127,7 +128,7 @@ void DebuggerExecutor::ThrowException(const EcmaVM *vm, const std::string &error
     JSNApi::ThrowException(vm, exception);
 }
 
-Local<JSValueRef> DebuggerExecutor::GetLocalValue(const EcmaVM *vm, const FrameHandler *frameHandler,
+Local<JSValueRef> DebuggerExecutor::GetLocalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                                   Local<StringRef> name)
 {
     Local<JSValueRef> result;
@@ -141,7 +142,7 @@ Local<JSValueRef> DebuggerExecutor::GetLocalValue(const EcmaVM *vm, const FrameH
     return result;
 }
 
-bool DebuggerExecutor::SetLocalValue(const EcmaVM *vm, FrameHandler *frameHandler,
+bool DebuggerExecutor::SetLocalValue(const EcmaVM *vm, InterpretedFrameHandler *frameHandler,
                                      Local<StringRef> name, Local<JSValueRef> value)
 {
     std::string varName = name->ToString();
@@ -155,7 +156,7 @@ bool DebuggerExecutor::SetLocalValue(const EcmaVM *vm, FrameHandler *frameHandle
     return true;
 }
 
-Local<JSValueRef> DebuggerExecutor::GetLexicalValue(const EcmaVM *vm, const FrameHandler *frameHandler,
+Local<JSValueRef> DebuggerExecutor::GetLexicalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                                     Local<StringRef> name)
 {
     Local<JSValueRef> result;
@@ -169,7 +170,7 @@ Local<JSValueRef> DebuggerExecutor::GetLexicalValue(const EcmaVM *vm, const Fram
     return result;
 }
 
-bool DebuggerExecutor::SetLexicalValue(const EcmaVM *vm, const FrameHandler *frameHandler,
+bool DebuggerExecutor::SetLexicalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                        Local<StringRef> name, Local<JSValueRef> value)
 {
     std::string varName = name->ToString();

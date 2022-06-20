@@ -46,7 +46,8 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        ecmaVm = EcmaVM::Cast(instance);
     }
 
     void TearDown() override
@@ -56,6 +57,7 @@ public:
 
 protected:
     EcmaVM *ecmaVm {nullptr};
+    PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

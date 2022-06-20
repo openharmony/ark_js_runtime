@@ -19,8 +19,10 @@
 
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/agent/runtime_impl.h"
+#ifdef SUPPORT_PROFILER_CDP
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
 #include "ecmascript/tooling/agent/profiler_impl.h"
+#endif
 #include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
@@ -51,8 +53,7 @@ DispatchRequest::DispatchRequest(const std::string &message)
         return;
     }
     std::string::size_type length = wholeMethod.length();
-    std::string::size_type indexPoint;
-    indexPoint = wholeMethod.find_first_of('.', 0);
+    std::string::size_type indexPoint = wholeMethod.find_first_of('.', 0);
     if (indexPoint == std::string::npos || indexPoint == 0 || indexPoint == length - 1) {
         code_ = RequestCode::METHOD_FORMAT_ERROR;
         LOG(ERROR, DEBUGGER) << "method format error: " << wholeMethod;
@@ -124,6 +125,7 @@ void DispatcherBase::SendResponse(const DispatchRequest &request, const Dispatch
 
 Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
 {
+#ifdef SUPPORT_PROFILER_CDP
     // profiler
     auto profiler = std::make_unique<ProfilerImpl>(vm, channel);
     auto heapProfiler = std::make_unique<HeapProfilerImpl>(vm, channel);
@@ -131,6 +133,7 @@ Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
         std::make_unique<ProfilerImpl::DispatcherImpl>(channel, std::move(profiler));
     dispatchers_["HeapProfiler"] =
         std::make_unique<HeapProfilerImpl::DispatcherImpl>(channel, std::move(heapProfiler));
+#endif
 
     // debugger
     auto runtime = std::make_unique<RuntimeImpl>(vm, channel);
