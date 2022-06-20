@@ -4487,13 +4487,18 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
         GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
+        Label notHeapObject(env);
         Label ldMiss(env);
         Label icResultCheck(env);
-        Branch(TaggedIsHeapObject(handler), &isHeapObject, &ldMiss);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &notHeapObject);
         Bind(&isHeapObject);
         {
             icResult = LoadGlobal(handler);
             Branch(TaggedIsHole(*icResult), &ldMiss, &icResultCheck);
+        }
+        Bind(&notHeapObject);
+        {
+            Branch(TaggedIsHole(handler), &icNotAvailable, &ldMiss);
         }
         Bind(&ldMiss);
         {
@@ -4658,12 +4663,17 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
         GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
+        Label notHeapObject(env);
         Label ldMiss(env);
-        Branch(TaggedIsHeapObject(handler), &isHeapObject, &ldMiss);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &notHeapObject);
         Bind(&isHeapObject);
         {
             result = LoadGlobal(handler);
             Branch(TaggedIsHole(*result), &ldMiss, &checkResult);
+        }
+        Bind(&notHeapObject);
+        {
+            Branch(TaggedIsHole(handler), &icNotAvailable, &ldMiss);
         }
         Bind(&ldMiss);
         {

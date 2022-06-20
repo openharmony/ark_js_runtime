@@ -13,5 +13,5 @@
  * limitations under the License.
  */
 
-var helloworld = "container test start"
-print(helloworld)
+var string = "container test start"
+print(string)

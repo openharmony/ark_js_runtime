@@ -729,6 +729,7 @@ JSTaggedValue RuntimeStubs::RuntimeNotifyInlineCache(JSThread *thread, const JSH
 
     JSHandle<ProfileTypeInfo> profileTypeInfo = factory->NewProfileTypeInfo(icSlotSize);
     if (overflow) {
+        // set as mega
         profileTypeInfo->Set(thread, ProfileTypeInfo::INVALID_SLOT_INDEX - 1, JSTaggedValue::Hole());
         profileTypeInfo->Set(thread, ProfileTypeInfo::INVALID_SLOT_INDEX, JSTaggedValue::Hole());
     }
