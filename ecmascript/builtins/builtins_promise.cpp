@@ -619,4 +619,460 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
         RETURN_COMPLETION_IF_ABRUPT(thread, handleResult);
     }
 }
+
+JSTaggedValue BuiltinsPromise::GetPromiseResolve(JSThread *thread, JSHandle<JSTaggedValue> promiseConstructor)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    // 1. Let promiseResolve be ? Get(promiseConstructor, "resolve").
+    JSHandle<JSTaggedValue> resolveKey = globalConst->GetHandledPromiseResolveString();
+    JSHandle<JSTaggedValue> promiseResolve = JSObject::GetProperty(thread, promiseConstructor, resolveKey).GetValue();
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 2. If IsCallable(promiseResolve) is false, throw a TypeError exception.
+    if (!promiseResolve->IsCallable()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "promiseResolve is not callable", JSTaggedValue::Exception());
+    }
+    // 3. Return promiseResolve.
+    return promiseResolve.GetTaggedValue();
+}
+
+// 27.2.4.3 Promise.any ( iterable )
+JSTaggedValue BuiltinsPromise::Any(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Promise, Any);
+    JSThread *thread = argv->GetThread();
+    auto ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    // 1. Let C be the this value.
+    JSHandle<JSTaggedValue> thisValue = GetThis(argv);
+    // 2. Let promiseCapability be ? NewPromiseCapability(C).
+    JSHandle<PromiseCapability> promiseCapability = JSPromise::NewPromiseCapability(thread, thisValue);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, promiseCapability.GetTaggedValue());
+    // 3. Let promiseResolve be GetPromiseResolve(C).
+    JSHandle<JSTaggedValue> promiseResolve(thread, BuiltinsPromise::GetPromiseResolve(thread, thisValue));
+    // 4. IfAbruptRejectPromise(promiseResolve, promiseCapability).
+    if (thread->HasPendingException()) {
+        promiseResolve = JSPromise::IfThrowGetThrowValue(thread);
+    }
+    RETURN_REJECT_PROMISE_IF_ABRUPT(thread, promiseResolve, promiseCapability);
+    // 5. Let iteratorRecord be GetIterator(iterable).
+    JSHandle<JSTaggedValue> iterable = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> iterator = JSIterator::GetIterator(thread, iterable);
+    // 6. IfAbruptRejectPromise(iteratorRecord, promiseCapability).
+    if (thread->HasPendingException()) {
+        iterator = JSPromise::IfThrowGetThrowValue(thread);
+    }
+    RETURN_REJECT_PROMISE_IF_ABRUPT(thread, iterator, promiseCapability);
+    // Let iteratorRecord be Record {[[iterator]]: iterator, [[done]]: false}.
+    JSHandle<PromiseIteratorRecord> iteratorRecord = factory->NewPromiseIteratorRecord(iterator, false);
+    // 7. Let result be PerformPromiseAny(iteratorRecord, C, promiseCapability, promiseResolve).
+    JSHandle<CompletionRecord> result = PerformPromiseAny(thread, iteratorRecord, thisValue,
+                                                          promiseCapability, promiseResolve);
+    // 8. If result is an abrupt completion, then
+    if (result->IsThrow()) {
+        thread->ClearException();
+        // a. If iteratorRecord.[[Done]] is false, set result to IteratorClose(iteratorRecord, result).
+        // b. IfAbruptRejectPromise(result, promiseCapability).
+        if (!iteratorRecord->GetDone()) {
+            JSHandle<JSTaggedValue> resultHandle = JSHandle<JSTaggedValue>::Cast(result);
+            JSHandle<JSTaggedValue> closeVal = JSIterator::IteratorClose(thread, iterator, resultHandle);
+            if (closeVal.GetTaggedValue().IsCompletionRecord()) {
+                result = JSHandle<CompletionRecord>(closeVal);
+                RETURN_REJECT_PROMISE_IF_ABRUPT(thread, result, promiseCapability);
+                return result->GetValue();
+            }
+        }
+        RETURN_REJECT_PROMISE_IF_ABRUPT(thread, result, promiseCapability);
+        return result->GetValue();
+    }
+    // 9. Return ? result.
+    return result->GetValue();
+}
+
+JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAny(JSThread *thread,
+                                                              const JSHandle<PromiseIteratorRecord> &iteratorRecord,
+                                                              const JSHandle<JSTaggedValue> &constructor,
+                                                              const JSHandle<PromiseCapability> &resultCapability,
+                                                              const JSHandle<JSTaggedValue> &promiseResolve)
+{
+    auto ecmaVm = thread->GetEcmaVM();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    // 1. Let errors be a new empty List.
+    JSHandle<PromiseRecord> errors = factory->NewPromiseRecord();
+    JSHandle<TaggedArray> emptyArray = factory->EmptyArray();
+    errors->SetValue(thread, emptyArray);
+    // 2. Let remainingElementsCount be the Record { [[Value]]: 1 }.
+    JSHandle<PromiseRecord> remainCnt = factory->NewPromiseRecord();
+    remainCnt->SetValue(thread, JSTaggedNumber(1));
+    // 3. Let index be 0.
+    uint32_t index = 0;
+    // 4. Repeat,
+    JSHandle<JSTaggedValue> iter(thread, iteratorRecord->GetIterator());
+    JSMutableHandle<JSTaggedValue> next(thread, globalConst->GetUndefined());
+    JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+    while (true) {
+        // a. Let next be IteratorStep(iteratorRecord).
+        next.Update(JSIterator::IteratorStep(thread, iter).GetTaggedValue());
+        // b. If next is an abrupt completion, set iteratorRecord.[[Done]] to true.
+        if (thread->HasPendingException()) {
+            iteratorRecord->SetDone(true);
+            next.Update(JSPromise::IfThrowGetThrowValue(thread).GetTaggedValue());
+        }
+        // c. ReturnIfAbrupt(next).
+        RETURN_COMPLETION_IF_ABRUPT(thread, next);
+        // d. If next is false, then
+        if (next->IsFalse()) {
+            // i. Set iteratorRecord.[[Done]] to true.
+            iteratorRecord->SetDone(true);
+            // ii. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] - 1.
+            remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
+            // iii. If remainingElementsCount.[[Value]] is 0, then
+            if (remainCnt->GetValue().IsZero()) {
+                // 1. Let error be a newly created AggregateError object.
+                JSHandle<JSObject> error = factory->NewJSAggregateError();
+                // 2. Perform ! DefinePropertyOrThrow(error, "errors", PropertyDescriptor { [[Configurable]]: true,
+                //    [[Enumerable]]: false, [[Writable]]: true, [[Value]]: ! CreateArrayFromList(errors) }).
+                JSHandle<JSTaggedValue> errorsKey(thread, globalConst->GetErrorsString());
+                JSHandle<TaggedArray> errorsArray =
+                    JSHandle<TaggedArray>::Cast(JSHandle<JSTaggedValue>(thread, errors->GetValue()));
+                JSHandle<JSTaggedValue> errorsValue(JSArray::CreateArrayFromList(thread, errorsArray));
+                PropertyDescriptor msgDesc(thread, errorsValue, true, false, true);
+                JSHandle<JSTaggedValue> errorTagged = JSHandle<JSTaggedValue>::Cast(error);
+                JSTaggedValue::DefinePropertyOrThrow(thread, errorTagged, errorsKey, msgDesc);
+                // 3. Return ThrowCompletion(error).
+                JSHandle<JSTaggedValue> errorCompletion(
+                    factory->NewCompletionRecord(CompletionRecordType::THROW, errorTagged));
+                JSHandle<CompletionRecord> errorResult = JSHandle<CompletionRecord>::Cast(errorCompletion);
+                return errorResult;
+            }
+            // iv. Return resultCapability.[[Promise]].
+            JSHandle<JSTaggedValue> resultCapabilityHandle(thread, resultCapability->GetPromise());
+            JSHandle<CompletionRecord> resRecord = factory->NewCompletionRecord(
+                CompletionRecordType::NORMAL, resultCapabilityHandle);
+            return resRecord;
+        }
+        // e. Let nextValue be IteratorValue(next).
+        JSHandle<JSTaggedValue> nextVal = JSIterator::IteratorValue(thread, next);
+        // f. If nextValue is an abrupt completion, set iteratorRecord.[[Done]] to true.
+        if (thread->HasPendingException()) {
+            iteratorRecord->SetDone(true);
+            nextVal = JSHandle<JSTaggedValue>(thread, thread->GetException());
+        }
+        // g. ReturnIfAbrupt(nextValue).
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        // h. Append undefined to errors.
+        JSHandle<JSTaggedValue> errorsHandle(thread, errors->GetValue());
+        JSHandle<TaggedArray> errorsArray = JSHandle<TaggedArray>::Cast(errorsHandle);
+        errorsArray = TaggedArray::SetCapacity(thread, errorsArray, index + 1);
+        errorsArray->Set(thread, index, JSTaggedValue::Undefined());
+        errors->SetValue(thread, errorsArray);
+        // i. Let nextPromise be ? Call(promiseResolve, constructor, « nextValue »).
+        EcmaRuntimeCallInfo taggedInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, promiseResolve, constructor, undefined, 1);
+        taggedInfo.SetCallArg(nextVal.GetTaggedValue());
+        JSTaggedValue taggedNextPromise = JSFunction::Call(&taggedInfo);
+        JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
+        if (thread->HasPendingException()) {
+            JSHandle<JSTaggedValue> promiseResult = JSPromise::IfThrowGetThrowValue(thread);
+            JSHandle<CompletionRecord> completionRecord =
+                factory->NewCompletionRecord(CompletionRecordType::THROW, promiseResult);
+            return completionRecord;
+        }
+        // j. Let stepsRejected be the algorithm steps defined in Promise.any Reject Element Functions.
+        // k. Let lengthRejected be the number of non-optional parameters of the function definition in
+        //    Promise.any Reject Element Functions.
+        // l. Let onRejected be CreateBuiltinFunction(stepsRejected, lengthRejected, "", « [[AlreadyCalled]],
+        //    [[Index]], [[Errors]], [[Capability]], [[RemainingElements]] »).
+        JSHandle<JSPromiseAnyRejectElementFunction> onRejected = factory->NewJSPromiseAnyRejectElementFunction();
+        // m. Set onRejected.[[AlreadyCalled]] to false.
+        onRejected->SetAlreadyCalled(thread, JSTaggedValue::False());
+        // n. Set onRejected.[[Index]] to index.
+        onRejected->SetIndex(index);
+        // o. Set onRejected.[[Errors]] to errors.
+        onRejected->SetErrors(thread, errors);
+        // p. Set onRejected.[[Capability]] to resultCapability.
+        onRejected->SetCapability(thread, resultCapability);
+        // q. Set onRejected.[[RemainingElements]] to remainingElementsCount.
+        onRejected->SetRemainingElements(thread, remainCnt);
+        // r. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] + 1.
+        remainCnt->SetValue(thread, ++JSTaggedNumber(remainCnt->GetValue()));
+        // s. Perform ? Invoke(nextPromise, "then", « resultCapability.[[Resolve]], onRejected »).
+        JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
+        JSHandle<JSTaggedValue> resCapaFunc(thread, resultCapability->GetResolve());
+        EcmaRuntimeCallInfo invokeInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise, undefined, 2); // 2: two args
+        invokeInfo.SetCallArg(resCapaFunc.GetTaggedValue(), onRejected.GetTaggedValue());
+        JSFunction::Invoke(&invokeInfo, thenKey);
+        if (thread->HasPendingException()) {
+            JSHandle<JSTaggedValue> taggedResult = JSPromise::IfThrowGetThrowValue(thread);
+            JSHandle<CompletionRecord> completionRecord =
+                factory->NewCompletionRecord(CompletionRecordType::THROW, taggedResult);
+            return completionRecord;
+        }
+        // t. Set index to index + 1.
+        ++index;
+    }
+}
+
+// 25.6.4.2 Promise.allSettled ( iterable )
+JSTaggedValue BuiltinsPromise::AllSettled(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Promise, AllSettled);
+    JSThread *thread = argv->GetThread();
+    auto ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    // 1. Let C be the this value.
+    JSHandle<JSTaggedValue> thisValue = GetThis(argv);
+    // 2. Let promiseCapability be ? NewPromiseCapability(C).
+    JSHandle<PromiseCapability> promiseCapability = JSPromise::NewPromiseCapability(thread, thisValue);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, promiseCapability.GetTaggedValue());
+    // 3. Let promiseResolve be Completion(GetPromiseResolve(C)).
+    JSHandle<JSTaggedValue> promiseResolve(thread, BuiltinsPromise::GetPromiseResolve(thread, thisValue));
+    // 4. IfAbruptRejectPromise(promiseResolve, promiseCapability).
+    if (thread->HasPendingException()) {
+        promiseResolve = JSPromise::IfThrowGetThrowValue(thread);
+    }
+    RETURN_REJECT_PROMISE_IF_ABRUPT(thread, promiseResolve, promiseCapability);
+    // 5. Let iteratorRecord be Completion(GetIterator(iterable)).
+    JSHandle<JSTaggedValue> iterable = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> iterator = JSIterator::GetIterator(thread, iterable);
+    // 6. IfAbruptRejectPromise(iteratorRecord, promiseCapability).
+    if (thread->HasPendingException()) {
+        iterator = JSPromise::IfThrowGetThrowValue(thread);
+    }
+    RETURN_REJECT_PROMISE_IF_ABRUPT(thread, iterator, promiseCapability);
+    // Let iteratorRecord be Record {[[iterator]]: iterator, [[done]]: false}.
+    JSHandle<PromiseIteratorRecord> iteratorRecord = factory->NewPromiseIteratorRecord(iterator, false);
+    // 7. Let result be PerformPromiseAllSettled(iteratorRecord, C, promiseCapability).
+    JSHandle<CompletionRecord> result = PerformPromiseAllSettled(thread, iteratorRecord, thisValue,
+                                                                 promiseCapability, promiseResolve);
+    // 8. If result is an abrupt completion, then
+    if (result->IsThrow()) {
+        thread->ClearException();
+        // a. If iteratorRecord.[[Done]] is false, set result to IteratorClose(iteratorRecord, result).
+        if (!iteratorRecord->GetDone()) {
+            JSHandle<JSTaggedValue> resultHandle = JSHandle<JSTaggedValue>::Cast(result);
+            JSHandle<JSTaggedValue> closeVal = JSIterator::IteratorClose(thread, iterator, resultHandle);
+            if (closeVal.GetTaggedValue().IsCompletionRecord()) {
+                result = JSHandle<CompletionRecord>(closeVal);
+                RETURN_REJECT_PROMISE_IF_ABRUPT(thread, result, promiseCapability);
+                return result->GetValue();
+            }
+        }
+        // b. IfAbruptRejectPromise(result, promiseCapability).
+        RETURN_REJECT_PROMISE_IF_ABRUPT(thread, result, promiseCapability);
+        return result->GetValue();
+    }
+    // 7.Return Completion(result).
+    return result->GetValue();
+}
+
+JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAllSettled(JSThread *thread,
+                                                                     const JSHandle<PromiseIteratorRecord> &iterRecord,
+                                                                     const JSHandle<JSTaggedValue> &constructor,
+                                                                     const JSHandle<PromiseCapability> &resultCapa,
+                                                                     const JSHandle<JSTaggedValue> &promiseResolve)
+{
+    auto ecmaVm = thread->GetEcmaVM();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    // 1. Let values be a new empty List.
+    JSHandle<PromiseRecord> values = factory->NewPromiseRecord();
+    JSHandle<TaggedArray> emptyArray = factory->EmptyArray();
+    values->SetValue(thread, emptyArray);
+    // 2. Let remainingElementsCount be the Record { [[Value]]: 1 }.
+    JSHandle<PromiseRecord> remainCnt = factory->NewPromiseRecord();
+    remainCnt->SetValue(thread, JSTaggedNumber(1));
+    // 3. Let index be 0.
+    uint32_t index = 0;
+    // 4. Repeat,
+    JSHandle<JSTaggedValue> iter(thread, iterRecord->GetIterator());
+    JSMutableHandle<JSTaggedValue> next(thread, globalConst->GetUndefined());
+    JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+    while (true) {
+        // a. Let next be IteratorStep(iteratorRecord).
+        next.Update(JSIterator::IteratorStep(thread, iter).GetTaggedValue());
+        // b. If next is an abrupt completion, set iteratorRecord.[[Done]] to true.
+        if (thread->HasPendingException()) {
+            iterRecord->SetDone(true);
+            next.Update(JSPromise::IfThrowGetThrowValue(thread).GetTaggedValue());
+        }
+        // c. ReturnIfAbrupt(next).
+        RETURN_COMPLETION_IF_ABRUPT(thread, next);
+        // d. If next is false, then
+        if (next->IsFalse()) {
+            // i. Set iteratorRecord.[[Done]] to true.
+            iterRecord->SetDone(true);
+            // ii. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] - 1.
+            remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
+            // iii. If remainingElementsCount.[[Value]] is 0, then
+            if (remainCnt->GetValue().IsZero()) {
+                // 1. Let valuesArray be ! CreateArrayFromList(values).
+                JSHandle<TaggedArray> taggedValues(thread, values->GetValue());
+                JSHandle<JSArray> jsArrayValues = JSArray::CreateArrayFromList(thread, taggedValues);
+                // 2. Perform ? Call(resultCapability.[[Resolve]], undefined, « valuesArray »).
+                JSHandle<JSTaggedValue> resCapaFunc(thread, resultCapa->GetResolve());
+                EcmaRuntimeCallInfo info =
+                    EcmaInterpreter::NewRuntimeCallInfo(thread, resCapaFunc, undefined, undefined, 1);
+                info.SetCallArg(jsArrayValues.GetTaggedValue());
+                JSFunction::Call(&info);
+                if (thread->HasPendingException()) {
+                    JSHandle<JSTaggedValue> throwValue = JSPromise::IfThrowGetThrowValue(thread);
+                    JSHandle<CompletionRecord> completionRecord =
+                        factory->NewCompletionRecord(CompletionRecordType::THROW, throwValue);
+                    return completionRecord;
+                }
+            }
+            // iv. Return resultCapability.[[Promise]].
+            JSHandle<JSTaggedValue> resultCapabilityHandle(thread, resultCapa->GetPromise());
+            JSHandle<CompletionRecord> resRecord = factory->NewCompletionRecord(
+                CompletionRecordType::NORMAL, resultCapabilityHandle);
+            return resRecord;
+        }
+        // e. Let nextValue be IteratorValue(next).
+        JSHandle<JSTaggedValue> nextVal = JSIterator::IteratorValue(thread, next);
+        // f. If nextValue is an abrupt completion, set iteratorRecord.[[Done]] to true.
+        if (thread->HasPendingException()) {
+            iterRecord->SetDone(true);
+            nextVal = JSHandle<JSTaggedValue>(thread, thread->GetException());
+        }
+        // g. ReturnIfAbrupt(nextValue).
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        // h. Append undefined to values.
+        JSHandle<JSTaggedValue> valuesHandle(thread, values->GetValue());
+        JSHandle<TaggedArray> valuesArray = JSHandle<TaggedArray>::Cast(valuesHandle);
+        valuesArray = TaggedArray::SetCapacity(thread, valuesArray, index + 1);
+        valuesArray->Set(thread, index, JSTaggedValue::Undefined());
+        values->SetValue(thread, valuesArray);
+        // i. Let nextPromise be ? Call(promiseResolve, constructor, « nextValue »).
+        EcmaRuntimeCallInfo taggedInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, promiseResolve, constructor, undefined, 1);
+        taggedInfo.SetCallArg(nextVal.GetTaggedValue());
+        JSTaggedValue taggedNextPromise = JSFunction::Call(&taggedInfo);
+        JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
+        if (thread->HasPendingException()) {
+            JSHandle<JSTaggedValue> promiseResult = JSPromise::IfThrowGetThrowValue(thread);
+            JSHandle<CompletionRecord> completionRecord =
+                factory->NewCompletionRecord(CompletionRecordType::THROW, promiseResult);
+            return completionRecord;
+        }
+        // j. Let stepsFulfilled be the algorithm steps defined in Promise.allSettled Resolve Element Functions.
+        // k. Let lengthFulfilled be the number of non-optional parameters of the function definition in
+        //    Promise.allSettled Resolve Element Functions.
+        // l. Let onFulfilled be CreateBuiltinFunction(stepsFulfilled, lengthFulfilled, "",
+        //    « [[AlreadyCalled]], [[Index]], [[Values]], [[Capability]], [[RemainingElements]] »).
+        JSHandle<JSPromiseAllSettledElementFunction> onFulfilled =
+            factory->NewJSPromiseAllSettledResolveElementFunction();
+        // m. Let alreadyCalled be the Record { [[Value]]: false }.
+        JSHandle<PromiseRecord> alreadyCalled = factory->NewPromiseRecord();
+        alreadyCalled->SetValue(thread, JSTaggedValue::False());
+        // n. Set onFulfilled.[[AlreadyCalled]] to alreadyCalled.
+        onFulfilled->SetAlreadyCalled(thread, alreadyCalled);
+        // o. Set onFulfilled.[[Index]] to index.
+        onFulfilled->SetIndex(index);
+        // p. Set onFulfilled.[[Values]] to values.
+        onFulfilled->SetValues(thread, values);
+        // q. Set onFulfilled.[[Capability]] to resultCapability.
+        onFulfilled->SetCapability(thread, resultCapa);
+        // r. Set onFulfilled.[[RemainingElements]] to remainingElementsCount.
+        onFulfilled->SetRemainingElements(thread, remainCnt);
+        // s. Let stepsRejected be the algorithm steps defined in Promise.allSettled Reject Element Functions.
+        // t. Let lengthRejected be the number of non-optional parameters of the function definition in
+        //    Promise.allSettled Reject Element Functions.
+        // u. Let onRejected be CreateBuiltinFunction(stepsRejected, lengthRejected, "",
+        //    « [[AlreadyCalled]], [[Index]], [[Values]], [[Capability]], [[RemainingElements]] »).
+        JSHandle<JSPromiseAllSettledElementFunction> onRejected =
+            factory->NewJSPromiseAllSettledRejectElementFunction();
+        // v. Set onRejected.[[AlreadyCalled]] to alreadyCalled.
+        onRejected->SetAlreadyCalled(thread, alreadyCalled);
+        // w. Set onRejected.[[Index]] to index.
+        onRejected->SetIndex(index);
+        // x. Set onRejected.[[Values]] to values.
+        onRejected->SetValues(thread, values);
+        // y. Set onRejected.[[Capability]] to resultCapability.
+        onRejected->SetCapability(thread, resultCapa);
+        // z. Set onRejected.[[RemainingElements]] to remainingElementsCount.
+        onRejected->SetRemainingElements(thread, remainCnt);
+        // aa. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] + 1.
+        remainCnt->SetValue(thread, ++JSTaggedNumber(remainCnt->GetValue()));
+        // ab. Perform ? Invoke(nextPromise, "then", « onFulfilled, onRejected »).
+        JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
+        EcmaRuntimeCallInfo invokeInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise, undefined, 2); // 2: two args
+        invokeInfo.SetCallArg(onFulfilled.GetTaggedValue(), onRejected.GetTaggedValue());
+        JSFunction::Invoke(&invokeInfo, thenKey);
+        if (thread->HasPendingException()) {
+            JSHandle<JSTaggedValue> taggedResult = JSPromise::IfThrowGetThrowValue(thread);
+            JSHandle<CompletionRecord> completionRecord =
+                factory->NewCompletionRecord(CompletionRecordType::THROW, taggedResult);
+            return completionRecord;
+        }
+        // ac. Set index to index + 1.
+        ++index;
+    }
+}
+
+// 27.2.5.3 Promise.prototype.finally ( onFinally )
+JSTaggedValue BuiltinsPromise::Finally(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Promise, Finally);
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    auto ecmaVm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    // 1. Let promise be the this value.
+    // 2. If Type(promise) is not Object, throw a TypeError exception.
+    JSHandle<JSTaggedValue> promise = GetThis(argv);
+    if (!promise->IsECMAObject()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Reject: this value is not object", JSTaggedValue::Exception());
+    }
+    // 3. Let C be SpeciesConstructor(promise, %Promise%).
+    // 4. Assert: IsConstructor(C) is true.
+    JSHandle<JSTaggedValue> onFinally = BuiltinsBase::GetCallArg(argv, 0);
+    JSHandle<JSObject> ctor = JSHandle<JSObject>::Cast(promise);
+    JSHandle<JSTaggedValue> promiseFunc = JSHandle<JSTaggedValue>::Cast(env->GetPromiseFunction());
+    JSHandle<JSTaggedValue> constructor = JSObject::SpeciesConstructor(thread, ctor, promiseFunc);
+    ASSERT_PRINT(constructor->IsConstructor(), "constructor is not constructor");
+    JSHandle<JSTaggedValue> thenFinally;
+    JSHandle<JSTaggedValue> catchFinally;
+    // 5. If IsCallable(onFinally) is false, then
+    if (!onFinally->IsCallable()) {
+        // a. Let thenFinally be onFinally.
+        // b. Let catchFinally be onFinally.
+        thenFinally = onFinally;
+        catchFinally = onFinally;
+    // 6. Else,
+    } else {
+        // a. Let stepsThenFinally be the algorithm steps defined in Then Finally Functions.
+        // b. Let thenFinally be CreateBuiltinFunction(stepsThenFinally, « [[Constructor]], [[OnFinally]] »).
+        JSHandle<JSPromiseFinallyFunction> thenFinallyFun =
+            factory->NewJSPromiseThenFinallyFunction();
+        // c. Set thenFinally.[[Constructor]] to C.
+        // d. Set thenFinally.[[OnFinally]] to onFinally.
+        thenFinallyFun->SetConstructor(thread, constructor);
+        thenFinallyFun->SetOnFinally(thread, onFinally);
+        thenFinally = JSHandle<JSTaggedValue>(thenFinallyFun);
+        // e. Let stepsCatchFinally be the algorithm steps defined in Catch Finally Functions.
+        // f. Let catchFinally be CreateBuiltinFunction(stepsCatchFinally, « [[Constructor]], [[OnFinally]] »).
+        JSHandle<JSPromiseFinallyFunction> catchFinallyFun =
+            factory->NewJSPromiseCatchFinallyFunction();
+        // g. Set catchFinally.[[Constructor]] to C.
+        // h. Set catchFinally.[[OnFinally]] to onFinally.
+        catchFinallyFun->SetConstructor(thread, constructor);
+        catchFinallyFun->SetOnFinally(thread, onFinally);
+        catchFinally = JSHandle<JSTaggedValue>(catchFinallyFun);
+    }
+    // 7. return invoke(promise, "then", <<thenFinally, catchFinally>>)
+    JSHandle<JSTaggedValue> thenKey(globalConst->GetHandledPromiseThenString());
+    JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+    EcmaRuntimeCallInfo invokeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promise, undefined, 2); // 2: two args
+    invokeInfo.SetCallArg(thenFinally.GetTaggedValue(), catchFinally.GetTaggedValue());
+    return JSFunction::Invoke(&invokeInfo, thenKey);
+}
 }  // namespace panda::ecmascript::builtins

@@ -542,6 +542,10 @@ public:
     bool IsPromiseCapability() const;
     bool IsPromiseIteratorRecord() const;
     bool IsPromiseRecord() const;
+    bool IsJSPromiseAnyRejectElementFunction() const;
+    bool IsJSPromiseAllSettledElementFunction() const;
+    bool IsJSPromiseFinallyFunction() const;
+    bool IsJSPromiseValueThunkOrThrowerFunction() const;
     bool IsResolvingFunctionsRecord() const;
     bool IsCompletionRecord() const;
     bool IsDataView() const;

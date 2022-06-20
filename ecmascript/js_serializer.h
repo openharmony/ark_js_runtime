@@ -79,6 +79,7 @@ enum class SerializationUID : uint8_t {
     RANGE_ERROR,
     REFERENCE_ERROR,
     TYPE_ERROR,
+    AGGREGATE_ERROR,
     URI_ERROR,
     SYNTAX_ERROR,
     ERROR_MESSAGE_BEGIN,

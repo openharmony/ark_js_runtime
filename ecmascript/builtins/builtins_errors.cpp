@@ -15,7 +15,12 @@
 
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/base/error_helper.h"
+#include "ecmascript/ecma_macros.h"
+#include "ecmascript/global_env.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/js_array.h"
+#include "ecmascript/js_primitive_ref.h"
+#include "ecmascript/js_iterator.h"
 
 namespace panda::ecmascript::builtins {
 using ErrorHelper = base::ErrorHelper;
@@ -102,5 +107,56 @@ JSTaggedValue BuiltinsEvalError::EvalErrorConstructor(EcmaRuntimeCallInfo *argv)
 JSTaggedValue BuiltinsEvalError::ToString(EcmaRuntimeCallInfo *argv)
 {
     return ErrorHelper::ErrorCommonToString(argv, ErrorType::EVAL_ERROR);
+}
+
+// AggregateError
+JSTaggedValue BuiltinsAggregateError::AggregateErrorConstructor(EcmaRuntimeCallInfo *argv)
+{
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    // 1. If NewTarget is undefined, let newTarget be the active function object; else let newTarget be NewTarget.
+    JSHandle<JSTaggedValue> constructor = GetConstructor(argv);
+    JSMutableHandle<JSTaggedValue> newTarget(thread, GetNewTarget(argv));
+    if (newTarget->IsUndefined()) {
+        newTarget.Update(constructor.GetTaggedValue());
+    }
+    JSHandle<JSTaggedValue> errors = BuiltinsBase::GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> message = BuiltinsBase::GetCallArg(argv, 1);
+    // 2. Let O be ? OrdinaryCreateFromConstructor(newTarget, "%AggregateError.prototype%", « [[ErrorData]] »).
+    JSHandle<JSObject> objValues = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), newTarget);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> taggedObj = JSHandle<JSTaggedValue>::Cast(objValues);
+    // 3. If message is not undefined, then
+    // a. Let msg be ? ToString(message).
+    // b. Let msgDesc be the PropertyDescriptor
+    // { [[Value]]: msg, [[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true }.
+    // c. Perform ! DefinePropertyOrThrow(O, "message", msgDesc).
+    JSHandle<JSTaggedValue> msgKey = globalConst->GetHandledMessageString();
+    JSHandle<JSTaggedValue> errorsKey = globalConst->GetHandledErrorsString();
+    if (!message->IsUndefined()) {
+        JSHandle<EcmaString> handleStr = JSTaggedValue::ToString(thread, message);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        PropertyDescriptor msgDesc(thread, JSHandle<JSTaggedValue>::Cast(handleStr), true, false, true);
+        JSTaggedValue::DefinePropertyOrThrow(thread, taggedObj, msgKey, msgDesc);
+    }
+    // 4. Let errorsList be ? IterableToList(errors).
+    JSHandle<JSTaggedValue> errorsList = JSObject::IterableToList(thread, errors);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 5. Perform ! DefinePropertyOrThrow(O, "errors", PropertyDescriptor { [[Configurable]]: true,
+    //    [[Enumerable]]: false, [[Writable]]: true, [[Value]]: !CreateArrayFromList(errorsList) }).
+    JSHandle<TaggedArray> errorsArray = JSArray::ToTaggedArray(thread, errorsList);
+    JSHandle<JSTaggedValue> errorsValues(JSArray::CreateArrayFromList(thread, errorsArray));
+    PropertyDescriptor msgDesc(thread, errorsValues, true, false, true);
+    JSTaggedValue::DefinePropertyOrThrow(thread, taggedObj, errorsKey, msgDesc);
+    // 6. Return O.
+    return taggedObj.GetTaggedValue();
+}
+
+JSTaggedValue BuiltinsAggregateError::ToString(EcmaRuntimeCallInfo *argv)
+{
+    return ErrorHelper::ErrorCommonToString(argv, ErrorType::AGGREGATE_ERROR);
 }
 }  // namespace panda::ecmascript::builtins

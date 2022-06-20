@@ -601,6 +601,9 @@ public:
     static JSHandle<TaggedArray> GrowElementsCapacity(const JSThread *thread, const JSHandle<JSObject> &obj,
                                                       uint32_t capacity);
 
+    static JSHandle<JSTaggedValue> IterableToList(JSThread *thread, const JSHandle<JSTaggedValue> &items,
+                                                  JSTaggedValue method = JSTaggedValue::Undefined());
+
 protected:
     static void ElementsToDictionary(const JSThread *thread, JSHandle<JSObject> obj);
 

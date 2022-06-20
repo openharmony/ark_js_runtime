@@ -48,6 +48,14 @@ public:
                                             const JSHandle<JSTaggedValue> &onRejected,
                                             const JSHandle<PromiseCapability> &capability);
 
+    static JSTaggedValue Any(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue AllSettled(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue Finally(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue GetPromiseResolve(JSThread *thread, JSHandle<JSTaggedValue> promiseConstructor);
+
 private:
     static JSHandle<CompletionRecord> PerformPromiseAll(JSThread *thread,
                                                         const JSHandle<PromiseIteratorRecord> &itRecord,
@@ -58,6 +66,18 @@ private:
                                                          const JSHandle<PromiseIteratorRecord> &iteratorRecord,
                                                          const JSHandle<PromiseCapability> &capability,
                                                          const JSHandle<JSTaggedValue> &constructor);
+
+    static JSHandle<CompletionRecord> PerformPromiseAllSettled(JSThread *thread,
+                                                               const JSHandle<PromiseIteratorRecord> &iterRecord,
+                                                               const JSHandle<JSTaggedValue> &constructor,
+                                                               const JSHandle<PromiseCapability> &resultCapa,
+                                                               const JSHandle<JSTaggedValue> &promiseResolve);
+
+    static JSHandle<CompletionRecord> PerformPromiseAny(JSThread *thread,
+                                                        const JSHandle<PromiseIteratorRecord> &iteratorRecord,
+                                                        const JSHandle<JSTaggedValue> &constructor,
+                                                        const JSHandle<PromiseCapability> &resultCapability,
+                                                        const JSHandle<JSTaggedValue> &promiseResolve);
 };
 }  // namespace panda::ecmascript::builtins
 #endif  // ECMASCRIPT_BUILTINS_BUILTINS_PROMISE_H

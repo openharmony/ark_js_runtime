@@ -61,6 +61,7 @@ class JSThread;
     V(JSTaggedValue, RangeErrorFunction, RANGE_ERROR_FUNCTION_INDEX)                                \
     V(JSTaggedValue, ReferenceErrorFunction, REFERENCE_ERROR_FUNCTION_INDEX)                        \
     V(JSTaggedValue, TypeErrorFunction, TYPE_ERROR_FUNCTION_INDEX)                                  \
+    V(JSTaggedValue, AggregateErrorFunction, AGGREGATE_ERROR_FUNCTION_INDEX)                        \
     V(JSTaggedValue, URIErrorFunction, URI_ERROR_FUNCTION_INDEX)                                    \
     V(JSTaggedValue, SyntaxErrorFunction, SYNTAX_ERROR_FUNCTION_INDEX)                              \
     V(JSTaggedValue, EvalErrorFunction, EVAL_ERROR_FUNCTION_INDEX)                                  \
@@ -137,6 +138,10 @@ class JSThread;
     V(JSTaggedValue, PromiseExecutorFunctionClass, PROMISE_EXECUTOR_FUNCTION_CLASS)                 \
     V(JSTaggedValue, GeneratorFunctionClass, GENERATOR_FUNCTION_CLASS)                              \
     V(JSTaggedValue, PromiseAllResolveElementFunctionClass, PROMISE_ALL_RESOLVE_ELEMENT_FUNC_CLASS) \
+    V(JSTaggedValue, PromiseAnyRejectElementFunctionClass, PROMISE_ANY_REJECT_ELEMENT_FUNC_CLASS)   \
+    V(JSTaggedValue, PromiseAllSettledElementFunctionClass, PROMISE_ALL_SETTLED_ELEMENT_FUNC_CLASS) \
+    V(JSTaggedValue, PromiseFinallyFunctionClass, PROMISE_FINALLY_FUNC_CLASS)                       \
+    V(JSTaggedValue, PromiseValueThunkOrThrowerFunctionClass, PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION_CLASS) \
     V(JSTaggedValue, ProxyRevocFunctionClass, PROXY_REVOC_FUNCTION_CLASS)                           \
     V(JSTaggedValue, NativeErrorFunctionClass, NATIVE_ERROR_FUNCTION_CLASS)                         \
     V(JSTaggedValue, SpecificTypedArrayFunctionClass, SPERCIFIC_TYPED_ARRAY_FUNCTION_CLASS)         \

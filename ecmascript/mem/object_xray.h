@@ -118,6 +118,7 @@ public:
             case JSType::JS_RANGE_ERROR:
             case JSType::JS_REFERENCE_ERROR:
             case JSType::JS_TYPE_ERROR:
+            case JSType::JS_AGGREGATE_ERROR:
             case JSType::JS_URI_ERROR:
             case JSType::JS_SYNTAX_ERROR:
             case JSType::JS_ITERATOR:
@@ -179,6 +180,38 @@ public:
                 jsPromiseAllResolveElementFunction->VisitRangeSlot(visitor);
                 if (visitType == VisitType::SNAPSHOT_VISIT) {
                     jsPromiseAllResolveElementFunction->VisitRangeSlotForNative(visitor);
+                }
+                break;
+            }
+            case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION: {
+                auto jsPromiseAnyRejectElementFunction = JSPromiseAnyRejectElementFunction::Cast(object);
+                jsPromiseAnyRejectElementFunction->VisitRangeSlot(visitor);
+                if (visitType == VisitType::SNAPSHOT_VISIT) {
+                    jsPromiseAnyRejectElementFunction->VisitRangeSlotForNative(visitor);
+                }
+                break;
+            }
+            case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION: {
+                auto jsPromiseAllSettledElementFunction = JSPromiseAllSettledElementFunction::Cast(object);
+                jsPromiseAllSettledElementFunction->VisitRangeSlot(visitor);
+                if (visitType == VisitType::SNAPSHOT_VISIT) {
+                    jsPromiseAllSettledElementFunction->VisitRangeSlotForNative(visitor);
+                }
+                break;
+            }
+            case JSType::JS_PROMISE_FINALLY_FUNCTION: {
+                auto jsPromiseFinallyFunction = JSPromiseFinallyFunction::Cast(object);
+                jsPromiseFinallyFunction->VisitRangeSlot(visitor);
+                if (visitType == VisitType::SNAPSHOT_VISIT) {
+                    jsPromiseFinallyFunction->VisitRangeSlotForNative(visitor);
+                }
+                break;
+            }
+            case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION: {
+                auto jsPromiseValueThunkOrThrowerFunction = JSPromiseValueThunkOrThrowerFunction::Cast(object);
+                jsPromiseValueThunkOrThrowerFunction->VisitRangeSlot(visitor);
+                if (visitType == VisitType::SNAPSHOT_VISIT) {
+                    jsPromiseValueThunkOrThrowerFunction->VisitRangeSlotForNative(visitor);
                 }
                 break;
             }
