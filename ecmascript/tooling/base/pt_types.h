@@ -19,7 +19,9 @@
 #include <memory>
 #include <optional>
 
+#ifdef SUPPORT_PROFILER_CDP
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
+#endif
 #include "ecmascript/tooling/backend/debugger_api.h"
 #include "ecmascript/tooling/base/pt_json.h"
 #include "libpandabase/macros.h"
@@ -1458,6 +1460,7 @@ private:
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
 };
 
+#ifdef SUPPORT_PROFILER_CDP
 // ========== Heapprofiler types begin
 
 using HeapSnapshotObjectId = int32_t;
@@ -2199,5 +2202,6 @@ private:
     std::string url_ {};
     std::vector<std::unique_ptr<TypeProfileEntry>> entries_ {};
 };
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

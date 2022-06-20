@@ -247,6 +247,23 @@ private:
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
 
+class GetHeapUsageReturns : public PtBaseReturns {
+public:
+    explicit GetHeapUsageReturns(double usedSize, double totalSize)
+        : usedSize_(usedSize), totalSize_(totalSize) {}
+    ~GetHeapUsageReturns() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+private:
+    GetHeapUsageReturns() = default;
+    NO_COPY_SEMANTIC(GetHeapUsageReturns);
+    NO_MOVE_SEMANTIC(GetHeapUsageReturns);
+
+    double usedSize_ {0.0};
+    double totalSize_ {0.0};
+};
+
+#ifdef SUPPORT_PROFILER_CDP
 class StopSamplingReturns : public PtBaseReturns {
 public:
     explicit StopSamplingReturns(std::unique_ptr<SamplingHeapProfile> profile)
@@ -312,22 +329,6 @@ private:
     std::unique_ptr<Profile> profile_ {};
 };
 
-class GetHeapUsageReturns : public PtBaseReturns {
-public:
-    explicit GetHeapUsageReturns(double usedSize, double totalSize)
-        : usedSize_(usedSize), totalSize_(totalSize) {}
-    ~GetHeapUsageReturns() override = default;
-    std::unique_ptr<PtJson> ToJson() const override;
-
-private:
-    GetHeapUsageReturns() = default;
-    NO_COPY_SEMANTIC(GetHeapUsageReturns);
-    NO_MOVE_SEMANTIC(GetHeapUsageReturns);
-
-    double usedSize_ {0.0};
-    double totalSize_ {0.0};
-};
-
 class GetBestEffortCoverageReturns : public PtBaseReturns {
 public:
     explicit GetBestEffortCoverageReturns(std::vector<std::unique_ptr<ScriptCoverage>> result)
@@ -391,5 +392,6 @@ private:
 
     std::vector<std::unique_ptr<ScriptTypeProfile>> result_ {};
 };
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

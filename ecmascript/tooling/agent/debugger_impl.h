@@ -133,15 +133,16 @@ private:
     JSPtExtractor *GetExtractor(const std::string &url);
     std::optional<std::string> CmptEvaluateValue(CallFrameId callFrameId, const std::string &expression,
                                              std::unique_ptr<RemoteObject> *result);
-    bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
-    void SaveCallFrameHandler(const FrameHandler *frameHandler);
-    std::unique_ptr<Scope> GetLocalScopeChain(const FrameHandler *frameHandler,
+    bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, CallFrameId frameId);
+    void SaveCallFrameHandler(const InterpretedFrameHandler *frameHandler);
+    std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     std::unique_ptr<Scope> GetGlobalScopeChain();
-    void GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
+    void GetLocalVariables(const InterpretedFrameHandler *frameHandler, const JSMethod *method,
         Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj);
     void CleanUpOnPaused();
-    void UpdateScopeObject(const FrameHandler *frameHandler, std::string_view varName, Local<JSValueRef> newVal);
+    void UpdateScopeObject(const InterpretedFrameHandler *frameHandler,
+                           std::string_view varName, Local<JSValueRef> newVal);
     Local<JSValueRef> ConvertToLocal(const std::string &varValue);
     bool DecodeAndCheckBase64(const std::string &src, std::string &dest);
     bool IsSkipLine(const JSPtLocation &location);
@@ -177,7 +178,7 @@ private:
     std::unique_ptr<JSPtExtractor::SingleStepper> singleStepper_ {nullptr};
 
     std::unordered_map<JSTaggedType *, RemoteObjectId> scopeObjects_ {};
-    std::vector<std::shared_ptr<FrameHandler>> callFrameHandlers_;
+    std::vector<std::shared_ptr<InterpretedFrameHandler>> callFrameHandlers_;
     JsDebuggerManager::ObjectUpdaterFunc updaterFunc_ {nullptr};
 
     friend class JSPtHooks;

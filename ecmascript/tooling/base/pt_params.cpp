@@ -571,6 +571,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const PtJson 
     return paramsObject;
 }
 
+#ifdef SUPPORT_PROFILER_CDP
 std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const PtJson &params)
 {
     auto paramsObject = std::make_unique<StartSamplingParams>();
@@ -778,4 +779,5 @@ std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(con
     }
     return paramsObject;
 }
+#endif
 }  // namespace panda::ecmascript::tooling

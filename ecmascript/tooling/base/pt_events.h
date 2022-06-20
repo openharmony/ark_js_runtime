@@ -738,6 +738,7 @@ private:
     std::optional<std::string> embedderName_ {};
 };
 
+#ifdef SUPPORT_PROFILER_CDP
 class AddHeapSnapshotChunk final : public PtBaseEvents {
 public:
     AddHeapSnapshotChunk() = default;
@@ -1063,5 +1064,6 @@ private:
     int32_t total_ {};
     std::optional<bool> finished_ {};
 };
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

@@ -205,6 +205,17 @@ std::unique_ptr<PtJson> CallFunctionOnReturns::ToJson() const
     return result;
 }
 
+std::unique_ptr<PtJson> GetHeapUsageReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("usedSize", usedSize_);
+    result->Add("totalSize", totalSize_);
+
+    return result;
+}
+
+#ifdef SUPPORT_PROFILER_CDP
 std::unique_ptr<PtJson> StopSamplingReturns::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
@@ -237,16 +248,6 @@ std::unique_ptr<PtJson> StopReturns::ToJson() const
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("profile", profile_->ToJson());
-
-    return result;
-}
-
-std::unique_ptr<PtJson> GetHeapUsageReturns::ToJson() const
-{
-    std::unique_ptr<PtJson> result = PtJson::CreateObject();
-
-    result->Add("usedSize", usedSize_);
-    result->Add("totalSize", totalSize_);
 
     return result;
 }
@@ -305,4 +306,5 @@ std::unique_ptr<PtJson> TakeTypeProfileReturns::ToJson() const
 
     return result;
 }
+#endif
 }  // namespace panda::ecmascript::tooling

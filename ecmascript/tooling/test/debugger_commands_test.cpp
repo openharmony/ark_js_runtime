@@ -43,7 +43,8 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        ecmaVm = EcmaVM::Cast(instance);
         // Main logic is JSON parser, so not need trigger GC to decrease execute time
         ecmaVm->SetEnableForceGC(false);
     }
@@ -55,6 +56,7 @@ public:
 
 protected:
     EcmaVM *ecmaVm {nullptr};
+    PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

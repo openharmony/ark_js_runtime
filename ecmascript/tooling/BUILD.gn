@@ -18,6 +18,7 @@ config("ark_ecma_debugger_config") {
   configs = [
     "//ark/js_runtime:ark_jsruntime_common_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
+    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   include_dirs = [
@@ -29,8 +30,8 @@ config("ark_ecma_debugger_config") {
 
 debugger_sources = [
   "agent/debugger_impl.cpp",
-  "agent/heapprofiler_impl.cpp",
-  "agent/profiler_impl.cpp",
+  # "agent/heapprofiler_impl.cpp",
+  # "agent/profiler_impl.cpp",
   "agent/runtime_impl.cpp",
   "backend/debugger_executor.cpp",
   "backend/js_pt_extractor.cpp",
@@ -95,6 +96,12 @@ ohos_shared_library("libark_ecma_debugger_test") {
     ":libark_ecma_debugger_test_set",
     "//ark/js_runtime:libark_jsruntime_test_set",
   ]
+
+  if (is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime_static" ]
+  } else {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 
   if (is_ohos && is_standard_system) {
     if (build_public_version) {

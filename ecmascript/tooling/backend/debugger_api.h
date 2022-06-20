@@ -26,9 +26,9 @@
 
 namespace panda {
 namespace ecmascript {
-class FrameHandler;
+class InterpretedFrameHandler;
 class EcmaVM;
-struct JSMethod;
+class JSMethod;
 class JSThread;
 namespace tooling {
 class JSDebugger;
@@ -45,26 +45,26 @@ enum StackState {
 
 class PUBLIC_API DebuggerApi {
 public:
-    // FrameHandler
+    // InterpretedFrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
-    static std::shared_ptr<FrameHandler> NewFrameHandler(const EcmaVM *ecmaVm);
-    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func);
+    static std::shared_ptr<InterpretedFrameHandler> NewFrameHandler(const EcmaVM *ecmaVm);
+    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
-    static uint32_t GetBytecodeOffset(const FrameHandler *frameHandler);
-    static JSMethod *GetMethod(const FrameHandler *frameHandler);
-    static JSTaggedValue GetEnv(const FrameHandler *frameHandler);
-    static JSTaggedType *GetSp(const FrameHandler *frameHandler);
-    static int32_t GetVregIndex(const FrameHandler *frameHandler, std::string_view name);
+    static uint32_t GetBytecodeOffset(const InterpretedFrameHandler *frameHandler);
+    static JSMethod *GetMethod(const InterpretedFrameHandler *frameHandler);
+    static JSTaggedValue GetEnv(const InterpretedFrameHandler *frameHandler);
+    static JSTaggedType *GetSp(const InterpretedFrameHandler *frameHandler);
+    static int32_t GetVregIndex(const InterpretedFrameHandler *frameHandler, std::string_view name);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
-                                          const FrameHandler *frameHandler, size_t index);
-    static void SetVRegValue(FrameHandler *frameHandler, size_t index, Local<JSValueRef> value);
+                                          const InterpretedFrameHandler *frameHandler, size_t index);
+    static void SetVRegValue(InterpretedFrameHandler *frameHandler, size_t index, Local<JSValueRef> value);
 
-    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, const FrameHandler *frameHandler,
+    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler,
                                            int32_t level, uint32_t slot);
-    static void SetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+    static void SetProperties(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                               int32_t level, uint32_t slot, Local<JSValueRef> value);
-    static std::pair<int32_t, uint32_t> GetLevelSlot(const FrameHandler *frameHandler, std::string_view name);
+    static std::pair<int32_t, uint32_t> GetLevelSlot(const InterpretedFrameHandler *frameHandler, std::string_view name);
     static Local<JSValueRef> GetGlobalValue(const EcmaVM *vm, Local<StringRef> name);
     static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 
@@ -85,9 +85,8 @@ public:
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
     static void HandleUncaughtException(const EcmaVM *ecmaVm, std::string &message);
     static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, Local<FunctionRef> funcRef,
-        std::shared_ptr<FrameHandler> &frameHandler);
-    static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
-        std::string_view entryPoint);
+        std::shared_ptr<InterpretedFrameHandler> &frameHandler);
+    static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size);
 
     // JSMethod
     static std::string ParseFunctionName(const JSMethod *method);

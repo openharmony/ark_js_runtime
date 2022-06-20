@@ -20,7 +20,8 @@
 namespace panda::ecmascript {
 JSMethod::JSMethod(const JSPandaFile *jsPandaFile,  panda_file::File::EntityId fileId,
                    panda_file::File::EntityId codeId, uint32_t accessFlags, uint32_t numArgs, const uint16_t *shorty)
-    : Method(nullptr, jsPandaFile == nullptr ? nullptr : jsPandaFile->GetPandaFile(), fileId, codeId, accessFlags, numArgs, shorty)
+    : Method(nullptr, jsPandaFile == nullptr ? nullptr : jsPandaFile->GetPandaFile(),
+             fileId, codeId, accessFlags, numArgs, shorty)
 {
     bytecodeArray_ = JSMethod::GetInstructions();
     bytecodeArraySize_ = JSMethod::GetCodeSize();

@@ -18,7 +18,7 @@
 #include <boost/beast/core/detail/base64.hpp>
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/napi/jsnapi_helper.h"
+#include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/base/pt_returns.h"
@@ -528,8 +528,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(const EvaluateOnCallFramePara
         return DispatchResponse::Create(ret);
     }
 
-    auto funcRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size(),
-        JSPandaFile::ENTRY_MAIN_FUNCTION);
+    auto funcRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size());
     auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(vm_), funcRef,
         callFrameHandlers_[callFrameId]);
     if (vm_->GetJSThread()->HasPendingException()) {
@@ -679,8 +678,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(const SetBreakpointByUrlParams
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
                 return false;
             }
-            condFuncRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size(),
-                JSPandaFile::ENTRY_MAIN_FUNCTION);
+            condFuncRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size());
             if (condFuncRef->IsUndefined()) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: generate function failed";
                 return false;
@@ -796,7 +794,7 @@ JSPtExtractor *DebuggerImpl::GetExtractor(const std::string &url)
 bool DebuggerImpl::GenerateCallFrames(std::vector<std::unique_ptr<CallFrame>> *callFrames)
 {
     CallFrameId callFrameId = 0;
-    auto walkerFunc = [this, &callFrameId, &callFrames](const FrameHandler *frameHandler) -> StackState {
+    auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
         if (method->IsNativeWithCallField()) {
             LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
@@ -817,7 +815,7 @@ bool DebuggerImpl::GenerateCallFrames(std::vector<std::unique_ptr<CallFrame>> *c
     return DebuggerApi::StackWalker(vm_, walkerFunc);
 }
 
-void DebuggerImpl::SaveCallFrameHandler(const FrameHandler *frameHandler)
+void DebuggerImpl::SaveCallFrameHandler(const InterpretedFrameHandler *frameHandler)
 {
     auto handlerPtr = DebuggerApi::NewFrameHandler(vm_);
     *handlerPtr = *frameHandler;
@@ -825,7 +823,7 @@ void DebuggerImpl::SaveCallFrameHandler(const FrameHandler *frameHandler)
 }
 
 bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
-    const FrameHandler *frameHandler, CallFrameId callFrameId)
+    const InterpretedFrameHandler *frameHandler, CallFrameId callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
@@ -880,7 +878,7 @@ bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
     return true;
 }
 
-std::unique_ptr<Scope> DebuggerImpl::GetLocalScopeChain(const FrameHandler *frameHandler,
+std::unique_ptr<Scope> DebuggerImpl::GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
     std::unique_ptr<RemoteObject> *thisObj)
 {
     auto localScope = std::make_unique<Scope>();
@@ -930,7 +928,7 @@ std::unique_ptr<Scope> DebuggerImpl::GetLocalScopeChain(const FrameHandler *fram
     return localScope;
 }
 
-void DebuggerImpl::GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
+void DebuggerImpl::GetLocalVariables(const InterpretedFrameHandler *frameHandler, const JSMethod *method,
     Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj)
 {
     auto methodId = method->GetMethodId();
@@ -974,20 +972,20 @@ void DebuggerImpl::GetLocalVariables(const FrameHandler *frameHandler, const JSM
         auto ptr = JSNativePointer::Cast(lexEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
         auto *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(ptr);
         JSThread *thread = vm_->GetJSThread();
-        for (const auto &[varName, slot] : scopeDebugInfo->scopeInfo) {
+        for (const auto &info : scopeDebugInfo->scopeInfo) {
             // skip possible duplicate variables both in local variable table and env
-            if (varName == "4newTarget") {
+            if (info.name == "4newTarget") {
                 continue;
             }
             value = JSNApiHelper::ToLocal<JSValueRef>(
-                JSHandle<JSTaggedValue>(thread, lexEnv->GetProperties(slot)));
-            if (varName == "this") {
+                JSHandle<JSTaggedValue>(thread, lexEnv->GetProperties(info.slot)));
+            if (info.name == "this") {
                 if (!hasThis) {
                     thisVal = value;
                 }
                 continue;
             }
-            Local<JSValueRef> name = StringRef::NewFromUtf8(vm_, varName.c_str());
+            Local<JSValueRef> name = StringRef::NewFromUtf8(vm_, info.name.c_str());
             PropertyAttribute descriptor(value, true, true, true);
             localObj->DefineProperty(vm_, name, descriptor);
         }
@@ -1008,7 +1006,7 @@ std::unique_ptr<Scope> DebuggerImpl::GetGlobalScopeChain()
     return globalScope;
 }
 
-void DebuggerImpl::UpdateScopeObject(const FrameHandler *frameHandler,
+void DebuggerImpl::UpdateScopeObject(const InterpretedFrameHandler *frameHandler,
     std::string_view varName, Local<JSValueRef> newVal)
 {
     auto *sp = DebuggerApi::GetSp(frameHandler);
@@ -1054,7 +1052,7 @@ std::optional<std::string> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrame
     }
 
     Local<StringRef> name = StringRef::NewFromUtf8(vm_, varName.c_str());
-    FrameHandler *frameHandler = callFrameHandlers_[callFrameId].get();
+    InterpretedFrameHandler *frameHandler = callFrameHandlers_[callFrameId].get();
     if (varValue.empty()) {
         Local<JSValueRef> ret = DebuggerExecutor::GetValue(vm_, frameHandler, name);
         if (!ret.IsEmpty() && !ret->IsException()) {

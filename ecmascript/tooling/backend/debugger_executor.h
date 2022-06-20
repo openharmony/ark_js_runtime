@@ -19,7 +19,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 
 namespace panda::ecmascript {
-class FrameHandler;
+class InterpretedFrameHandler;
 namespace tooling {
 class DebuggerExecutor {
 public:
@@ -28,27 +28,31 @@ public:
 
     static void Initialize(const EcmaVM *vm);
 
-    static Local<JSValueRef> GetValue(const EcmaVM *vm, const FrameHandler *frameHandler, Local<StringRef> name);
-    static bool SetValue(const EcmaVM *vm, FrameHandler *frameHandler,
+    static Local<JSValueRef> GetValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
+                                      Local<StringRef> name);
+    static bool SetValue(const EcmaVM *vm, InterpretedFrameHandler *frameHandler,
                          Local<StringRef> name, Local<JSValueRef> value);
 
 private:
     NO_COPY_SEMANTIC(DebuggerExecutor);
     NO_MOVE_SEMANTIC(DebuggerExecutor);
 
-    static Local<JSValueRef> DebuggerGetValue(JsiRuntimeCallInfo *runtimeCallInfo);
-    static Local<JSValueRef> DebuggerSetValue(JsiRuntimeCallInfo *runtimeCallInfo);
+    static Local<JSValueRef> DebuggerGetValue(EcmaVM *vm, Local<JSValueRef> thisArg, const Local<JSValueRef> *argv,
+                                              int32_t length, void *data);
+    static Local<JSValueRef> DebuggerSetValue(EcmaVM *vm, Local<JSValueRef> thisArg, const Local<JSValueRef> *argv,
+                                              int32_t length, void *data);
 
     static void ThrowException(const EcmaVM *vm, const std::string &error);
 
-    static Local<JSValueRef> GetLocalValue(const EcmaVM *vm, const FrameHandler *frameHandler, Local<StringRef> name);
-    static Local<JSValueRef> GetLexicalValue(const EcmaVM *vm, const FrameHandler *frameHandler,
+    static Local<JSValueRef> GetLocalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
+                                           Local<StringRef> name);
+    static Local<JSValueRef> GetLexicalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                              Local<StringRef> name);
     static Local<JSValueRef> GetGlobalValue(const EcmaVM *vm, Local<StringRef> name);
 
-    static bool SetLocalValue(const EcmaVM *vm, FrameHandler *frameHandler,
+    static bool SetLocalValue(const EcmaVM *vm, InterpretedFrameHandler *frameHandler,
                               Local<StringRef> name, Local<JSValueRef> value);
-    static bool SetLexicalValue(const EcmaVM *vm, const FrameHandler *frameHandler,
+    static bool SetLexicalValue(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
                                 Local<StringRef> name, Local<JSValueRef> value);
     static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 

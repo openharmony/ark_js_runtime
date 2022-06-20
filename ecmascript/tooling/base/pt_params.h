@@ -608,6 +608,7 @@ private:
     std::optional<bool> throwOnSideEffect_ {};
 };
 
+#ifdef SUPPORT_PROFILER_CDP
 class StartSamplingParams : public PtBaseParams {
 public:
     StartSamplingParams() = default;
@@ -836,5 +837,6 @@ private:
 
     int32_t interval_ {0};
 };
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

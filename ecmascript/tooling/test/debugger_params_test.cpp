@@ -49,7 +49,8 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        ecmaVm = EcmaVM::Cast(instance);
         // Main logic is JSON parser, so not need trigger GC to decrease execute time
         ecmaVm->SetEnableForceGC(false);
     }
@@ -61,6 +62,7 @@ public:
 
 protected:
     EcmaVM *ecmaVm {nullptr};
+    PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -83,6 +85,8 @@ HWTEST_F_L0(DebuggerParamsTest, EnableParamsCreateTest)
     EXPECT_EQ(enableParams->GetMaxScriptsCacheSize(), 100);
 }
 
+
+#ifdef SUPPORT_PROFILER_CDP
 HWTEST_F_L0(DebuggerParamsTest, StartSamplingParamsCreateTest)
 {
     std::string msg;
@@ -365,4 +369,5 @@ HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ(objectData->GetInterval(), 500);
 }
+#endif
 }  // namespace panda::test
