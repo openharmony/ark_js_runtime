@@ -270,10 +270,10 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
     if (!SamplesRecord::staticGcState_) {
         FrameHandler frameHandler(thread);
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-            if (frameHandler.IsEntryFrame()) {
+            if (!frameHandler.IsInterpretedFrame()) {
                 continue;
             }
-            auto *method = frameHandler.GetMethod();
+            auto method = frameHandler.CheckAndGetMethod();
             if (method != nullptr && staticStackInfo_.count(method) == 0) {
                 ParseMethodInfo(method, frameHandler);
             }
@@ -287,7 +287,10 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, FrameHandler frameHandler)
     struct FrameInfo codeEntry;
     if (method != nullptr && method->IsNativeWithCallField()) {
         codeEntry.codeType = "other";
-        codeEntry.functionName = "native";
+        auto addr = method->GetNativePointer();
+        std::stringstream strm;
+        strm << addr;
+        codeEntry.functionName = "native(" + strm.str() + ")";
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
     } else if (method != nullptr) {
         codeEntry.codeType = "JS";
