@@ -37,6 +37,7 @@ public:
 
         uint32_t start = GetStart().GetArrayLength();
         JSTaggedValue value = Get(start);
+        Set(thread, start, JSTaggedValue::Hole());
 
         uint32_t capacity = GetCapacity().GetArrayLength();
         ASSERT(capacity != 0);
