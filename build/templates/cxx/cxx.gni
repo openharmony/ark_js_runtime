@@ -11,22 +11,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-template("ark_executable") {
+template("ohos_executable") {
   executable(target_name) {
-    forward_variables_from(invoker, "*")
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "subsystem_name",
+                             "install_enable",
+                           ])
   }
 }
-template("ark_static_library") {
+template("ohos_static_library") {
   static_library(target_name) {
-    forward_variables_from(invoker, "*")
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "subsystem_name",
+                             "part_name",
+                             "use_exceptions",
+                           ])
   }
 }
-template("ark_shared_library") {
+template("ohos_shared_library") {
   shared_library(target_name) {
-    forward_variables_from(invoker, "*")
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "relative_install_dir",
+                             "subsystem_name",
+                             "install_enable",
+                             "part_name",
+                             "use_exceptions",
+                           ])
   }
 }
-template("ark_copy") {
+
+template("ohos_copy") {
   copy(target_name) {
     forward_variables_from(invoker, "*")
   }
