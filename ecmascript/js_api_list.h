@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JSAPILIST_H
-#define ECMASCRIPT_JSAPILIST_H
+#ifndef ECMASCRIPT_JS_API_LIST_H
+#define ECMASCRIPT_JS_API_LIST_H
 
 #include "js_object.h"
 #include "js_tagged_value-inl.h"
@@ -72,4 +72,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_JSAPILIST_H
+#endif  // ECMASCRIPT_JS_API_LIST_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JS_APIARRAYLIST_H
-#define ECMASCRIPT_JS_APIARRAYLIST_H
+#ifndef ECMASCRIPT_JS_API_ARRAYLIST_H
+#define ECMASCRIPT_JS_API_ARRAYLIST_H
 
 #include "js_object.h"
 #include "js_tagged_value-inl.h"
@@ -95,4 +95,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_JS_APIARRAYLIST_H
+#endif  // ECMASCRIPT_JS_API_ARRAYLIST_H

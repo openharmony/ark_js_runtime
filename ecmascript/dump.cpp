@@ -34,6 +34,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list.h"
@@ -332,6 +336,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "TSArrayType";
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             return "JSArraylistIterator";
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+            return "LightWeightMap";
+        case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+            return "LightWeightMapIterator";
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
+            return "LightWeightSet";
+        case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
+            return "LightWeightSetIterator";
         case JSType::JS_API_TREE_MAP:
             return "TreeMap";
         case JSType::JS_API_TREE_SET:
@@ -749,6 +761,18 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             JSAPIArrayListIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+            JSAPILightWeightMap::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+            JSAPILightWeightMapIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
+            JSAPILightWeightSet::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
+            JSAPILightWeightSetIterator::Cast(obj)->Dump(os);
             break;
         case JSType::TS_OBJECT_TYPE:
             TSObjectType::Cast(obj)->Dump(os);
@@ -1678,6 +1702,15 @@ void JSArray::Dump(std::ostream &os) const
     JSObject::Dump(os);
 }
 
+void JSArrayIterator::Dump(std::ostream &os) const
+{
+    JSArray *array = JSArray::Cast(GetIteratedArray().GetTaggedObject());
+    os << " - length: " << std::dec << array->GetArrayLength() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
+    JSObject::Dump(os);
+}
+
 void JSAPIArrayList::Dump(std::ostream &os) const
 {
     os << " - length: " << std::dec << GetSize() << "\n";
@@ -1707,24 +1740,53 @@ void JSAPIDequeIterator::Dump(std::ostream &os) const
     JSObject::Dump(os);
 }
 
-void JSAPIStack::Dump(std::ostream &os) const
+void JSAPILightWeightMap::Dump(std::ostream &os) const
 {
-    os << " - top: " << std::dec << GetTop() << "\n";
+    int capacity = GetSize();
+    os << " - length: " << std::dec << capacity << "\n";
+    int i = 0;
+    TaggedArray *hashArray = TaggedArray::Cast(GetHashes().GetTaggedObject());
+    TaggedArray *keyArray = TaggedArray::Cast(GetKeys().GetTaggedObject());
+    TaggedArray *valueArray = TaggedArray::Cast(GetValues().GetTaggedObject());
+    while (capacity > i) {
+        os << " hash: ";
+        hashArray->Get(i).DumpTaggedValue(os);
+        os << " key: ";
+        keyArray->Get(i).DumpTaggedValue(os);
+        os << " value: ";
+        valueArray->Get(i).DumpTaggedValue(os);
+        os << "\n";
+        i++;
+    }
     JSObject::Dump(os);
 }
 
-void JSAPIStackIterator::Dump(std::ostream &os) const
+void JSAPILightWeightMapIterator::Dump(std::ostream &os) const
 {
-    JSAPIStack *stack = JSAPIStack::Cast(GetIteratedStack().GetTaggedObject());
-    os << " - length: " << std::dec << stack->GetSize() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(os);
 }
 
-void JSArrayIterator::Dump(std::ostream &os) const
+void JSAPILightWeightSet::Dump(std::ostream &os) const
 {
-    JSArray *array = JSArray::Cast(GetIteratedArray().GetTaggedObject());
-    os << " - length: " << std::dec << array->GetArrayLength() << "\n";
+    TaggedArray *keys = TaggedArray::Cast(GetHashes().GetTaggedObject());
+    TaggedArray *values = TaggedArray::Cast(GetValues().GetTaggedObject());
+    uint32_t len = GetLength();
+    for (uint32_t i = 0; i < len; i++) {
+        os << " - keys: ";
+        keys->Get(i).DumpTaggedValue(os);
+        os << "\n";
+        os << " - values: ";
+        values->Get(i).DumpTaggedValue(os);
+        os << "\n";
+    }
+    os << " - length: " << std::dec << len << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPILightWeightSetIterator::Dump(std::ostream &os) const
+{
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(os);
@@ -1816,6 +1878,20 @@ void JSAPIQueueIterator::Dump(std::ostream &os) const
 {
     JSAPIQueue *queue = JSAPIQueue::Cast(GetIteratedQueue().GetTaggedObject());
     os << " - length: " << std::dec << queue->GetSize() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIStack::Dump(std::ostream &os) const
+{
+    os << " - top: " << std::dec << GetTop() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIStackIterator::Dump(std::ostream &os) const
+{
+    JSAPIStack *stack = JSAPIStack::Cast(GetIteratedStack().GetTaggedObject());
+    os << " - length: " << std::dec << stack->GetSize() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(os);
 }
@@ -3376,6 +3452,18 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             JSAPIArrayListIterator::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+            JSAPILightWeightMap::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+            JSAPILightWeightMapIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
+            JSAPILightWeightSet::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
+            JSAPILightWeightSetIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3888,6 +3976,21 @@ void JSAPIArrayListIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTa
     JSObject::DumpForSnapshot(vec);
 }
 
+void JSAPILightWeightMap::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPILightWeightMapIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPILightWeightMap *map =
+        JSAPILightWeightMap::Cast(GetIteratedLightWeightMap().GetTaggedObject());
+    map->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
+    JSObject::DumpForSnapshot(vec);
+}
+
 void JSAPIQueue::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     JSObject::DumpForSnapshot(vec);
@@ -3913,6 +4016,22 @@ void JSAPIDequeIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTagged
     vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
     JSObject::DumpForSnapshot(vec);
 }
+
+void JSAPILightWeightSet::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPILightWeightSetIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPILightWeightSet *set =
+        JSAPILightWeightSet::Cast(GetIteratedLightWeightSet().GetTaggedObject());
+    set->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
+    JSObject::DumpForSnapshot(vec);
+}
+
 void JSAPIStack::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     JSObject::DumpForSnapshot(vec);
@@ -4133,6 +4252,10 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("Undefined"), globalConst->GetUndefined()));
     vec.push_back(std::make_pair(CString("ArrayListFunction"), globalConst->GetArrayListFunction()));
     vec.push_back(std::make_pair(CString("ArrayListIteratorPrototype"), globalConst->GetArrayListIteratorPrototype()));
+    vec.push_back(
+        std::make_pair(CString("LightWeightMapIteratorPrototype"), globalConst->GetLightWeightMapIteratorPrototype()));
+    vec.push_back(
+        std::make_pair(CString("LightWeightSetIteratorPrototype"), globalConst->GetLightWeightSetIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
     vec.push_back(std::make_pair(CString("VectorFunction"), globalConst->GetVectorFunction()));

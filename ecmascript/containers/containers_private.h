@@ -70,6 +70,10 @@ private:
     static JSHandle<JSTaggedValue> InitializeArrayList(JSThread *thread);
     static void InitializeArrayListIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
                                             GlobalEnvConstants *globalConst);
+    static JSHandle<JSTaggedValue> InitializeLightWeightMap(JSThread *thread);
+    static void InitializeLightWeightMapIterator(JSThread *thread);
+    static JSHandle<JSTaggedValue> InitializeLightWeightSet(JSThread *thread);
+    static void InitializeLightWeightSetIterator(JSThread *thread);
     static JSHandle<JSTaggedValue> InitializeTreeMap(JSThread *thread);
     static void InitializeTreeMapIterator(JSThread *thread);
     static JSHandle<JSTaggedValue> InitializeTreeSet(JSThread *thread);

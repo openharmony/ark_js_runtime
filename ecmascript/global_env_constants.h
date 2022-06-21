@@ -84,9 +84,11 @@ class JSThread;
     V(JSTaggedValue, JSArrayIteratorClass, JS_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, JSAPIArrayListIteratorClass, JS_API_ARRAYLIST_ITERATOR_CLASS_INDEX, ecma_roots_class)            \
     V(JSTaggedValue, JSAPIDequeIteratorClass, JS_API_DEQUE_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
-    V(JSTaggedValue, JSAPIPlainArrayIteratorClass, JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
+    V(JSTaggedValue, JSAPILightWeightMapIteratorClass, JS_API_LIGHTWEIGHTMAP_ITERATOR_CLASS_INDEX, ecma_roots_class)  \
+    V(JSTaggedValue, JSAPILightWeightSetIteratorClass, JS_API_LIGHTWEIGHTSET_ITERATOR_CLASS_INDEX, ecma_roots_class)  \
     V(JSTaggedValue, JSAPILinkedListIteratorClass, JS_API_LINKED_LIST_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
     V(JSTaggedValue, JSAPIListIteratorClass, JS_API_LIST_ITERATOR_CLASS_INDEX, ecma_roots_class)                      \
+    V(JSTaggedValue, JSAPIPlainArrayIteratorClass, JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
     V(JSTaggedValue, JSAPIQueueIteratorClass, JS_API_QUEUE_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIStackIteratorClass, JS_API_STACK_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIVectorIteratorClass, JS_API_VECTOR_ITERATOR_CLASS_INDEX, ecma_roots_class)                  \
@@ -119,6 +121,8 @@ class JSThread;
     /* non ECMA standard jsapi containers iterators */                                                                \
     V(JSTaggedValue, ArrayListFunction, ARRAYLIST_FUNCTION_INDEX, ArrayListFunction)                                  \
     V(JSTaggedValue, ArrayListIteratorPrototype, ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, ArrayListIterator)               \
+    V(JSTaggedValue, LightWeightMapIteratorPrototype, LIGHTWEIGHTMAP_ITERATOR_PROTOTYPE_INDEX, LightWeightMapIterator) \
+    V(JSTaggedValue, LightWeightSetIteratorPrototype, LIGHTWEIGHTSET_ITERATOR_PROTOTYPE_INDEX, LightWeightSetIterator) \
     V(JSTaggedValue, TreeMapIteratorPrototype, TREEMAP_ITERATOR_PROTOTYPE_INDEX, TreeMapIterator)                     \
     V(JSTaggedValue, TreeSetIteratorPrototype, TREESET_ITERATOR_PROTOTYPE_INDEX, TreeSetIterator)                     \
     V(JSTaggedValue, VectorFunction, VECTOR_FUNCTION_INDEX, VectorFunction)                                           \

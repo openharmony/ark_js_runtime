@@ -173,6 +173,7 @@ JSTaggedValue ContainersDeque::PopLast(EcmaRuntimeCallInfo *argv)
 JSTaggedValue ContainersDeque::ForEach(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv != nullptr);
+    BUILTINS_API_TRACE(argv->GetThread(), Deque, ForEach);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 

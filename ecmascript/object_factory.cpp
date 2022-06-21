@@ -45,6 +45,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list.h"
@@ -1128,6 +1132,17 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             JSAPIDeque::Cast(*obj)->SetFirst(0);
             JSAPIDeque::Cast(*obj)->SetLast(0);
             break;
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+            JSAPILightWeightMap::Cast(*obj)->SetLength(0);
+            JSAPILightWeightMap::Cast(*obj)->SetHashes(thread_, JSTaggedValue::Undefined());
+            JSAPILightWeightMap::Cast(*obj)->SetKeys(thread_, JSTaggedValue::Undefined());
+            JSAPILightWeightMap::Cast(*obj)->SetValues(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
+            JSAPILightWeightSet::Cast(*obj)->SetLength(0);
+            JSAPILightWeightSet::Cast(*obj)->SetHashes(thread_, JSTaggedValue::Undefined());
+            JSAPILightWeightSet::Cast(*obj)->SetValues(thread_, JSTaggedValue::Undefined());
+            break;
         case JSType::JS_API_VECTOR:
             JSAPIVector::Cast(*obj)->SetLength(0);
             break;
@@ -1214,7 +1229,10 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         case JSType::JS_API_TREESET_ITERATOR:
         case JSType::JS_API_QUEUE_ITERATOR:
         case JSType::JS_API_DEQUE_ITERATOR:
+        case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+        case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
         case JSType::JS_API_STACK_ITERATOR:
+        case JSType::JS_API_VECTOR_ITERATOR:
         case JSType::JS_ARRAY_ITERATOR:
         case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             break;
@@ -3056,6 +3074,40 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
     iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPILightWeightMapIterator> ObjectFactory::NewJSAPILightWeightMapIterator(const
+                                                                                    JSHandle<JSAPILightWeightMap> &obj,
+                                                                                    IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetLightWeightMapIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPILightWeightMapIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPILightWeightMapIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedLightWeightMap(thread_, obj);
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
+    return iter;
+}
+
+JSHandle<JSAPILightWeightSetIterator> ObjectFactory::NewJSAPILightWeightSetIterator(const
+                                                                                    JSHandle<JSAPILightWeightSet> &obj,
+                                                                                    IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetLightWeightSetIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPILightWeightSetIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPILightWeightSetIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedLightWeightSet(thread_, obj);
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
     return iter;
 }
 
