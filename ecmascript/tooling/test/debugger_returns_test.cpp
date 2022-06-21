@@ -60,330 +60,315 @@ protected:
     JSThread *thread {nullptr};
 };
 
-#ifdef CHANGE_TOJSON
-HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToJsonTest)
 {
     std::unique_ptr<EnableReturns> enableReturns = std::make_unique<EnableReturns>(100U);
     ASSERT_NE(enableReturns, nullptr);
-    Local<ObjectRef> enableObject = enableReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "debuggerId");
-    ASSERT_TRUE(enableObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = enableObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("100"), Local<StringRef>(result)->ToString());
+
+    std::string debuggerId;
+    ASSERT_EQ(enableReturns->ToJson()->GetString("debuggerId", &debuggerId), Result::SUCCESS);
+    EXPECT_EQ(debuggerId, "100");
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToJsonTest)
 {
     auto locations = std::vector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
-    location->SetScriptId(1);
+    location->SetScriptId(1).SetLine(99);
     locations.emplace_back(std::move(location));
-    ASSERT_EQ(locations.back()->GetScriptId(), 1);
-
     std::unique_ptr<SetBreakpointByUrlReturns> setBreakpointByUrlReturns
                      = std::make_unique<SetBreakpointByUrlReturns>("11", std::move(locations));
     ASSERT_NE(setBreakpointByUrlReturns, nullptr);
-    Local<ObjectRef> setObject = setBreakpointByUrlReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "breakpointId");
-    ASSERT_TRUE(setObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = setObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("11"), Local<StringRef>(result)->ToString());
+    std::string id;
+    ASSERT_EQ(setBreakpointByUrlReturns->ToJson()->GetString("breakpointId", &id), Result::SUCCESS);
+    EXPECT_EQ(id, "11");
+
+    std::unique_ptr<PtJson> locationsJson;
+    ASSERT_EQ(setBreakpointByUrlReturns->ToJson()->GetArray("locations", &locationsJson), Result::SUCCESS);
+    ASSERT_NE(locationsJson, nullptr);
+    EXPECT_EQ(locationsJson->GetSize(), 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToJsonTest)
 {
-    std::unique_ptr<RemoteObject> result1 = std::make_unique<RemoteObject>();
+    std::unique_ptr<RemoteObject> result = std::make_unique<RemoteObject>();
+    result->SetType("idle");
     std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
+    exceptionDetails->SetExceptionId(12);
     std::unique_ptr<EvaluateOnCallFrameReturns> evaluateOnCallFrameReturns
-                     = std::make_unique<EvaluateOnCallFrameReturns>(std::move(result1), std::move(exceptionDetails));
+                     = std::make_unique<EvaluateOnCallFrameReturns>(std::move(result), std::move(exceptionDetails));
     ASSERT_NE(evaluateOnCallFrameReturns, nullptr);
-    Local<ObjectRef> callObject = evaluateOnCallFrameReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(callObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = callObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_EQ(std::move(result1), nullptr);
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(evaluateOnCallFrameReturns->ToJson()->GetObject("result", &json), Result::SUCCESS);
+    std::string type;
+    ASSERT_EQ(json->GetString("type", &type), Result::SUCCESS);
+    EXPECT_EQ(type, "idle");
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "exceptionDetails");
-    ASSERT_TRUE(callObject->Has(ecmaVm, tmpStr));
-    result = callObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_EQ(std::move(exceptionDetails), nullptr);
+    std::unique_ptr<PtJson> tmpJson;
+    ASSERT_EQ(evaluateOnCallFrameReturns->ToJson()->GetObject("exceptionDetails", &tmpJson), Result::SUCCESS);
+    int32_t exceptionId;
+    ASSERT_EQ(tmpJson->GetInt("exceptionId", &exceptionId), Result::SUCCESS);
+    EXPECT_EQ(exceptionId, 12);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetPossibleBreakpointsReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetPossibleBreakpointsReturnsToJsonTest)
 {
     auto locations = std::vector<std::unique_ptr<BreakLocation>>();
     std::unique_ptr<BreakLocation> breakLocation = std::make_unique<BreakLocation>();
+    breakLocation->SetScriptId(11).SetLine(1).SetColumn(44).SetType("idel5");
+    locations.emplace_back(std::move(breakLocation));
     std::unique_ptr<GetPossibleBreakpointsReturns> getPossibleBreakpointsReturns = std::make_unique
                                                     <GetPossibleBreakpointsReturns>(std::move(locations));
-    Local<ArrayRef> getObject = getPossibleBreakpointsReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "locations");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+
+    std::unique_ptr<PtJson> locationsJson;
+    ASSERT_EQ(getPossibleBreakpointsReturns->ToJson()->GetArray("locations", &locationsJson), Result::SUCCESS);
+    ASSERT_NE(locationsJson, nullptr);
+    EXPECT_EQ(locationsJson->GetSize(), 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetScriptSourceReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetScriptSourceReturnsToJsonTest)
 {
     std::unique_ptr<GetScriptSourceReturns> getScriptSourceReturns = std::make_unique
-                                                                     <GetScriptSourceReturns>("source_1", "bytecode_1");
+                                                                    <GetScriptSourceReturns>("source_1", "bytecode_1");
     ASSERT_NE(getScriptSourceReturns, nullptr);
-    Local<ObjectRef> scriptObject = getScriptSourceReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptSource");
-    ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = scriptObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("source_1"), Local<StringRef>(result)->ToString());
+    
+    std::string scriptSource;
+    ASSERT_EQ(getScriptSourceReturns->ToJson()->GetString("scriptSource", &scriptSource), Result::SUCCESS);
+    EXPECT_EQ(scriptSource, "source_1");
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "bytecode");
-    ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
-    result = scriptObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("bytecode_1"), Local<StringRef>(result)->ToString());
+    std::string bytecode;
+    ASSERT_EQ(getScriptSourceReturns->ToJson()->GetString("bytecode", &bytecode), Result::SUCCESS);
+    EXPECT_EQ(bytecode, "bytecode_1");
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, RestartFrameReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, RestartFrameReturnsToJsonTest)
 {
     auto callFrames = std::vector<std::unique_ptr<CallFrame>>();
     std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
+    std::unique_ptr<Location> location = std::make_unique<Location>();
+    location->SetScriptId(13).SetLine(16);
+
+    std::unique_ptr<RemoteObject> res = std::make_unique<RemoteObject>();
+    res->SetType("idle2");
+
+    callFrame->SetCallFrameId(55);
+    callFrame->SetLocation(std::move(location));
+    callFrame->SetThis(std::move(res));
+    callFrames.emplace_back(std::move(callFrame));
     std::unique_ptr<RestartFrameReturns> restartFrameReturns = std::make_unique
-                                                                     <RestartFrameReturns>(std::move(callFrames));
-    Local<ArrayRef> restartObject = restartFrameReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrames");
-    ASSERT_TRUE(restartObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = restartObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+                                                                 <RestartFrameReturns>(std::move(callFrames));
+    
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(restartFrameReturns->ToJson()->GetArray("callFrames", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointReturnsToJsonTest)
 {
     std::unique_ptr<Location> location = std::make_unique<Location>();
     std::unique_ptr<SetBreakpointReturns> setBreakpointReturns
                      = std::make_unique<SetBreakpointReturns>("breakpointId_1", std::move(location));
     ASSERT_NE(setBreakpointReturns, nullptr);
-    Local<ObjectRef> breakObject = setBreakpointReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "breakpointId");
-    ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = breakObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("breakpointId_1"), Local<StringRef>(result)->ToString());
     
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "actualLocation");
-    ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
-    result = breakObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_EQ(std::move(location), nullptr);
+    std::string breakpointId;
+    ASSERT_EQ(setBreakpointReturns->ToJson()->GetString("breakpointId", &breakpointId), Result::SUCCESS);
+    EXPECT_EQ(breakpointId, "breakpointId_1");
+
+    std::unique_ptr<PtJson> tmpJson;
+    ASSERT_EQ(setBreakpointReturns->ToJson()->GetObject("actualLocation", &tmpJson), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, SetInstrumentationBreakpointReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, SetInstrumentationBreakpointReturnsToJsonTest)
 {
     std::unique_ptr<SetInstrumentationBreakpointReturns> setInstrumentationBreakpointReturns
                      = std::make_unique<SetInstrumentationBreakpointReturns>("111");
     ASSERT_NE(setInstrumentationBreakpointReturns, nullptr);
-    Local<ObjectRef> instrumentationObject = setInstrumentationBreakpointReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "breakpointId");
-    ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = instrumentationObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("111"), Local<StringRef>(result)->ToString());
+    
+    std::string breakpointId;
+    ASSERT_EQ(setInstrumentationBreakpointReturns->ToJson()->GetString("breakpointId", &breakpointId),
+              Result::SUCCESS);
+    EXPECT_EQ(breakpointId, "111");
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToJsonTest)
 {
     auto callFrames = std::vector<std::unique_ptr<CallFrame>>();
     std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
-    std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
+    std::unique_ptr<Location> location = std::make_unique<Location>();
+    location->SetScriptId(3).SetLine(36);
+
+    std::unique_ptr<RemoteObject> res = std::make_unique<RemoteObject>();
+    res->SetType("idle5");
+
+    callFrame->SetCallFrameId(33);
+    callFrame->SetLocation(std::move(location));
+    callFrame->SetThis(std::move(res));
+    callFrames.emplace_back(std::move(callFrame));
     std::unique_ptr<SetScriptSourceReturns> setScriptSourceReturns = std::make_unique
                                                                 <SetScriptSourceReturns>(std::move(callFrames));
-    Local<ArrayRef> setObject = setScriptSourceReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrames");
-    ASSERT_TRUE(setObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = setObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
-
-    ASSERT_NE(setScriptSourceReturns, nullptr);
-    exceptionDetails->SetScriptId(5);
-    ASSERT_EQ(exceptionDetails->GetScriptId(), 5);
+    
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(setScriptSourceReturns->ToJson()->GetArray("callFrames", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToJsonTest)
 {
     auto descriptor = std::vector<std::unique_ptr<PropertyDescriptor>>();
     std::unique_ptr<PropertyDescriptor> propertyDescriptor = std::make_unique<PropertyDescriptor>();
-    std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
+    propertyDescriptor->SetName("filename1").SetConfigurable(true).SetEnumerable(true);
+    descriptor.emplace_back(std::move(propertyDescriptor));
     std::unique_ptr<GetPropertiesReturns> getPropertiesReturns = std::make_unique
                                                         <GetPropertiesReturns>(std::move(descriptor));
     ASSERT_NE(getPropertiesReturns, nullptr);
-    exceptionDetails->SetScriptId(6);
-    ASSERT_EQ(exceptionDetails->GetScriptId(), 6);
-
-    Local<ArrayRef> getObject = getPropertiesReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
-
-    auto internalDescripties = std::vector<std::unique_ptr<InternalPropertyDescriptor>>();
-    std::unique_ptr<InternalPropertyDescriptor> internalPropertyDescriptor =
-                                                std::make_unique<InternalPropertyDescriptor>();
-    internalPropertyDescriptor->SetName("filename1");
-    internalDescripties.emplace_back(std::move(internalPropertyDescriptor));
-    ASSERT_EQ(internalDescripties.back()->GetName(), "filename1");
-
-    auto privateProperties = std::vector<std::unique_ptr<PrivatePropertyDescriptor>>();
-    std::unique_ptr<PrivatePropertyDescriptor> privatePropertyDescriptor =
-                                               std::make_unique<PrivatePropertyDescriptor>();
-    privatePropertyDescriptor->SetName("filename2");
-    privateProperties.emplace_back(std::move(privatePropertyDescriptor));
-    ASSERT_EQ(privateProperties.back()->GetName(), "filename2");
+    
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(getPropertiesReturns->ToJson()->GetArray("result", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, CallFunctionOnReturnsToJsonTest)
 {
-    std::unique_ptr<SamplingHeapProfileNode> head = std::make_unique<SamplingHeapProfileNode>();
+    std::unique_ptr<RemoteObject> result = std::make_unique<RemoteObject>();
+    result->SetType("idle2");
+    std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
+    std::unique_ptr<CallFunctionOnReturns> callFunctionOnReturns
+                     = std::make_unique<CallFunctionOnReturns>(std::move(result), std::move(exceptionDetails));
+    ASSERT_NE(callFunctionOnReturns, nullptr);
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(callFunctionOnReturns->ToJson()->GetObject("result", &json), Result::SUCCESS);
+    std::string type;
+    ASSERT_EQ(json->GetString("type", &type), Result::SUCCESS);
+    EXPECT_EQ(type, "idle2");
+
+    std::unique_ptr<PtJson> tmpJson;
+    ASSERT_EQ(callFunctionOnReturns->ToJson()->GetObject("exceptionDetails", &tmpJson), Result::SUCCESS);
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToJsonTest)
+{
+    auto res = std::vector<std::unique_ptr<SamplingHeapProfileSample>>();
+    std::unique_ptr<RuntimeCallFrame> runtime = std::make_unique<RuntimeCallFrame>();
+    std::unique_ptr<SamplingHeapProfileNode> node = std::make_unique<SamplingHeapProfileNode>();
+    node->SetCallFrame(std::move(runtime));
     std::unique_ptr<SamplingHeapProfile> profile = std::make_unique<SamplingHeapProfile>();
-    profile->SetHead(std::move(head));
-    profile->SetSamples();
+    profile->SetHead(std::move(node));
+    profile->SetSamples(std::move(res));
     std::unique_ptr<StopSamplingReturns> stopSamplingReturns =
                                          std::make_unique<StopSamplingReturns>(std::move(profile));
     ASSERT_NE(stopSamplingReturns, nullptr);
-    Local<ObjectRef> object = stopSamplingReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(stopSamplingReturns->ToJson()->GetObject("profile", &json), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToJsonTest)
 {
     std::unique_ptr<GetHeapObjectIdReturns> getHeapObjectIdReturns = std::make_unique<GetHeapObjectIdReturns>(10);
     ASSERT_NE(getHeapObjectIdReturns, nullptr);
-    
-    Local<ObjectRef> object = getHeapObjectIdReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "heapSnapshotObjectId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("10"), Local<StringRef>(result)->ToString());
+
+    std::string heapSnapshotObjectId;
+    ASSERT_EQ(getHeapObjectIdReturns->ToJson()->GetString("heapSnapshotObjectId", &heapSnapshotObjectId),
+              Result::SUCCESS);
+    EXPECT_EQ(heapSnapshotObjectId, "10");
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToJsonTest)
 {
     std::unique_ptr<RemoteObject> remoteObjectResult = std::make_unique<RemoteObject>();
+    remoteObjectResult->SetType("idle5");
     std::unique_ptr<GetObjectByHeapObjectIdReturns> getObjectByHeapObjectIdReturns =
                                     std::make_unique<GetObjectByHeapObjectIdReturns>(std::move(remoteObjectResult));
     ASSERT_NE(getObjectByHeapObjectIdReturns, nullptr);
 
-    Local<ObjectRef> object = getObjectByHeapObjectIdReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_EQ(std::move(remoteObjectResult), nullptr);
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(getObjectByHeapObjectIdReturns->ToJson()->GetObject("result", &json), Result::SUCCESS);
+    std::string type;
+    ASSERT_EQ(json->GetString("type", &type), Result::SUCCESS);
+    EXPECT_EQ(type, "idle5");
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToJsonTest)
 {
     std::unique_ptr<Profile> profile = std::make_unique<Profile>();
     std::unique_ptr<StopReturns> stopReturns= std::make_unique<StopReturns>(std::move(profile));
     ASSERT_NE(stopReturns, nullptr);
-    Local<ObjectRef> temp = stopReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
-    ASSERT_TRUE(temp->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = temp->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(stopReturns->ToJson()->GetObject("profile", &json), Result::SUCCESS);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetHeapUsageReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetHeapUsageReturnsToJsonTest)
 {
     double usedSize = 1;
     double totalSize = 1;
     std::unique_ptr<GetHeapUsageReturns> getHeapUsageReturns =
         std::make_unique<GetHeapUsageReturns>(usedSize, totalSize);
     ASSERT_NE(getHeapUsageReturns, nullptr);
-    Local<ObjectRef> getObject = getHeapUsageReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "usedSize");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<NumberRef>(result)->Value(), 1);
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "totalSize");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<NumberRef>(result)->Value(), 1);
+    double pUsedSize;
+    ASSERT_EQ(getHeapUsageReturns->ToJson()->GetDouble("usedSize", &pUsedSize), Result::SUCCESS);
+    EXPECT_EQ(pUsedSize, 1);
+
+    double pTotalSize;
+    ASSERT_EQ(getHeapUsageReturns->ToJson()->GetDouble("totalSize", &pTotalSize), Result::SUCCESS);
+    EXPECT_EQ(pTotalSize, 1);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, GetBestEffortCoverageReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, GetBestEffortCoverageReturnsToJsonTest)
 {
     auto result = std::vector<std::unique_ptr<ScriptCoverage>>();
     std::unique_ptr<ScriptCoverage> scriptCoverage = std::make_unique<ScriptCoverage>();
     std::unique_ptr<GetBestEffortCoverageReturns> getBestEffortCoverageReturns =
                                                 std::make_unique<GetBestEffortCoverageReturns>(std::move(result));
-    Local<ArrayRef> getObject = getBestEffortCoverageReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> tmpResult = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    ASSERT_TRUE(tmpResult->IsArray(ecmaVm));
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(getBestEffortCoverageReturns->ToJson()->GetArray("result", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 0);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, StartPreciseCoverageReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, StartPreciseCoverageReturnsToJsonTest)
 {
     std::unique_ptr<StartPreciseCoverageReturns> startPreciseCoverageReturns
                      = std::make_unique<StartPreciseCoverageReturns>(1001);
     ASSERT_NE(startPreciseCoverageReturns, nullptr);
-    Local<ObjectRef> getObject = startPreciseCoverageReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 1001);
+
+    int32_t timestamp;
+    ASSERT_EQ(startPreciseCoverageReturns->ToJson()->GetInt("timestamp", &timestamp), Result::SUCCESS);
+    EXPECT_EQ(timestamp, 1001);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, TakePreciseCoverageReturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, TakePreciseCoverageReturnsToJsonTest)
 {
     auto coverage = std::vector<std::unique_ptr<ScriptCoverage>>();
     std::unique_ptr<TakePreciseCoverageReturns> takePreciseCoverageReturns =
                                                 std::make_unique<TakePreciseCoverageReturns>(std::move(coverage), 1001);
     ASSERT_NE(takePreciseCoverageReturns, nullptr);
-    Local<ArrayRef> getObject = takePreciseCoverageReturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
 
-    Local<ObjectRef> instrumentationObject = takePreciseCoverageReturns->ToObject(ecmaVm);
-    Local<StringRef> tmperStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
-    ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmperStr));
-    Local<JSValueRef> tmpResult = instrumentationObject->Get(ecmaVm, tmperStr);
-    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(tmpResult)->Value(), 1001);
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(takePreciseCoverageReturns->ToJson()->GetArray("result", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 0);
+
+    int32_t timestamp;
+    ASSERT_EQ(takePreciseCoverageReturns->ToJson()->GetInt("timestamp", &timestamp), Result::SUCCESS);
+    EXPECT_EQ(timestamp, 1001);
 }
 
-HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToObjectTest)
+HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToJsonTest)
 {
     auto result = std::vector<std::unique_ptr<ScriptTypeProfile>>();
     std::unique_ptr<ScriptTypeProfile> scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
     std::unique_ptr<TakeTypeProfileReturns> takeTypeProfileturns = std::make_unique
                                                     <TakeTypeProfileReturns>(std::move(result));
-    Local<ArrayRef> getObject = takeTypeProfileturns->ToObject(ecmaVm);
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
-    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> tmpResult = getObject->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    ASSERT_TRUE(tmpResult->IsArray(ecmaVm));
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(takeTypeProfileturns->ToJson()->GetArray("result", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 0);
 }
-#endif
 }  // namespace panda::test
