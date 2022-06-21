@@ -294,8 +294,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
     size_t originalNewSpaceSize = activeSemiSpace_->GetHeapObjectSize();
     memController_->StartCalculationBeforeGC();
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType
-                                             << " global CommittedSize " << GetCommittedSize()
+    LOG(INFO, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType;
+    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << " global CommittedSize " << GetCommittedSize()
                                              << " global limit " << globalSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::YOUNG_GC:
