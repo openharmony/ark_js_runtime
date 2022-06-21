@@ -32,7 +32,7 @@ bool JSAPIVector::Add(JSThread *thread, const JSHandle<JSAPIVector> &vector, con
     int32_t length = vector->GetSize();
     GrowCapacity(thread, vector, length + 1);
 
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     elements->Set(thread, length, value);
     vector->SetLength(++length);
@@ -49,7 +49,7 @@ void JSAPIVector::Insert(JSThread *thread, const JSHandle<JSAPIVector> &vector,
     }
     GrowCapacity(thread, vector, length + 1);
 
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     for (int32_t i = length - 1; i >= index; i--) {
         elements->Set(thread, i + 1, elements->Get(i));
@@ -70,7 +70,7 @@ void JSAPIVector::SetLength(JSThread *thread, const JSHandle<JSAPIVector> &vecto
 
 uint32_t JSAPIVector::GetCapacity()
 {
-    TaggedArray* elementData = TaggedArray::Cast(GetElements().GetTaggedObject());
+    TaggedArray *elementData = TaggedArray::Cast(GetElements().GetTaggedObject());
     ASSERT(!elementData->IsDictionaryMode());
     return elementData->GetLength();
 }
@@ -101,7 +101,7 @@ int32_t JSAPIVector::GetIndexOf(JSThread *thread, const JSHandle<JSAPIVector> &v
 int32_t JSAPIVector::GetIndexFrom(JSThread *thread, const JSHandle<JSAPIVector> &vector,
                                   const JSHandle<JSTaggedValue> &obj, int32_t index)
 {
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     int32_t length = vector->GetSize();
     if (index < 0) {
@@ -130,7 +130,7 @@ JSTaggedValue JSAPIVector::GetLastElement()
     if (length == 0) {
         return JSTaggedValue::Undefined();
     }
-    TaggedArray* elements = TaggedArray::Cast(GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     return elements->Get(length - 1);
 }
@@ -138,20 +138,23 @@ JSTaggedValue JSAPIVector::GetLastElement()
 int32_t JSAPIVector::GetLastIndexOf(JSThread *thread, const JSHandle<JSAPIVector> &vector,
                                     const JSHandle<JSTaggedValue> &obj)
 {
-    int32_t length = vector->GetSize();
-    return JSAPIVector::GetLastIndexFrom(thread, vector, obj, length - 1);
+    int32_t index = vector->GetSize() - 1;
+    if (index < 0) {
+        return -1; // vector isEmpty, defalut return -1
+    }
+    return JSAPIVector::GetLastIndexFrom(thread, vector, obj, index);
 }
 
 int32_t JSAPIVector::GetLastIndexFrom(JSThread *thread, const JSHandle<JSAPIVector> &vector,
                                       const JSHandle<JSTaggedValue> &obj, int32_t index)
 {
     int32_t length = vector->GetSize();
-    if (index < 0) {
-        index = 0;
-    } else if (index >= length) {
+    if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "index-out-of-bounds", -1);
+    } else if (index < 0) {
+        index = 0;
     }
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     for (int32_t i = index; i >= 0; i--) {
@@ -173,7 +176,7 @@ bool JSAPIVector::Remove(JSThread *thread, const JSHandle<JSAPIVector> &vector, 
             THROW_RANGE_ERROR_AND_RETURN(thread, "index-out-of-bounds", false);
         }
 
-        TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+        TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
         ASSERT(!elements->IsDictionaryMode());
         for (int32_t i = index; i < length - 1; i++) {
             elements->Set(thread, i, elements->Get(i + 1));
@@ -191,7 +194,7 @@ JSTaggedValue JSAPIVector::RemoveByIndex(JSThread *thread, const JSHandle<JSAPIV
     if (index < 0 || index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "the index is out-of-bounds", JSTaggedValue::Exception());
     }
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     JSTaggedValue oldValue = elements->Get(index);
 
@@ -218,7 +221,7 @@ JSTaggedValue JSAPIVector::RemoveByRange(JSThread *thread, const JSHandle<JSAPIV
     }
     
     int32_t endIndex = toIndex >= length ? length : toIndex;
-    TaggedArray* elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
+    TaggedArray *elements = TaggedArray::Cast(vector->GetElements().GetTaggedObject());
     ASSERT(!elements->IsDictionaryMode());
     int32_t numMoved = length - endIndex;
     for (int32_t i = 0; i < numMoved; i++) {

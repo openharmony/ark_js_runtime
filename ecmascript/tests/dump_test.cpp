@@ -33,6 +33,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list.h"
@@ -274,6 +278,45 @@ static JSHandle<JSRegExp> NewJSRegExp(JSThread *thread, ObjectFactory *factory, 
     jSRegExp->SetOriginalFlags(thread, JSTaggedValue(0));
     jSRegExp->SetLength(0);
     return jSRegExp;
+}
+
+static JSHandle<JSAPILightWeightMap> NewJSAPILightWeightMap(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> lwmapClass =
+        factory->NewEcmaDynClass(JSAPILightWeightMap::SIZE, JSType::JS_API_LIGHT_WEIGHT_MAP, proto);
+    JSHandle<JSAPILightWeightMap> jSAPILightWeightMap =
+        JSHandle<JSAPILightWeightMap>::Cast(factory->NewJSObjectWithInit(lwmapClass));
+    JSHandle<JSTaggedValue> hashArray =
+        JSHandle<JSTaggedValue>(factory->NewTaggedArray(JSAPILightWeightMap::DEFAULT_CAPACITY_LENGTH));
+    JSHandle<JSTaggedValue> keyArray =
+        JSHandle<JSTaggedValue>(factory->NewTaggedArray(JSAPILightWeightMap::DEFAULT_CAPACITY_LENGTH));
+    JSHandle<JSTaggedValue> valueArray =
+        JSHandle<JSTaggedValue>(factory->NewTaggedArray(JSAPILightWeightMap::DEFAULT_CAPACITY_LENGTH));
+    jSAPILightWeightMap->SetHashes(thread, hashArray);
+    jSAPILightWeightMap->SetKeys(thread, keyArray);
+    jSAPILightWeightMap->SetValues(thread, valueArray);
+    jSAPILightWeightMap->SetLength(0);
+    return jSAPILightWeightMap;
+}
+
+static JSHandle<JSAPILightWeightSet> NewJSAPILightWeightSet(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> setClass =
+        factory->NewEcmaDynClass(JSAPILightWeightSet::SIZE, JSType::JS_API_LIGHT_WEIGHT_SET, proto);
+    JSHandle<JSAPILightWeightSet> jSAPILightWeightSet =
+        JSHandle<JSAPILightWeightSet>::Cast(factory->NewJSObjectWithInit(setClass));
+    JSHandle<TaggedArray> hashes =
+        JSAPILightWeightSet::CreateSlot(thread, JSAPILightWeightSet::DEFAULT_CAPACITY_LENGTH);
+    JSHandle<TaggedArray> values =
+        JSAPILightWeightSet::CreateSlot(thread, JSAPILightWeightSet::DEFAULT_CAPACITY_LENGTH);
+    jSAPILightWeightSet->SetHashes(thread, hashes);
+    jSAPILightWeightSet->SetValues(thread, values);
+    jSAPILightWeightSet->SetLength(0);
+    return jSAPILightWeightSet;
 }
 
 static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
@@ -899,6 +942,34 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
                 JSHandle<JSAPIArrayListIterator> jsArrayListIter = factory->NewJSAPIArrayListIterator(jsArrayList);
                 DUMP_FOR_HANDLE(jsArrayListIter)
+                break;
+            }
+            case JSType::JS_API_LIGHT_WEIGHT_MAP: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPILightWeightMap::SIZE, 4U)
+                JSHandle<JSAPILightWeightMap> jSAPILightWeightMap = NewJSAPILightWeightMap(thread, factory);
+                DUMP_FOR_HANDLE(jSAPILightWeightMap)
+                break;
+            }
+            case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPILightWeightMapIterator::SIZE, 2U)
+                JSHandle<JSAPILightWeightMap> jSAPILightWeightMap = NewJSAPILightWeightMap(thread, factory);
+                JSHandle<JSAPILightWeightMapIterator> jSAPILightWeightMapIterator =
+                    factory->NewJSAPILightWeightMapIterator(jSAPILightWeightMap, IterationKind::KEY);
+                DUMP_FOR_HANDLE(jSAPILightWeightMapIterator)
+                break;
+            }
+            case JSType::JS_API_LIGHT_WEIGHT_SET: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPILightWeightSet::SIZE, 3U)
+                JSHandle<JSAPILightWeightSet> jSAPILightWeightSet = NewJSAPILightWeightSet(thread, factory);
+                DUMP_FOR_HANDLE(jSAPILightWeightSet)
+                break;
+            }
+            case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPILightWeightSetIterator::SIZE, 2U)
+                JSHandle<JSAPILightWeightSetIterator> jSAPILightWeightSetIter =
+                    factory->NewJSAPILightWeightSetIterator(NewJSAPILightWeightSet(thread, factory),
+                                                            IterationKind::KEY);
+                DUMP_FOR_HANDLE(jSAPILightWeightSetIter)
                 break;
             }
             case JSType::JS_API_QUEUE: {

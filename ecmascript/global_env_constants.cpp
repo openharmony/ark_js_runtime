@@ -29,6 +29,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
@@ -192,6 +194,12 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
         factory->NewEcmaDynClass(dynClassClass, JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR));
     SetConstant(ConstantIndex::JS_API_DEQUE_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIDequeIterator::SIZE, JSType::JS_API_DEQUE_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_LIGHTWEIGHTMAP_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPILightWeightMapIterator::SIZE,
+                JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_LIGHTWEIGHTSET_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPILightWeightSetIterator::SIZE,
+                JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR));
     SetConstant(
         ConstantIndex::JS_API_LINKED_LIST_ITERATOR_CLASS_INDEX,
         factory->NewEcmaDynClass(dynClassClass, JSAPILinkedListIterator::SIZE, JSType::JS_API_LINKED_LIST_ITERATOR));
@@ -244,7 +252,6 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::CONFIGURABLE_STRING_INDEX, factory->NewFromASCIINonMovable("configurable"));
     /* non ECMA standard jsapi containers iterators, init to Undefined first */
     InitJSAPIContainers();
-
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromASCIINonMovable("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromASCIINonMovable("getPrototypeOf"));

@@ -616,6 +616,17 @@ inline bool JSTaggedValue::IsJSAPIDeque() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIDeque();
 }
+
+inline bool JSTaggedValue::IsJSAPILightWeightMap() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILightWeightMap();
+}
+
+inline bool JSTaggedValue::IsJSAPILightWeightSet() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILightWeightSet();
+}
+
 inline bool JSTaggedValue::IsJSAPIStack() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIStack();
@@ -992,6 +1003,16 @@ inline bool JSTaggedValue::IsJSAPIQueueIterator() const
 inline bool JSTaggedValue::IsJSAPIDequeIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIDequeIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPILightWeightMapIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILightWeightMapIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPILightWeightSetIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILightWeightSetIterator();
 }
 
 inline bool JSTaggedValue::IsJSAPIStackIterator() const

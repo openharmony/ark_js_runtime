@@ -108,6 +108,10 @@ class JSAPIArrayList;
 class JSAPIArrayListIterator;
 class JSAPIDeque;
 class JSAPIDequeIterator;
+class JSAPILightWeightMap;
+class JSAPILightWeightMapIterator;
+class JSAPILightWeightSet;
+class JSAPILightWeightSetIterator;
 class JSAPIQueue;
 class JSAPIQueueIterator;
 class JSAPIStack;
@@ -478,6 +482,11 @@ public:
     JSHandle<JSAPIPlainArrayIterator> NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
                                                                  IterationKind kind);
     JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);
+
+    JSHandle<JSAPILightWeightMapIterator> NewJSAPILightWeightMapIterator(const JSHandle<JSAPILightWeightMap> &obj,
+                                                                         IterationKind kind);
+    JSHandle<JSAPILightWeightSetIterator> NewJSAPILightWeightSetIterator(const JSHandle<JSAPILightWeightSet> &obj,
+                                                                         IterationKind kind);
     JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t newLength,
                                     uint32_t front, uint32_t tail);
     JSHandle<JSAPIQueueIterator> NewJSAPIQueueIterator(const JSHandle<JSAPIQueue> &queue);
@@ -557,6 +566,7 @@ private:
 
     // used for creating Function
     JSHandle<JSFunction> NewJSFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &dynKlass);
+    JSHandle<JSHClass> CreateObjectClass(const JSHandle<TaggedArray> &keys, const JSHandle<TaggedArray> &values);
     JSHandle<JSHClass> CreateObjectClass(const JSHandle<TaggedArray> &properties, size_t length);
     JSHandle<JSHClass> CreateFunctionClass(FunctionKind kind, uint32_t size, JSType type,
                                            const JSHandle<JSTaggedValue> &prototype);

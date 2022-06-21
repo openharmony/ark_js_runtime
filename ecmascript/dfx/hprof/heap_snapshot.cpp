@@ -394,6 +394,14 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("ArrayList");
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             return GetString("ArrayListIterator");
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+            return GetString("LightWeightMap");
+        case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+            return GetString("LightWeightMapIterator");
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
+            return GetString("LightWeightSet");
+        case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
+            return GetString("LightWeightSetIterator");
         case JSType::JS_API_TREE_MAP:
             return GetString("TreeMap");
         case JSType::JS_API_TREE_SET:
