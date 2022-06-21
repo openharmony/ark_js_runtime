@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/ecma_string-inl.h"
-#include "ecmascript/ecma_global_storage-inl.h"
+#include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
