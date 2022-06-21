@@ -374,6 +374,10 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
             }
             case JSType::SYMBOL:
                 return JSTaggedValue::Undefined();
+            case JSType::BIGINT: {
+                result_ += ConvertToString(*BigInt::ToString(thread_, JSHandle<BigInt>(valHandle)));
+                return tagValue;
+            }
             default: {
                 if (!tagValue.IsCallable()) {
                     JSHClass *jsHclass = tagValue.GetTaggedObject()->GetClass();
