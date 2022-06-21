@@ -490,8 +490,8 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         Register codeAddress(X3);
         Register argV(X4);
         Label directCallCodeEntry;
+        __ Mov(Register(X5), jsfunc);
         __ Mov(arg2, actualArgC);
-        __ Ldr(codeAddress, MemoryOperand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET));
         __ Lsr(callField, callField, JSMethod::NumArgsBits::START_BIT);
         __ And(callField.W(), callField.W(),
             LogicalImmediate::Create(JSMethod::NumArgsBits::Mask() >> JSMethod::NumArgsBits::START_BIT, RegWSize));
@@ -499,6 +499,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         __ Cmp(arg2.W(), expectedNumArgs);
         // 8 : 8 mean argV = sp + 8
         __ Add(argV, sp, Immediate(8));
+        __ Ldr(codeAddress, MemoryOperand(Register(X5), JSFunctionBase::CODE_ENTRY_OFFSET));
         __ B(Condition::HS, &directCallCodeEntry);
         __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
         __ Bind(&directCallCodeEntry);
@@ -1984,7 +1985,7 @@ void AssemblerStubs::PushOptimizedFrame(ExtendedAssembler *assembler, Register c
     Register frameType = __ TempRegister2();
     __ SaveFpAndLr();
     // construct frame
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
     // 2 : 2 means pairs
     __ Stp(callSiteSp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
 }
@@ -2015,14 +2016,17 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Mov(callsiteSp, sp);
     PushOptimizedFrame(assembler, callsiteSp);
     __ Cbz(actualNumArgs, &pushCallThis);
-    CopyArgumentWithArgV(assembler, actualNumArgs, argV);
+    TempRegister1Scope scope1(assembler);
+    Register tmp = __ TempRegister1();
+    __ Mov(tmp, actualNumArgs);
+    CopyArgumentWithArgV(assembler, tmp, argV);
     __ Bind(&pushCallThis);
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Add(actualNumArgs, actualNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
     __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
-    __ Ldr(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+    __ Ldr(actualNumArgs, MemoryOperand(sp, 0));
     PopAotArgs(assembler, actualNumArgs);
     PopOptimizedFrame(assembler);
     __ Ret();

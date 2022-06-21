@@ -2192,8 +2192,8 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     Label align16Bytes;
     Label pushCallThis;
 
-    __ Mov(sp, callsiteSp);
-    __ Addq(Immediate(-8), callsiteSp);   // 8 : 8 means skip pc to get last callsitesp
+    __ Movq(sp, callsiteSp);
+    __ Addq(Immediate(8), callsiteSp);   // 8 : 8 means skip pc to get last callsitesp
     PushOptimizedFrame(assembler, callsiteSp);
     __ Testb(1, actualNumArgs);
     __ Jne(&align16Bytes);
@@ -2201,7 +2201,8 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Bind(&align16Bytes);
     __ Cmp(Immediate(0), actualNumArgs);
     __ Jz(&pushCallThis);
-    CopyArgumentWithArgV(assembler, actualNumArgs, argV);
+    __ Mov(actualNumArgs, rax);
+    CopyArgumentWithArgV(assembler, rax, argV);
     __ Bind(&pushCallThis);
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Addq(Immediate(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);
