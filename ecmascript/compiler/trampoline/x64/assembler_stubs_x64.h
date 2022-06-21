@@ -31,7 +31,7 @@ public:
 
     static void CallBuiltinTrampoline(ExtendedAssembler *assembler);
 
-    static void JSCallWithArgV(ExtendedAssembler *assembler);
+    static void JSProxyCallInternalWithArgV(ExtendedAssembler *assembler);
 
     static void JSCall(ExtendedAssembler *assembler);
 
@@ -77,6 +77,10 @@ public:
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 
+    static void CallOptimizedJSFunction(ExtendedAssembler *assembler);
+
+    static void JSCallWithArgV(ExtendedAssembler *assembler);
+
 private:
     static void PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister, Register argcRegister,
         Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister,
@@ -119,6 +123,16 @@ private:
     static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
         Label *fastPathEntry, Label *pushCallThis);
     static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler);
+    static void PushArgsWithArgV(ExtendedAssembler *assembler, Register jsfunc,
+                                 Register actualNumArgs, Register argV, Label *pushCallThis);
+    static void CopyArgumentWithArgV(ExtendedAssembler *assembler, Register argc, Register argV);
+    static void PushMandatoryJSArgs(ExtendedAssembler *assembler, Register jsfunc,
+                                    Register thisObj, Register newTarget);
+    static void PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs);
+    static void PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp);
+    static void PopAotEntryFrame(ExtendedAssembler *assembler, Register glue);
+    static void PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp);
+    static void PopOptimizedFrame(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
