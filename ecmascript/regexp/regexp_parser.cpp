@@ -21,10 +21,15 @@
 #include "libpandabase/utils/utils.h"
 #include "securec.h"
 #include "unicode/uniset.h"
-
+#include "third_party/icu/icu4c/source/common/unicode/uchar.h"
 #define _NO_DEBUG_
 
 namespace panda::ecmascript {
+static constexpr uint32_t CACHE_SIZE = 128;
+static constexpr uint32_t ID_START_TABLE_ASCII[4] = {
+    /* $ A-Z _ a-z */
+    0x00000000, 0x00000010, 0x87FFFFFE, 0x07FFFFFE
+};
 static RangeSet g_rangeD(0x30, 0x39);  // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static RangeSet g_rangeS({
@@ -539,6 +544,7 @@ bool RegExpParser::ParseAssertionCapture(int *captureIndex, bool isBackward)
                             return false;
                         }
                         groupNames_.EmitStr(name.c_str());
+                        newGroupNames_.push_back(name);
                         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
                         PrintF("group name %s", name.c_str());
                         Advance();
@@ -758,24 +764,42 @@ void RegExpParser::ParseQuantifier(size_t atomBcStart, int captureStart, int cap
 bool RegExpParser::ParseGroupSpecifier(const uint8_t **pp, CString &name)
 {
     const uint8_t *p = *pp;
-    int c = *p;
-    while (c != '>') {
-        if (c < (INT8_MAX + 1)) {
-            if (name.empty()) {
-                if (!g_regexpIdentifyStart.IsContain(c)) {
-                    return false;
-                }
-            } else {
-                if (!g_regexpIdentifyContinue.IsContain(c)) {
-                    return false;
-                }
+    uint32_t c ;
+    char buffer[CACHE_SIZE] = {0};
+    char *q = buffer;
+    while (true) {
+        c = *p;
+        if (c == '\\') {
+            p++;
+            if (*p != 'u') {
+                return false;
             }
-            name += static_cast<char>(c);
+            if (!ParseUnicodeEscape(&c)) {
+                return false;
+            }
+        } else if (c == '>') {
+            break;
+        } else if (c > CACHE_SIZE) {
+            c = base::StringHelper::UnicodeFromUtf8(p, UTF8_CHAR_LEN_MAX, &p);
+        } else {
+            p++;
         }
-        c = *++p;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    }
-    p++;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        if (q == buffer) {
+            if (!IsIdentFirst(c)) {
+                return false;
+            }
+        } else {
+            if (!u_isIDPart(c)) {
+                return false;
+            }
+        }
+        if (q != nullptr) {
+            *q++ = c;
+        }
+    } // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    p++;
     *pp = p;
+    name = buffer;
     return true;
 }
 
@@ -784,6 +808,7 @@ int RegExpParser::ParseCaptureCount(const char *groupName)
     const uint8_t *p;
     int captureIndex = 1;
     CString name;
+    hasNamedCaptures_ = 0;
     for (p = base_; p < end_; p++) {  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         switch (*p) {
             case '(': {
@@ -793,6 +818,7 @@ int RegExpParser::ParseCaptureCount(const char *groupName)
                         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                         p[CAPTURE_CONUT_ADVANCE] != '=') {
                         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                        hasNamedCaptures_ = 1;
                         p += CAPTURE_CONUT_ADVANCE;
                         if (groupName != nullptr) {
                             if (ParseGroupSpecifier(&p, name)) {
@@ -836,6 +862,7 @@ int RegExpParser::ParseAtomEscape(bool isBackward)
     int result = -1;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     PrintF("Parse AtomEscape------\n");
+    PrevOpCode prevOp;
     switch (c0_) {
         case KEY_EOF:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
@@ -870,55 +897,129 @@ int RegExpParser::ParseAtomEscape(bool isBackward)
         case 'd': {
             // [0-9]
             RangeOpCode rangeOp;
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, g_rangeD);
-            Advance();
+            goto parseLookBehind;
         } break;
         case 'D': {
             // [^0-9]
             RangeSet atomRange(g_rangeD);
             atomRange.Invert(IsUtf16());
             Range32OpCode rangeOp;
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, atomRange);
-            Advance();
+            goto parseLookBehind;
         } break;
         case 's': {
             // [\f\n\r\t\v]
             RangeOpCode rangeOp;
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, g_rangeS);
-            Advance();
+            goto parseLookBehind;
         } break;
         case 'S': {
             RangeSet atomRange(g_rangeS);
-            atomRange.Invert(IsUtf16());
             Range32OpCode rangeOp;
+            atomRange.Invert(IsUtf16());
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, atomRange);
-            Advance();
+            goto parseLookBehind;
         } break;
         case 'w': {
             // [A-Za-z0-9]
             RangeOpCode rangeOp;
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, g_rangeW);
-            Advance();
+            goto parseLookBehind;
         } break;
         case 'W': {
             // [^A-Za-z0-9]
             RangeSet atomRange(g_rangeW);
             atomRange.Invert(IsUtf16());
             Range32OpCode rangeOp;
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
             rangeOp.InsertOpCode(&buffer_, atomRange);
-            Advance();
+            goto parseLookBehind;
         } break;
         // P{UnicodePropertyValueExpression}
         // p{UnicodePropertyValueExpression}
         case 'P':
         case 'p':
         // [+N]kGroupName[?U]
-        case 'k':
+        case 'k': {
+            Advance();
+            if (c0_ != '<') {
+                if (!IsUtf16() || HasNamedCaptures()) {
+                    ParseError("expecting group name.");
+                    break;
+                }
+            }
+            Advance();
+            Prev();
+            CString name;
+            auto **pp = const_cast<const uint8_t **>(&pc_);
+            if (!ParseGroupSpecifier(pp, name)) {
+                ParseError("GroupName Syntax error.");
+                break;
+            }
+            int postion = FindGroupName(name);
+            if (postion < 0) {
+                postion = ParseCaptureCount(name.c_str());
+                if (postion < 0 && (!IsUtf16() || HasNamedCaptures())) {
+                    ParseError("group name not defined");
+                    break;
+                }
+            }
+            if (isBackward) {
+                BackwardBackReferenceOpCode backReferenceOp;
+                backReferenceOp.EmitOpCode(&buffer_, postion);
+            } else {
+                BackReferenceOpCode backReferenceOp;
+                backReferenceOp.EmitOpCode(&buffer_, postion);
+            }
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+            Advance();
+        } break;
+        parseLookBehind: {
+            if (isBackward) {
+                prevOp.EmitOpCode(&buffer_, 0);
+            }
+            Advance();
+            break;
+        }
         default:
             result = ParseCharacterEscape();
             break;
     }
     return result;
+}
+
+int RegExpParser::RecountCaptures()
+{
+    if (totalCaptureCount_ < 0) {
+        const char *name = reinterpret_cast<const char*>(groupNames_.buf_);
+        totalCaptureCount_ = ParseCaptureCount(name);
+    }
+    return totalCaptureCount_;
+}
+bool RegExpParser::HasNamedCaptures()
+{
+    if (hasNamedCaptures_ < 0) {
+        RecountCaptures();
+    }
+    return false;
 }
 
 int RegExpParser::ParseCharacterEscape()
@@ -1298,6 +1399,15 @@ void RegExpParser::ParseError(const char *errorMessage)
     if (memcpy_s(errorMsg_, length, errorMessage, length) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
+    }
+}
+
+int RegExpParser::IsIdentFirst(uint32_t c)
+{
+    if (c < CACHE_SIZE) {
+        return (ID_START_TABLE_ASCII[c >> 5] >> (c & 31)) & 1; // 5: Shift five bits 31: and operation binary of 31
+    } else {
+        return u_isIDStart(c);
     }
 }
 }  // namespace panda::ecmascript

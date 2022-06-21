@@ -465,6 +465,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsString::PadStart),
     reinterpret_cast<uintptr_t>(BuiltinsString::Repeat),
     reinterpret_cast<uintptr_t>(BuiltinsString::Replace),
+    reinterpret_cast<uintptr_t>(BuiltinsString::ReplaceAll),
     reinterpret_cast<uintptr_t>(BuiltinsString::Search),
     reinterpret_cast<uintptr_t>(BuiltinsString::Slice),
     reinterpret_cast<uintptr_t>(BuiltinsString::Split),

@@ -1040,6 +1040,7 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             JSRegExp::Cast(*obj)->SetByteCodeBuffer(thread_, JSTaggedValue::Undefined());
             JSRegExp::Cast(*obj)->SetOriginalSource(thread_, JSTaggedValue::Undefined());
             JSRegExp::Cast(*obj)->SetOriginalFlags(thread_, JSTaggedValue(0));
+            JSRegExp::Cast(*obj)->SetGroupName(thread_, JSTaggedValue::Undefined());
             JSRegExp::Cast(*obj)->SetLength(0);
             break;
         case JSType::JS_PRIMITIVE_REF:

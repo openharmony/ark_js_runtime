@@ -179,12 +179,13 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
     const EcmaString *lhs = this;
     int32_t lhsCount = static_cast<int32_t>(lhs->GetLength());
     int32_t rhsCount = static_cast<int32_t>(rhs->GetLength());
-    if (rhsCount == 0) {
-        return pos;
+
+    if (pos > lhsCount) {
+        return -1;
     }
 
-    if (pos >= lhsCount) {
-        return -1;
+    if (rhsCount == 0) {
+        return pos;
     }
 
     if (pos < 0) {
