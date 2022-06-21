@@ -566,12 +566,12 @@ DEF_CALL_SIGNATURE(JSCall)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
-DEF_CALL_SIGNATURE(JSCallWithArgV)
+DEF_CALL_SIGNATURE(JSProxyCallInternalWithArgV)
 {
     // 4 : 4 input parameters
-    CallSignature jSCallWithArgV("JSCallWithArgV", 0, 4,
+    CallSignature jSProxyCallInternalWithArgV("JSProxyCallInternalWithArgV", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = jSCallWithArgV;
+    *callSign = jSProxyCallInternalWithArgV;
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::NATIVE_POINTER(),     // glue
         VariableType::INT32(),       // actual argC
@@ -802,6 +802,47 @@ DEF_CALL_SIGNATURE(CallGetter)
 DEF_CALL_SIGNATURE(CallSetter)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallSetter)
+}
+
+DEF_CALL_SIGNATURE(CallOptimizedJSFunction)
+{
+    // 6 : 6 input parameters
+    CallSignature CallOptimizedJSFunction("CallOptimizedJSFunction", 0, 6,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = CallOptimizedJSFunction;
+    // 6 : 6 input parameters
+    std::array<VariableType, 6> params = {
+        VariableType::NATIVE_POINTER(),   // glue
+        VariableType::NATIVE_POINTER(),   // prevFp
+        VariableType::JS_ANY(),           // jsfunc
+        VariableType::INT32(),            // actualNumArgs
+        VariableType::JS_ANY(),           // this
+        VariableType::JS_ANY(),           // new_target
+    };
+    callSign->SetVariadicArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
+DEF_CALL_SIGNATURE(JSCallWithArgV)
+{
+    // 6 : 6 input parameters
+    CallSignature jSCallWithArgV("JSCallWithArgV", 0, 6,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = jSCallWithArgV;
+    // 6 : 6 input parameters
+    std::array<VariableType, 6> params = {
+        VariableType::NATIVE_POINTER(),   // glue
+        VariableType::INT32(),            // actualNumArgs
+        VariableType::JS_ANY(),           // jsfunc
+        VariableType::JS_ANY(),           // newTarget
+        VariableType::JS_ANY(),           // this
+        VariableType::NATIVE_POINTER(),   // argV
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(DebugPrint)

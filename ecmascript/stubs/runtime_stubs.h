@@ -49,6 +49,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(PushCallNewAndDispatchNative)          \
     V(PushCallIRangeAndDispatchNative)       \
     V(PushCallIThisRangeAndDispatch)         \
+    V(CallOptimizedJSFunction)               \
+    V(JSCallWithArgV)                        \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
     V(ResumeCaughtFrameAndDispatch)          \
@@ -57,7 +59,7 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(CallGetter)                            \
     V(CallRuntimeWithArgv)                   \
     V(JSCall)                                \
-    V(JSCallWithArgV)                        \
+    V(JSProxyCallInternalWithArgV)           \
     V(JSFunctionEntry)                       \
     V(CallBuiltinTrampoline)                 \
     V(OptimizedCallOptimized)
