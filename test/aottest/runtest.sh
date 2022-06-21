@@ -148,15 +148,15 @@ case "$run_mode" in
         $make_cmd -n aot
         run_check $timeout $make_cmd -s aot
         $make_cmd -n run
-        run_check $timeout $make_cmd -s run > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s run &> $out_dir/$test_name/$run_output
         ;;
     "int")
         $make_cmd -n int
-        run_check $timeout $make_cmd -s int > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s int &> $out_dir/$test_name/$run_output
         ;;
     "asmint")
         $make_cmd -n asmint
-        run_check $timeout $make_cmd -s asmint > $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s asmint &> $out_dir/$test_name/$run_output
         ;;
 esac
 
