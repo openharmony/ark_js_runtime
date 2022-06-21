@@ -174,15 +174,93 @@ public:
         }
         ~NodeList() = default;
 
-        inline static NodeList<T> *NodeToNodeList(T *node);
+        inline static NodeList<T> *NodeToNodeList(T *node)
+        {
+            uintptr_t ptr = ToUintPtr(node) - node->GetIndex() * sizeof(T);
+            return reinterpret_cast<NodeList<T> *>(ptr);
+        }
 
-        inline T *NewNode(JSTaggedType value);
-        inline T *GetFreeNode(JSTaggedType value);
+        inline T *NewNode(JSTaggedType value)
+        {
+            if (IsFull()) {
+                return nullptr;
+            }
+            T *node = &nodeList_[index_++];
+            node->SetPrev(nullptr);
+            node->SetNext(usedList_);
+            node->SetObject(value);
+            node->SetUsing(true);
+            if (usedList_ != nullptr) {
+                usedList_->SetPrev(node);
+            }
+            usedList_ = node;
+            return node;
+        }
 
-        inline void FreeNode(T *node);
+        inline T *GetFreeNode(JSTaggedType value)
+        {
+            T *node = freeList_;
+            if (node != nullptr) {
+                freeList_ = reinterpret_cast<T *>(node->GetNext());
 
-        inline void LinkTo(NodeList<T> *prev);
-        inline void RemoveList();
+                node->SetPrev(nullptr);
+                node->SetNext(usedList_);
+                node->SetObject(value);
+                node->SetUsing(true);
+                if (usedList_ != nullptr) {
+                    usedList_->SetPrev(node);
+                }
+                usedList_ = node;
+            }
+            return node;
+        }
+
+        inline void FreeNode(T *node)
+        {
+            if (node->GetPrev() != nullptr) {
+                node->GetPrev()->SetNext(node->GetNext());
+            }
+            if (node->GetNext() != nullptr) {
+                node->GetNext()->SetPrev(node->GetPrev());
+            }
+            if (node == usedList_) {
+                usedList_ = reinterpret_cast<T *>(node->GetNext());
+            }
+            node->SetPrev(nullptr);
+            node->SetNext(freeList_);
+            node->SetObject(JSTaggedValue::Undefined().GetRawData());
+            node->SetUsing(false);
+            if (node->IsWeak()) {
+                reinterpret_cast<WeakNode *>(node)->SetReference(nullptr);
+                reinterpret_cast<WeakNode *>(node)->SetCallback(nullptr);
+            }
+            if (freeList_ != nullptr) {
+                freeList_->SetPrev(node);
+            }
+            freeList_ = node;
+        }
+
+        inline void LinkTo(NodeList<T> *prev)
+        {
+            next_ = nullptr;
+            prev_ = prev;
+            prev_->next_ = this;
+        }
+        inline void RemoveList()
+        {
+            if (next_ != nullptr) {
+                next_->SetPrev(prev_);
+            }
+            if (prev_ != nullptr) {
+                prev_->SetNext(next_);
+            }
+            if (freeNext_ != nullptr) {
+                freeNext_->SetFreePrev(freePrev_);
+            }
+            if (freePrev_ != nullptr) {
+                freePrev_->SetFreeNext(freeNext_);
+            }
+        }
 
         inline bool IsFull()
         {
@@ -259,11 +337,49 @@ public:
         NodeList<T> *freePrev_ {nullptr};
     };
 
-    inline uintptr_t NewGlobalHandle(JSTaggedType value);
-    inline void DisposeGlobalHandle(uintptr_t addr);
-    inline uintptr_t SetWeak(uintptr_t addr, void *ref = nullptr, WeakClearCallback callback = nullptr);
-    inline uintptr_t ClearWeak(uintptr_t addr);
-    inline bool IsWeak(uintptr_t addr) const;
+    inline uintptr_t NewGlobalHandle(JSTaggedType value)
+    {
+        uintptr_t ret = NewGlobalHandleImplement(&lastGlobalNodes_, &freeListNodes_, value);
+        return ret;
+    }
+
+    inline void DisposeGlobalHandle(uintptr_t nodeAddr)
+    {
+        Node *node = reinterpret_cast<Node *>(nodeAddr);
+        if (!node->IsUsing()) {
+            return;
+        }
+        if (node->IsWeak()) {
+            DisposeGlobalHandle(reinterpret_cast<WeakNode *>(node), &weakFreeListNodes_, &topWeakGlobalNodes_,
+                                &lastWeakGlobalNodes_);
+        } else {
+            DisposeGlobalHandle(node, &freeListNodes_, &topGlobalNodes_, &lastGlobalNodes_);
+        }
+    }
+
+    inline uintptr_t SetWeak(uintptr_t nodeAddr, void *ref = nullptr, WeakClearCallback callback = nullptr)
+    {
+        auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
+        DisposeGlobalHandle(nodeAddr);
+        uintptr_t addr = NewGlobalHandleImplement<WeakNode>(&lastWeakGlobalNodes_, &weakFreeListNodes_, value);
+        WeakNode *node = reinterpret_cast<WeakNode *>(addr);
+        node->SetReference(ref);
+        node->SetCallback(callback);
+        return addr;
+    }
+
+    inline uintptr_t ClearWeak(uintptr_t nodeAddr)
+    {
+        auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
+        DisposeGlobalHandle(nodeAddr);
+        uintptr_t ret = NewGlobalHandleImplement<Node>(&lastGlobalNodes_, &freeListNodes_, value);
+        return ret;
+    }
+    inline bool IsWeak(uintptr_t addr) const
+    {
+        Node *node = reinterpret_cast<Node *>(addr);
+        return node->IsWeak();
+    }
 
     template<class Callback>
     void IterateUsageGlobal(Callback callback)
@@ -296,10 +412,73 @@ private:
     NO_MOVE_SEMANTIC(EcmaGlobalStorage);
 
     template<typename T>
-    inline void DisposeGlobalHandle(T *node, NodeList<T> **freeLis, NodeList<T> **topNodes,
-                                    NodeList<T> **lastNodes);
+    inline void DisposeGlobalHandle(T *node, NodeList<T> **freeList, NodeList<T> **topNodes,
+                                    NodeList<T> **lastNodes)
+    {
+        NodeList<T> *list = NodeList<T>::NodeToNodeList(node);
+        list->FreeNode(node);
+
+        // If NodeList has no usage node, then delete NodeList
+        if (!list->HasUsagedNode() && (*topNodes != *lastNodes)) {
+            list->RemoveList();
+            if (*freeList == list) {
+                *freeList = list->GetNext();
+            }
+            if (*topNodes == list) {
+                *topNodes = list->GetNext();
+            }
+            if (*lastNodes == list) {
+                *lastNodes = list->GetPrev();
+            }
+            chunk_->Delete(list);
+        } else {
+            // Add to freeList
+            if (list != *freeList && list->GetFreeNext() == nullptr && list->GetFreePrev() == nullptr) {
+                list->SetFreeNext(*freeList);
+                if (*freeList != nullptr) {
+                    (*freeList)->SetFreePrev(list);
+                }
+                *freeList = list;
+            }
+        }
+    }
+
     template<typename T>
-    inline uintptr_t NewGlobalHandleImplement(NodeList<T> **storage, NodeList<T> **freeList, JSTaggedType value);
+    inline uintptr_t NewGlobalHandleImplement(NodeList<T> **storage, NodeList<T> **freeList, JSTaggedType value)
+    {
+    #if ECMASCRIPT_ENABLE_NEW_HANDLE_CHECK
+        thread_->CheckJSTaggedType(value);
+    #endif
+        if (!(*storage)->IsFull()) {
+            // alloc new block
+            T *node = (*storage)->NewNode(value);
+            ASSERT(node != nullptr);
+            return node->GetObjectAddress();
+        }
+        if (*freeList != nullptr) {
+            // use free_list node
+            Node *node = (*freeList)->GetFreeNode(value);
+            ASSERT(node != nullptr);
+            if (!(*freeList)->HasFreeNode()) {
+                auto next = (*freeList)->GetFreeNext();
+                (*freeList)->SetFreeNext(nullptr);
+                (*freeList)->SetFreePrev(nullptr);
+                if (next != nullptr) {
+                    next->SetFreePrev(nullptr);
+                }
+                *freeList = next;
+            }
+            return node->GetObjectAddress();
+        }
+        auto block = chunk_->New<NodeList<T>>();
+        block->LinkTo(*storage);
+        *storage = block;
+
+        // use node in block finally
+        T *node = (*storage)->NewNode(value);
+        ASSERT(node != nullptr);
+        return node->GetObjectAddress();
+    }
 
     [[maybe_unused]] JSThread *thread_ {nullptr};
     Chunk *chunk_ {nullptr};
