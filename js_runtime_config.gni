@@ -11,15 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
   ark_root = "//ark/runtime_core"
   js_root = "//ark/js_runtime"
-  third_party_gn_path = "//third_party"
 } else {
   ark_root = "//runtime_core"
   js_root = "//js_runtime"
-  third_party_gn_path = "$build_root/third_party_gn"
 }
+third_party_gn_path = "//third_party"
 compile_llvm_online = false
 run_with_asan = false
 enable_bytrace = true

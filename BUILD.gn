@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (defined(ark_independent_build)) {
+if (defined(ark_standalone_build)) {
   import("//js_runtime/js_runtime_config.gni")
   import("$build_root/ark.gni")
 } else {
@@ -183,7 +183,7 @@ config("ark_jsruntime_common_config") {
     "-Wdate-time",
     "-Wformat=2",
   ]
-  if (defined(ark_independent_build)) {
+  if (defined(ark_standalone_build)) {
     cflags_cc += [
       "-std=c++17",
       "-fno-rtti",
@@ -229,7 +229,7 @@ config("ark_jsruntime_common_config") {
     }
   }
 
-  if (!defined(ark_independent_build)) {
+  if (!defined(ark_standalone_build)) {
     if (!use_libfuzzer) {
       cflags_cc += [ "-flto" ]
       ldflags = [ "-flto" ]
@@ -623,37 +623,38 @@ source_set("libark_jsruntime_test_set") {
     "$js_root:ark_jsruntime_public_config",
   ]
 }
-if (!defined(ark_independent_build)) {
-  ohos_shared_library("libark_jsruntime") {
-    deps = [
-      ":libark_js_intl_set",
-      ":libark_jsruntime_set",
-    ]
 
-    if (is_ohos && is_standard_system) {
-      if (enable_dump_in_faultlog || enable_bytrace) {
-        external_deps = []
-      }
-      if (enable_dump_in_faultlog) {
-        external_deps += [ "faultloggerd:libfaultloggerd" ]
-      }
-      if (enable_bytrace) {
-        external_deps += [ "hitrace_native:hitrace_meter" ]
-      }
-    }
+ohos_shared_library("libark_jsruntime") {
+  deps = [
+    ":libark_js_intl_set",
+    ":libark_jsruntime_set",
+  ]
 
-    install_enable = true
-
-    if (!is_mingw && !is_mac) {
-      output_extension = "so"
+  if (is_ohos && is_standard_system) {
+    if (enable_dump_in_faultlog || enable_bytrace) {
+      external_deps = []
     }
-    if (!is_standard_system) {
-      relative_install_dir = "ark"
+    if (enable_dump_in_faultlog) {
+      external_deps += [ "faultloggerd:libfaultloggerd" ]
     }
-    part_name = "ark_js_runtime"
-    subsystem_name = "ark"
+    if (enable_bytrace) {
+      external_deps += [ "hitrace_native:hitrace_meter" ]
+    }
   }
 
+  install_enable = true
+
+  if (!is_mingw && !is_mac) {
+    output_extension = "so"
+  }
+  if (!is_standard_system) {
+    relative_install_dir = "ark"
+  }
+  part_name = "ark_js_runtime"
+  subsystem_name = "ark"
+}
+
+if (!defined(ark_standalone_build)) {
   ohos_shared_library("libark_jsruntime_test") {
     deps = [ ":libark_jsruntime_test_set" ]
 
@@ -669,16 +670,6 @@ if (!defined(ark_independent_build)) {
     ohos_copy("copy_asan_runtime") {
       sources = [ "${asan_lib_path}/libclang_rt.asan-x86_64.a" ]
       outputs = [ "${root_out_dir}/ark/ark_js_runtime/{{source_file_part}}" ]
-    }
-  }
-} else {
-  ark_shared_library("libark_jsruntime") {
-    deps = [
-      ":libark_js_intl_set",
-      ":libark_jsruntime_set",
-    ]
-    if (!is_mingw && !is_mac) {
-      output_extension = "so"
     }
   }
 }

@@ -12,8 +12,8 @@
 # limitations under the License.
 
 declare_args() {
-  ark_independent_build = true
-  root_core_gn = "//build/core/gn"
+  another_path = true
+  ark_standalone_build = true
   build_root = "//js_runtime/build"
 }
 
