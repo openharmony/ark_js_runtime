@@ -493,6 +493,16 @@ public:
 
     void CollectBCOffsetInfo();
 
+    void SetCheckAndCallEnterState(bool state)
+    {
+        finalizationCheckState_ = state;
+    }
+
+    bool GetCheckAndCallEnterState() const
+    {
+        return finalizationCheckState_;
+    }
+
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                  JSTaggedValue,
                                                  JSTaggedValue,
@@ -647,6 +657,8 @@ private:
     bool enablePrintBCOffset_ {false};
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
+
+    bool finalizationCheckState_ {false};
 
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
