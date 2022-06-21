@@ -395,6 +395,7 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::FRACTION_STRING_INDEX, factory->NewFromASCIINonMovable("fraction"));
     SetConstant(ConstantIndex::DECIMAL_STRING_INDEX, factory->NewFromASCIINonMovable("decimal"));
     SetConstant(ConstantIndex::GROUP_STRING_INDEX, factory->NewFromASCIINonMovable("group"));
+    SetConstant(ConstantIndex::GROUPS_STRING_INDEX, factory->NewFromASCIINonMovable("groups"));
     SetConstant(ConstantIndex::CURRENCY_STRING_INDEX, factory->NewFromASCIINonMovable("currency"));
     SetConstant(ConstantIndex::CURRENCY_SIGN_STRING_INDEX, factory->NewFromASCIINonMovable("currencySign"));
     SetConstant(ConstantIndex::CURRENCY_DISPLAY_STRING_INDEX, factory->NewFromASCIINonMovable("currencyDisplay"));

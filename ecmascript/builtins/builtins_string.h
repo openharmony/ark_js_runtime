@@ -43,6 +43,7 @@ public:
     static JSTaggedValue GetSubstitution(JSThread *thread, const JSHandle<EcmaString> &matched,
                                          const JSHandle<EcmaString> &srcString, int position,
                                          const JSHandle<TaggedArray> &captureList,
+                                         const JSHandle<JSTaggedValue> &namedCaptures,
                                          const JSHandle<EcmaString> &replacement);
     // 21.1.3.1
     static JSTaggedValue CharAt(EcmaRuntimeCallInfo *argv);
@@ -78,6 +79,7 @@ public:
     // 21.1.3.14
     static JSTaggedValue Replace(EcmaRuntimeCallInfo *argv);
     // 21.1.3.14.1 Runtime Semantics: GetSubstitution()
+    static JSTaggedValue ReplaceAll(EcmaRuntimeCallInfo *argv);
     // 21.1.3.15
     static JSTaggedValue Search(EcmaRuntimeCallInfo *argv);
     // 21.1.3.16

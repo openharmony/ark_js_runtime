@@ -276,6 +276,7 @@ class JSThread;
     V(JSTaggedValue, FractionString, FRACTION_STRING_INDEX, fraction)                                                 \
     V(JSTaggedValue, DecimalString, DECIMAL_STRING_INDEX, decimal)                                                    \
     V(JSTaggedValue, GroupString, GROUP_STRING_INDEX, group)                                                          \
+    V(JSTaggedValue, GroupsString, GROUPS_STRING_INDEX, groups)                                                       \
     V(JSTaggedValue, CurrencyString, CURRENCY_STRING_INDEX, currency)                                                 \
     V(JSTaggedValue, CurrencySignString, CURRENCY_SIGN_STRING_INDEX, currencySign)                                    \
     V(JSTaggedValue, CurrencyDisplayString, CURRENCY_DISPLAY_STRING_INDEX, currencyDisplay)                           \

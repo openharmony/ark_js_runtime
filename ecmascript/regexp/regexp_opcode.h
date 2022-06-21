@@ -344,7 +344,6 @@ public:
         }
         return false;
     }
-
     inline uint32_t HighestValue() const
     {
         if (!rangeSet_.empty()) {
@@ -352,7 +351,6 @@ public:
         }
         return 0;
     }
-
     RangeSet(RangeSet const &) = default;
     RangeSet &operator=(RangeSet const &) = default;
     RangeSet(RangeSet &&) = default;

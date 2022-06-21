@@ -271,6 +271,7 @@ static JSHandle<JSRegExp> NewJSRegExp(JSThread *thread, ObjectFactory *factory, 
     JSHandle<JSRegExp> jSRegExp = JSHandle<JSRegExp>::Cast(factory->NewJSObject(jSRegExpClass));
     jSRegExp->SetByteCodeBuffer(thread, JSTaggedValue::Undefined());
     jSRegExp->SetOriginalSource(thread, JSTaggedValue::Undefined());
+    jSRegExp->SetGroupName(thread, JSTaggedValue::Undefined());
     jSRegExp->SetOriginalFlags(thread, JSTaggedValue(0));
     jSRegExp->SetLength(0);
     return jSRegExp;
@@ -457,7 +458,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_REG_EXP: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSRegExp::SIZE, 4U)
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSRegExp::SIZE, 5U)
                 NEW_OBJECT_AND_DUMP(JSRegExp, JS_REG_EXP)
                 break;
             }

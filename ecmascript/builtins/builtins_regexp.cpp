@@ -913,10 +913,23 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
             // v. Let n be n+1
             ++index;
         }
+        
+        // j. Let namedCaptures be ? Get(result, "groups").
+        JSHandle<JSTaggedValue> groupsKey = globalConst->GetHandledGroupsString();
+        JSTaggedValue named =
+            FastRuntimeStub::FastGetPropertyByValue(thread, resultValues.GetTaggedValue(), groupsKey.GetTaggedValue());
+        JSHandle<JSTaggedValue> namedCaptures(thread, named);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         // m. If functionalReplace is true, then
         CString replacement;
+        int emptyArrLength = 0;
+        if (namedCaptures->IsUndefined()) {
+            emptyArrLength = 3; // 3: «matched, pos, and string»
+        } else {
+            emptyArrLength = 4; // 4: «matched, pos, string, and groups»
+        }
         JSHandle<TaggedArray> replacerArgs =
-            factory->NewTaggedArray(3 + capturesList->GetLength());  // 3: «matched, pos, and string»
+            factory->NewTaggedArray(emptyArrLength + capturesList->GetLength());
         if (functionalReplace) {
             // i. Let replacerArgs be «matched».
             replacerArgs->Set(thread, 0, getMatchString.GetTaggedValue());
@@ -929,6 +942,9 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
             }
             replacerArgs->Set(thread, index + 1, JSTaggedValue(position));
             replacerArgs->Set(thread, index + 2, inputStr.GetTaggedValue());  // 2: position of string
+            if (!namedCaptures->IsUndefined()) {
+                replacerArgs->Set(thread, index + 3, namedCaptures.GetTaggedValue()); // 3: position of groups
+            }
             // iv. Let replValue be Call(replaceValue, undefined, replacerArgs).
             const size_t argsLength = replacerArgs->GetLength();
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
@@ -944,8 +960,14 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
             replacement = ConvertToString(*replacementString, StringConvertedUsage::LOGICOPERATION);
         } else {
             // n. Else,
+            if (!namedCaptures->IsUndefined()) {
+                JSHandle<JSObject> namedCapturesObj = JSTaggedValue::ToObject(thread, namedCaptures);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                namedCaptures = JSHandle<JSTaggedValue>::Cast(namedCapturesObj);
+            }
             JSHandle<JSTaggedValue> replacementHandle(
-                thread, BuiltinsString::GetSubstitution(thread, matchString, srcString, position, capturesList,
+                thread, BuiltinsString::GetSubstitution(thread, matchString, srcString,
+                                                        position, capturesList, namedCaptures,
                                                         replaceValueHandle));
             replacement = ConvertToString(EcmaString::Cast(replacementHandle->GetTaggedObject()),
                                           StringConvertedUsage::LOGICOPERATION);
@@ -1350,7 +1372,6 @@ bool BuiltinsRegExp::GetFlagsInternal(JSThread *thread, const JSHandle<JSTaggedV
     uint8_t flags = static_cast<uint8_t>(regexpObj->GetOriginalFlags().GetInt());
     return flags & mask;
 }
-
 // 21.2.5.2.2
 JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
                                                 const JSHandle<JSTaggedValue> &inputStr, bool useCache)
@@ -1389,14 +1410,6 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     JSMutableHandle<JSTaggedValue> flags(thread, regexpObj->GetOriginalFlags());
 
     JSHandle<RegExpExecResultCache> cacheTable(thread->GetEcmaVM()->GetRegExpCache());
-    if (lastIndex == 0 && useCache) {
-        JSTaggedValue cacheResult =
-            cacheTable->FindCachedResult(thread, pattern, flags, inputStr, RegExpExecResultCache::EXEC_TYPE, regexp);
-        if (cacheResult != JSTaggedValue::Undefined()) {
-            return cacheResult;
-        }
-    }
-
     uint32_t length = static_cast<EcmaString *>(inputStr->GetTaggedObject())->GetLength();
     uint8_t flagsBits = static_cast<uint8_t>(regexpObj->GetOriginalFlags().GetInt());
     JSHandle<JSTaggedValue> flagsValue(thread, FlagsBitsToString(thread, flagsBits));
@@ -1457,6 +1470,17 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     // 27. Perform CreateDataProperty(A, "0", matched_substr).
     JSHandle<JSTaggedValue> zeroValue(matchResult.captures_[0].second);
     JSObject::CreateDataProperty(thread, results, 0, zeroValue);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    JSHandle<JSTaggedValue> groupName(thread, regexpObj->GetGroupName());
+    JSMutableHandle<JSTaggedValue> groups(thread, JSTaggedValue::Undefined());
+    if (!groupName->IsUndefined()) {
+        JSHandle<JSTaggedValue> nullHandle(thread, JSTaggedValue::Null());
+        JSHandle<JSObject> nullObj = factory->OrdinaryNewJSObjectCreate(nullHandle);
+        groups.Update(nullObj.GetTaggedValue());
+    }
+    JSHandle<JSTaggedValue> groupsKey = globalConst->GetHandledGroupsString();
+    JSObject::CreateDataProperty(thread, results, groupsKey, groups);
     // 28. For each integer i such that i > 0 and i <= n
     for (uint32_t i = 1; i < capturesSize; i++) {
         // a. Let capture_i be ith element of r's captures List
@@ -1468,6 +1492,14 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
         }
         JSHandle<JSTaggedValue> iValue(thread, capturedValue);
         JSObject::CreateDataProperty(thread, results, i, iValue);
+        if (!groupName->IsUndefined()) {
+            JSHandle<JSObject> groupObject = JSHandle<JSObject>::Cast(groups);
+            TaggedArray *groupArray = TaggedArray::Cast(regexpObj->GetGroupName().GetTaggedObject());
+            if (groupArray->GetLength() > i - 1) {
+                JSHandle<JSTaggedValue> skey(thread, groupArray->Get(i - 1));
+                JSObject::CreateDataProperty(thread, groupObject, skey, iValue);
+            }
+        }
     }
     if (lastIndex == 0 && useCache) {
         RegExpExecResultCache::AddResultInCache(thread, cacheTable, pattern, flags, inputStr,
@@ -1672,6 +1704,15 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
     regexp->SetOriginalSource(thread, patternStrHandle.GetTaggedValue());
     // 12. Set the value of obj’s [[OriginalFlags]] internal slot to F.
     regexp->SetOriginalFlags(thread, JSTaggedValue(flagsBits));
+    auto groupName = parser.GetGroupNames();
+    if (!groupName.empty()) {
+        JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(groupName.size());
+        for (size_t i = 0; i < groupName.size(); ++i) {
+            JSHandle<JSTaggedValue> flagsKey(factory->NewFromStdString(groupName[i].c_str()));
+            taggedArray->Set(thread, i, flagsKey);
+        }
+        regexp->SetGroupName(thread, taggedArray);
+    }
     // 13. Set obj’s [[RegExpMatcher]] internal slot.
     if (getCache.first == JSTaggedValue::Hole()) {
         auto bufferSize = parser.GetOriginBufferSize();
