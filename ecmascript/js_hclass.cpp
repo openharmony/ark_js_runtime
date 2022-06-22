@@ -233,12 +233,11 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
 
         if (layoutInfoHandle->NumberOfElements() != static_cast<int>(offset)) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
-            newJshclass->SetLayout(thread, layoutInfoHandle);
         } else if (layoutInfoHandle->GetPropertiesCapacity() <= static_cast<int>(offset)) {  // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
-            newJshclass->SetLayout(thread, layoutInfoHandle);
         }
+        newJshclass->SetLayout(thread, layoutInfoHandle);
         layoutInfoHandle->AddKey(thread, offset, key.GetTaggedValue(), attr);
     }
 
