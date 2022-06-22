@@ -4061,7 +4061,7 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                     break;
                 case JSCallMode::CALL_SETTER:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, data[1], data[0]});
+                        { glue, realNumArgs, func, newTarget, data[0], data[1]});
                     Jump(&exit);
                     break;
                 default:
