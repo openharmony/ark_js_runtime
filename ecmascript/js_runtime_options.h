@@ -510,7 +510,8 @@ private:
     PandArg<bool> startup_time_ {"startup-time", false, R"(Print the start time of command execution. Default: false)"};
     PandArg<std::string> logCompiledMethods {"log-compiled-methods",
         R"(none)",
-        R"(print stub or aot logs in units of method, "none": no log, "all": every method)"};
+        R"(print stub or aot logs in units of method, "none": no log, "all": every method,"
+        "asm": log all disassemble code)"};
     PandArg<std::string> snapshotOutputFile_ {"snapshot-output-file",
         R"(snapshot)",
         R"(Path to snapshot output file. Default: "snapshot")"};
