@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/backend/js_pt_hooks.h"
+
+#include "ecmascript/tooling/agent/debugger_impl.h"
 
 namespace panda::ecmascript::tooling {
 void JSPtHooks::Breakpoint(const JSPtLocation &location)
@@ -51,6 +52,10 @@ bool JSPtHooks::SingleStep(const JSPtLocation &location)
         debugger_->NotifyPaused({}, OTHER);
         return true;
     }
+
+    // temporary "safepoint" to handle possible protocol command
+    debugger_->NotifyHandleProtocolCommand();
+
     return false;
 }
 
