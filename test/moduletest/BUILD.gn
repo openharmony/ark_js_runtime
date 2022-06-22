@@ -15,6 +15,7 @@ group("ark_js_moduletest") {
   testonly = true
   deps = [
     "allocatearraybuffer:allocatearraybufferAction",
+    "arrayjoin:arrayjoinAction",
     "async:asyncAction",
     "bindfunction:bindfunctionAction",
     "bitwiseop:bitwiseopAction",
@@ -56,6 +57,7 @@ group("ark_asm_test") {
   testonly = true
   deps = [
     "allocatearraybuffer:allocatearraybufferAsmAction",
+    "arrayjoin:arrayjoinAsmAction",
     "async:asyncAsmAction",
     "bindfunction:bindfunctionAsmAction",
     "bitwiseop:bitwiseopAsmAction",

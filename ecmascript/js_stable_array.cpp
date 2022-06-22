@@ -224,7 +224,9 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
     CVector<JSHandle<EcmaString>> vec;
     JSMutableHandle<JSTaggedValue> elementHandle(thread, JSTaggedValue::Undefined());
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    for (uint32_t k = 0; k < length; k++) {
+    uint32_t elementslength = elements->GetLength();
+    uint32_t len = elementslength > length ? length : elementslength;
+    for (uint32_t k = 0; k < len; k++) {
         JSTaggedValue element = elements->Get(k);
         if (!element.IsUndefinedOrNull() && !element.IsHole()) {
             if (!element.IsString()) {
@@ -243,11 +245,13 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
             vec.push_back(JSHandle<EcmaString>(globalConst->GetHandledEmptyString()));
         }
     }
-    allocateLength += sepLength * (length - 1);
+    if (len > 0) {
+        allocateLength += sepLength * (len - 1);
+    }
     auto newString = EcmaString::AllocStringObject(allocateLength, isOneByte, thread->GetEcmaVM());
     int current = 0;
     DISALLOW_GARBAGE_COLLECTION;
-    for (uint32_t k = 0; k < length; k++) {
+    for (uint32_t k = 0; k < len; k++) {
         if (k > 0) {
             if (sep >= 0) {
                 newString->WriteData(static_cast<char>(sep), current);
