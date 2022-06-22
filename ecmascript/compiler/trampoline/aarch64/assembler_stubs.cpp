@@ -1383,7 +1383,7 @@ void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler, JSCallMode mode)
     Label pushNewTarget;
     Label pushCallTarget;
     bool haveThis = kungfu::AssemblerModule::JSModeHaveThisArg(mode);
-    bool haveNewTarget = kungfu::AssemblerModule::JSModeHaveThisArg(mode);
+    bool haveNewTarget = kungfu::AssemblerModule::JSModeHaveNewTargetArg(mode);
     if (!haveThis) {
         __ Tst(callFieldRegister, LogicalImmediate::Create(CALL_TYPE_MASK, RegXSize));
         __ B(Condition::EQ, &pushVregs);
