@@ -390,10 +390,9 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
     }
 }
 
-std::string FrameHandler::GetAotExceptionFuncName(JSTaggedType* fp) const
+std::string FrameHandler::GetAotExceptionFuncName(JSTaggedType* argv) const
 {
-    ASSERT(FrameHandler::GetFrameType(fp) == FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
-    JSTaggedValue func = JSTaggedValue(*(fp + 3)); // 3: skip returnaddr and argc
+    JSTaggedValue func = JSTaggedValue(*(argv)); // 3: skip returnaddr and argc
     JSMethod *method = JSFunction::Cast(func.GetTaggedObject())->GetMethod();
     return method->GetMethodName();
 }
@@ -402,30 +401,35 @@ void FrameHandler::CollectBCOffsetInfo()
 {
     thread_->GetEcmaVM()->ClearExceptionBCList();
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
-    for (FrameIterator it(current, thread_); !it.Done(); it.Advance()) {
+    FrameIterator it(current, thread_);
+    ASSERT(it.GetFrameType() == FrameType::LEAVE_FRAME);
+    auto leaveFrame = it.GetFrame<OptimizedLeaveFrame>();
+    auto returnAddr = leaveFrame->GetReturnAddr();
+    // skip native function, need fixed it later.
+    it.Advance();
+
+    for (; !it.Done(); it.Advance()) {
         FrameType type = it.GetFrameType();
         switch (type) {
             case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME:
             case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
                 auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
-                auto returnAddr = frame->GetReturnAddr();
                 auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
-                    auto prevFp = frame->GetPrevFrameFp();
-                    auto name = GetAotExceptionFuncName(prevFp);
+                    int delta =
+                        thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser() \
+                               ->GetFuncFpDelta(it.GetOptimizedReturnAddr());
+                    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it.GetSp(), delta);
+                    JSTaggedType *argv = frame->GetArgv(reinterpret_cast<uintptr_t *>(preFrameSp));
+                    auto name = GetAotExceptionFuncName(argv);
                     thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
                 }
+                returnAddr = frame->GetReturnAddr();
                 break;
             }
             case FrameType::LEAVE_FRAME: {
                 auto frame = it.GetFrame<OptimizedLeaveFrame>();
-                auto returnAddr = frame->GetReturnAddr();
-                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
-                if (!constInfo.empty()) {
-                    auto prevFp = frame->GetPrevFrameFp();
-                    auto name = GetAotExceptionFuncName(prevFp);
-                    thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
-                }
+                returnAddr = frame->GetReturnAddr();
                 break;
             }
             case FrameType::OPTIMIZED_ENTRY_FRAME:
