@@ -31,3 +31,5 @@ var obj1 = new Obj1(0);
 print(obj1.value);
 var obj2 = new Obj2();
 obj2.fun();
+
+print(obj1 instanceof Object);
