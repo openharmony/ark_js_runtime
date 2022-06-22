@@ -21,13 +21,13 @@
 #include "ecmascript/weak_vector.h"
 
 namespace panda::ecmascript {
-class CheckAndCallScrop {
+class CheckAndCallScope {
 public:
-    CheckAndCallScrop(JSThread *thread) : thread_(thread)
+    CheckAndCallScope(JSThread *thread) : thread_(thread)
     {
         thread_->SetCheckAndCallEnterState(true);
     }
-    ~CheckAndCallScrop()
+    ~CheckAndCallScope()
     {
         thread_->SetCheckAndCallEnterState(false);
     }
@@ -63,7 +63,7 @@ public:
 
 class CellRecordVector : public WeakVector {
 public:
-    static CellRecordVector *Cast(ObjectHeader *object)
+    static CellRecordVector *Cast(TaggedObject *object)
     {
         return static_cast<CellRecordVector *>(object);
     }
