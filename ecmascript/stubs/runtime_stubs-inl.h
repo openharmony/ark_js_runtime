@@ -640,7 +640,7 @@ JSTaggedValue RuntimeStubs::RuntimeCloneClassFromTemplate(JSThread *thread, cons
     cloneClass->SetHomeObject(thread, cloneClassPrototype);
 
     if (!canShareHClass) {
-        RuntimeSetClassInheritanceRelationship(thread, JSHandle<JSTaggedValue>(ctor), base);
+        RuntimeSetClassInheritanceRelationship(thread, JSHandle<JSTaggedValue>(cloneClass), base);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
 
