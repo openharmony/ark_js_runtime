@@ -40,6 +40,8 @@ host_unittest_action("EcmaVm_001_Test") {
     "js_api_arraylist_test.cpp",
     "js_api_deque_iterator_test.cpp",
     "js_api_deque_test.cpp",
+    "js_api_lightweightmap_test.cpp",
+    "js_api_lightweightset_test.cpp",
     "js_api_linked_list_test.cpp",
     "js_api_list_test.cpp",
     "js_api_plain_array_test.cpp",

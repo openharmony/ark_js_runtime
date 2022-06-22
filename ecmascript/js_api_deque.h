@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JSAPIDEQUE_H
-#define ECMASCRIPT_JSAPIDEQUE_H
+#ifndef ECMASCRIPT_JS_API_DEQUE_H
+#define ECMASCRIPT_JS_API_DEQUE_H
 
 #include "js_object.h"
 #include "js_tagged_value-inl.h"
@@ -77,4 +77,4 @@ private:
 };
 } // namespace panda::ecmascript
 
-#endif // ECMASCRIPT_JSAPIDEQUE_H
+#endif // ECMASCRIPT_JS_API_DEQUE_H

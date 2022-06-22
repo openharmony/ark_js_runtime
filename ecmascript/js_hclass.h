@@ -105,6 +105,8 @@ class ProtoChangeDetails;
         JS_REG_EXP_ITERATOR,        /* ////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_ARRAYLIST_ITERATOR, /* /////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_DEQUE_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_LIGHT_WEIGHT_MAP_ITERATOR, /* //////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_LIGHT_WEIGHT_SET_ITERATOR,  /* /////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_PLAIN_ARRAY_ITERATOR,  /* //////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_QUEUE_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_STACK_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -136,6 +138,8 @@ class ProtoChangeDetails;
         /* SPECIAL indexed objects begin, DON'T CHANGE HERE ///////////////////////////////////////////////-PADDING */ \
         JS_ARRAY,       /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_ARRAY_LIST, /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_LIGHT_WEIGHT_MAP,      /* //////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_LIGHT_WEIGHT_SET, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_VECTOR,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_LINKED_LIST, /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_LIST,       /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -727,17 +731,30 @@ public:
     {
         return GetObjectType() == JSType::JS_API_ARRAYLIST_ITERATOR;
     }
-
+    inline bool IsJSAPILightWeightMap() const
+    {
+        return GetObjectType() == JSType::JS_API_LIGHT_WEIGHT_MAP;
+    }
+    inline bool IsJSAPILightWeightMapIterator() const
+    {
+        return GetObjectType() == JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR;
+    }
+    inline bool IsJSAPILightWeightSet() const
+    {
+        return GetObjectType() == JSType::JS_API_LIGHT_WEIGHT_SET;
+    }
+    inline bool IsJSAPILightWeightSetIterator() const
+    {
+        return GetObjectType() == JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR;
+    }
     inline bool IsJSAPIStack() const
     {
         return GetObjectType() == JSType::JS_API_STACK;
     }
-
     inline bool IsJSAPIDeque() const
     {
         return GetObjectType() == JSType::JS_API_DEQUE;
     }
-
     inline bool IsJSAPIQueue() const
     {
         return GetObjectType() == JSType::JS_API_QUEUE;

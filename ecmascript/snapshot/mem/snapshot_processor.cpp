@@ -65,6 +65,8 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_deque.h"
+#include "ecmascript/containers/containers_lightweightmap.h"
+#include "ecmascript/containers/containers_lightweightset.h"
 #include "ecmascript/containers/containers_linked_list.h"
 #include "ecmascript/containers/containers_list.h"
 #include "ecmascript/containers/containers_plainarray.h"
@@ -80,6 +82,8 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
@@ -162,6 +166,8 @@ using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using ArrayList = containers::ContainersArrayList;
+using LightWeightMap = containers::ContainersLightWeightMap;
+using LightWeightSet = containers::ContainersLightWeightSet;
 using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
 using Vector = containers::ContainersVector;
@@ -707,6 +713,50 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(ArrayList::Set),
     reinterpret_cast<uintptr_t>(ArrayList::GetSize),
     reinterpret_cast<uintptr_t>(JSAPIArrayListIterator::Next),
+    reinterpret_cast<uintptr_t>(LightWeightMap::HasAll),
+    reinterpret_cast<uintptr_t>(LightWeightMap::HasKey),
+    reinterpret_cast<uintptr_t>(LightWeightMap::HasValue),
+    reinterpret_cast<uintptr_t>(LightWeightMap::IncreaseCapacityTo),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Entries),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Get),
+    reinterpret_cast<uintptr_t>(LightWeightMap::GetIndexOfKey),
+    reinterpret_cast<uintptr_t>(LightWeightMap::GetIndexOfValue),
+    reinterpret_cast<uintptr_t>(LightWeightMap::IsEmpty),
+    reinterpret_cast<uintptr_t>(LightWeightMap::GetKeyAt),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Keys),
+    reinterpret_cast<uintptr_t>(LightWeightMap::SetAll),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Set),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Remove),
+    reinterpret_cast<uintptr_t>(LightWeightMap::RemoveAt),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Clear),
+    reinterpret_cast<uintptr_t>(LightWeightMap::SetValueAt),
+    reinterpret_cast<uintptr_t>(LightWeightMap::ForEach),
+    reinterpret_cast<uintptr_t>(LightWeightMap::ToString),
+    reinterpret_cast<uintptr_t>(LightWeightMap::GetValueAt),
+    reinterpret_cast<uintptr_t>(LightWeightMap::Values),
+    reinterpret_cast<uintptr_t>(JSAPILightWeightMapIterator::Next),
+    reinterpret_cast<uintptr_t>(LightWeightSet::LightWeightSetConstructor),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Add),
+    reinterpret_cast<uintptr_t>(LightWeightSet::AddAll),
+    reinterpret_cast<uintptr_t>(LightWeightSet::IsEmpty),
+    reinterpret_cast<uintptr_t>(LightWeightSet::GetValueAt),
+    reinterpret_cast<uintptr_t>(LightWeightSet::HasAll),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Has),
+    reinterpret_cast<uintptr_t>(LightWeightSet::HasHash),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Equal),
+    reinterpret_cast<uintptr_t>(LightWeightSet::IncreaseCapacityTo),
+    reinterpret_cast<uintptr_t>(LightWeightSet::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Values),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Entries),
+    reinterpret_cast<uintptr_t>(LightWeightSet::ForEach),
+    reinterpret_cast<uintptr_t>(LightWeightSet::GetIndexOf),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Remove),
+    reinterpret_cast<uintptr_t>(LightWeightSet::RemoveAt),
+    reinterpret_cast<uintptr_t>(LightWeightSet::Clear),
+    reinterpret_cast<uintptr_t>(LightWeightSet::ToString),
+    reinterpret_cast<uintptr_t>(LightWeightSet::ToArray),
+    reinterpret_cast<uintptr_t>(LightWeightSet::GetSize),
+    reinterpret_cast<uintptr_t>(JSAPILightWeightSetIterator::Next),
     reinterpret_cast<uintptr_t>(TreeMap::TreeMapConstructor),
     reinterpret_cast<uintptr_t>(TreeMap::Set),
     reinterpret_cast<uintptr_t>(TreeMap::Get),
