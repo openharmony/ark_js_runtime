@@ -18,6 +18,7 @@
 
 #include "algorithm"
 #include "ecmascript/base/builtins_base.h"
+#include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_json.h"
 #include "ecmascript/builtins/builtins_proxy.h"
@@ -512,7 +513,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify4)  // Test for proxy object
     ASSERT_TRUE(EcmaString::StringsAreEqual(*test, EcmaString::Cast(result.GetTaggedObject())));
 }
 
-HWTEST_F_L0(BuiltinsJsonTest, Stringify5)  // Test for proxy object
+HWTEST_F_L0(BuiltinsJsonTest, Stringify5)  // Test for typedarray object
 {
     auto ecmaVM = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVM->GetFactory();
@@ -544,5 +545,35 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify5)  // Test for proxy object
     JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*test, EcmaString::Cast(result.GetTaggedObject())));
+}
+
+HWTEST_F_L0(BuiltinsJsonTest, Stringify6)  // Test for bigint object
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("123456789123456789"));
+
+    auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    JSHandle<JSTaggedValue> bigIntHandle(thread, result1);
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, bigIntHandle.GetTaggedValue());
+
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
+    TestHelper::TearDownFrame(thread, prev);
+    CString str = ConvertToString(EcmaString::Cast(result.GetTaggedObject()));
+    ASSERT_TRUE(result.IsString());
+    ASSERT_TRUE(EcmaString::StringsAreEqual(EcmaString::Cast(numericValue.GetTaggedValue().GetTaggedObject()),
+                EcmaString::Cast(result.GetTaggedObject())));
 }
 }  // namespace panda::test
