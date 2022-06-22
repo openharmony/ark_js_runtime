@@ -603,6 +603,11 @@ struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedT
         return reinterpret_cast<InterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
+    static uint32_t NumOfMembers()
+    {
+        return sizeof(AsmInterpretedFrame) / JSTaggedValue::TaggedTypeSize();
+    }
+
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };

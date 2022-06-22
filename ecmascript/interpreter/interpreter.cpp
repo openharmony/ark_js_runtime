@@ -44,9 +44,15 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     JSTaggedType *newSp;
     JSTaggedType *prevSp = sp;
     if (thread->IsAsmInterpreter()) {
-        newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
+        newSp = sp - InterpretedEntryFrame::NumOfMembers();
     } else {
-        newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        if (FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FRAME ||
+            FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+            newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        } else {
+            newSp =
+                sp - InterpretedEntryFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        }
     }
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {
         EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, INVALID_ARGS_NUMBER, nullptr);
