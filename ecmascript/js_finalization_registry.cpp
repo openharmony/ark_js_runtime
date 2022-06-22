@@ -140,6 +140,10 @@ void JSFinalizationRegistry::CleanFinRegLists(JSThread *thread, JSHandle<JSFinal
 
 void JSFinalizationRegistry::CheckAndCall(JSThread *thread)
 {
+    if (thread->GetCheckAndCallEnterState()) {
+        return;
+    }
+    CheckAndCallScope scope(thread);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> prev = env->GetFinRegLists();
 

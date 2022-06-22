@@ -566,7 +566,7 @@ JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number
 int64_t BigInt::ToInt64()
 {
     uint32_t len = GetLength();
-    ASSERT(len < 2); // The maximum length of the BigInt data is less 2
+    ASSERT(len <= 2); // The maximum length of the BigInt data is less or equal 2
     uint64_t value = 0;
     uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
     for (int32_t index = static_cast<int32_t>(len - 1); index >= 0; --index) {
