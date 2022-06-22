@@ -16,7 +16,6 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H
 
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::ecmascript::tooling::test {
@@ -34,8 +33,8 @@ public:
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpointCounter_;
-            CVector<std::unique_ptr<CallFrame>> callFrames;
-            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            std::vector<std::unique_ptr<CallFrame>> callFrames;
+            ASSERT_TRUE(debugger_->GenerateCallFrames(&callFrames));
             ASSERT_TRUE(callFrames.size() > 0);
             auto jsLocation = callFrames[0]->GetLocation();
             ASSERT_TRUE(jsLocation != nullptr);
@@ -50,8 +49,8 @@ public:
             ASSERT_EQ(sourceLocation.line, 17);
             ASSERT_EQ(sourceLocation.column, 27);
             ++exceptionCounter_;
-            CVector<std::unique_ptr<CallFrame>> callFrames;
-            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            std::vector<std::unique_ptr<CallFrame>> callFrames;
+            ASSERT_TRUE(debugger_->GenerateCallFrames(&callFrames));
             ASSERT_TRUE(callFrames.size() > 0);
             auto jsLocation = callFrames[0]->GetLocation();
             ASSERT_TRUE(jsLocation != nullptr);
@@ -66,11 +65,11 @@ public:
                 if (moduleName != pandaFile_) {
                     return true;
                 }
-                ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
+                ASSERT_TRUE(debugger_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
-                auto error = debugInterface_->SetBreakpoint(location_, condFuncRef);
-                ASSERT_FALSE(error);
+                auto condFuncRef = FunctionRef::Undefined(vm_);
+                auto ret = debugInterface_->SetBreakpoint(location_, condFuncRef);
+                ASSERT_TRUE(ret);
             }
             return true;
         };
@@ -80,7 +79,8 @@ public:
             TestUtil::Continue();
             TestUtil::WaitForException();
             TestUtil::Continue();
-            ASSERT_TRUE(debugInterface_->RemoveBreakpoint(location_));
+            auto ret = debugInterface_->RemoveBreakpoint(location_);
+            ASSERT_TRUE(ret);
             ASSERT_EXITED();
             return true;
         };
@@ -92,14 +92,15 @@ public:
         };
     }
 
-    std::pair<CString, CString> GetEntryPoint() override
+    std::pair<std::string, std::string> GetEntryPoint() override
     {
         return {pandaFile_, entryPoint_};
     }
     ~JsExceptionTest() = default;
+
 private:
-    CString pandaFile_ = "/data/test/exception.abc";
-    CString entryPoint_ = "_GLOBAL::func_main_0";
+    std::string pandaFile_ = DEBUGGER_ABC_DIR "exception.abc";
+    std::string entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
     size_t exceptionCounter_ = 0;

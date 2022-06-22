@@ -23,8 +23,10 @@ class PtBaseParams : public PtBaseTypes {
 public:
     PtBaseParams() = default;
     ~PtBaseParams() override = default;
-
-    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
+    std::unique_ptr<PtJson> ToJson() const override
+    {
+        UNREACHABLE();
+    }
 
 private:
     NO_COPY_SEMANTIC(PtBaseParams);
@@ -36,11 +38,7 @@ public:
     EnableParams() = default;
     ~EnableParams() override = default;
 
-    static std::unique_ptr<EnableParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<EnableParams> Create(const PtJson &params);
 
     double GetMaxScriptsCacheSize() const
     {
@@ -56,7 +54,7 @@ private:
     NO_COPY_SEMANTIC(EnableParams);
     NO_MOVE_SEMANTIC(EnableParams);
 
-    std::optional<double> maxScriptsCacheSize_ {0};
+    std::optional<double> maxScriptsCacheSize_ {};
 };
 
 class EvaluateOnCallFrameParams : public PtBaseParams {
@@ -64,18 +62,14 @@ public:
     EvaluateOnCallFrameParams() = default;
     ~EvaluateOnCallFrameParams() override = default;
 
-    static std::unique_ptr<EvaluateOnCallFrameParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<EvaluateOnCallFrameParams> Create(const PtJson &params);
 
-    CString GetCallFrameId()
+    CallFrameId GetCallFrameId() const
     {
         return callFrameId_;
     }
 
-    CString GetExpression()
+    const std::string &GetExpression() const
     {
         return expression_;
     }
@@ -84,10 +78,10 @@ private:
     NO_COPY_SEMANTIC(EvaluateOnCallFrameParams);
     NO_MOVE_SEMANTIC(EvaluateOnCallFrameParams);
 
-    CString callFrameId_ {};
-    CString expression_ {};
-    std::optional<CString> objectGroup_ {};
-    std::optional<bool> includeCommandLineApi_ {};
+    CallFrameId callFrameId_ {};
+    std::string expression_ {};
+    std::optional<std::string> objectGroup_ {};
+    std::optional<bool> includeCommandLineAPI_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
     std::optional<bool> generatePreview_ {};
@@ -99,11 +93,7 @@ public:
     GetPossibleBreakpointsParams() = default;
     ~GetPossibleBreakpointsParams() override = default;
 
-    static std::unique_ptr<GetPossibleBreakpointsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<GetPossibleBreakpointsParams> Create(const PtJson &params);
 
     Location *GetStart() const
     {
@@ -147,11 +137,7 @@ public:
     GetScriptSourceParams() = default;
     ~GetScriptSourceParams() override = default;
 
-    static std::unique_ptr<GetScriptSourceParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<GetScriptSourceParams> Create(const PtJson &params);
 
     ScriptId GetScriptId() const
     {
@@ -162,7 +148,7 @@ private:
     NO_COPY_SEMANTIC(GetScriptSourceParams);
     NO_MOVE_SEMANTIC(GetScriptSourceParams);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
 };
 
 class RemoveBreakpointParams : public PtBaseParams {
@@ -170,11 +156,7 @@ public:
     RemoveBreakpointParams() = default;
     ~RemoveBreakpointParams() override = default;
 
-    static std::unique_ptr<RemoveBreakpointParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<RemoveBreakpointParams> Create(const PtJson &params);
 
     BreakpointId GetBreakpointId() const
     {
@@ -193,11 +175,7 @@ public:
     ResumeParams() = default;
     ~ResumeParams() override = default;
 
-    static std::unique_ptr<ResumeParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<ResumeParams> Create(const PtJson &params);
 
     bool GetTerminateOnResume() const
     {
@@ -221,13 +199,9 @@ public:
     SetAsyncCallStackDepthParams() = default;
     ~SetAsyncCallStackDepthParams() override = default;
 
-    static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const PtJson &params);
 
-    uint32_t GetMaxDepth() const
+    int32_t GetMaxDepth() const
     {
         return maxDepth_;
     }
@@ -236,20 +210,16 @@ private:
     NO_COPY_SEMANTIC(SetAsyncCallStackDepthParams);
     NO_MOVE_SEMANTIC(SetAsyncCallStackDepthParams);
 
-    uint32_t maxDepth_ {0};
+    int32_t maxDepth_ {0};
 };
 
 class SetBlackboxPatternsParams : public PtBaseParams {
 public:
     SetBlackboxPatternsParams() = default;
     ~SetBlackboxPatternsParams() override = default;
-    static std::unique_ptr<SetBlackboxPatternsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<SetBlackboxPatternsParams> Create(const PtJson &params);
 
-    CList<CString> GetPatterns() const
+    std::list<std::string> GetPatterns() const
     {
         return patterns_;
     }
@@ -258,7 +228,7 @@ private:
     NO_COPY_SEMANTIC(SetBlackboxPatternsParams);
     NO_MOVE_SEMANTIC(SetBlackboxPatternsParams);
 
-    CList<CString> patterns_ {};
+    std::list<std::string> patterns_ {};
 };
 
 class SetBreakpointByUrlParams : public PtBaseParams {
@@ -266,20 +236,17 @@ public:
     SetBreakpointByUrlParams() = default;
     ~SetBreakpointByUrlParams() override = default;
 
-    static std::unique_ptr<SetBreakpointByUrlParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<SetBreakpointByUrlParams> Create(const PtJson &params);
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
-        return url_.value_or("");
+        ASSERT(HasUrl());
+        return url_.value();
     }
 
     bool HasUrl() const
@@ -287,9 +254,10 @@ public:
         return url_.has_value();
     }
 
-    CString GetUrlRegex() const
+    const std::string &GetUrlRegex() const
     {
-        return urlRegex_.value_or("");
+        ASSERT(HasUrlRegex());
+        return urlRegex_.value();
     }
 
     bool HasUrlRegex() const
@@ -297,9 +265,10 @@ public:
         return urlRegex_.has_value();
     }
 
-    CString GetScriptHash() const
+    const std::string &GetScriptHash() const
     {
-        return scriptHash_.value_or("");
+        ASSERT(HasScriptHash());
+        return scriptHash_.value();
     }
 
     bool HasScriptHash() const
@@ -309,17 +278,18 @@ public:
 
     int32_t GetColumn() const
     {
-        return column_.value_or(0);
+        return columnNumber_.value_or(0);
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
-    CString GetCondition() const
+    const std::string &GetCondition() const
     {
-        return condition_.value_or("");
+        ASSERT(HasCondition());
+        return condition_.value();
     }
 
     bool HasCondition() const
@@ -331,12 +301,12 @@ private:
     NO_COPY_SEMANTIC(SetBreakpointByUrlParams);
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
-    size_t line_ {0};
-    std::optional<CString> url_ {};
-    std::optional<CString> urlRegex_ {};
-    std::optional<CString> scriptHash_ {};
-    std::optional<size_t> column_ {0};
-    std::optional<CString> condition_ {};
+    int32_t lineNumber_ {0};
+    std::optional<std::string> url_ {};
+    std::optional<std::string> urlRegex_ {};
+    std::optional<std::string> scriptHash_ {};
+    std::optional<int32_t> columnNumber_ {0};
+    std::optional<std::string> condition_ {};
 };
 
 enum class PauseOnExceptionsState : uint8_t { NONE, UNCAUGHT, ALL };
@@ -345,18 +315,14 @@ class SetPauseOnExceptionsParams : public PtBaseParams {
 public:
     SetPauseOnExceptionsParams() = default;
     ~SetPauseOnExceptionsParams() override = default;
-    static std::unique_ptr<SetPauseOnExceptionsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<SetPauseOnExceptionsParams> Create(const PtJson &params);
 
     PauseOnExceptionsState GetState() const
     {
         return state_;
     }
 
-    bool StoreState(const CString &state)
+    bool StoreState(const std::string &state)
     {
         if (state == "none") {
             state_ = PauseOnExceptionsState::NONE;
@@ -385,11 +351,7 @@ public:
     StepIntoParams() = default;
     ~StepIntoParams() override = default;
 
-    static std::unique_ptr<StepIntoParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<StepIntoParams> Create(const PtJson &params);
 
     bool GetBreakOnAsyncCall() const
     {
@@ -401,7 +363,7 @@ public:
         return breakOnAsyncCall_.has_value();
     }
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -419,7 +381,7 @@ private:
     NO_MOVE_SEMANTIC(StepIntoParams);
 
     std::optional<bool> breakOnAsyncCall_ {};
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class StepOverParams : public PtBaseParams {
@@ -427,13 +389,9 @@ public:
     StepOverParams() = default;
     ~StepOverParams() override = default;
 
-    static std::unique_ptr<StepOverParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<StepOverParams> Create(const PtJson &params);
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -450,7 +408,7 @@ private:
     NO_COPY_SEMANTIC(StepOverParams);
     NO_MOVE_SEMANTIC(StepOverParams);
 
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class GetPropertiesParams : public PtBaseParams {
@@ -458,11 +416,7 @@ public:
     GetPropertiesParams() = default;
     ~GetPropertiesParams() override = default;
 
-    static std::unique_ptr<GetPropertiesParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<GetPropertiesParams> Create(const PtJson &params);
 
     RemoteObjectId GetObjectId() const
     {
@@ -514,20 +468,16 @@ public:
     CallFunctionOnParams() = default;
     ~CallFunctionOnParams() override = default;
 
-    static std::unique_ptr<CallFunctionOnParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
-    {
-        return Local<ObjectRef>();
-    }
+    static std::unique_ptr<CallFunctionOnParams> Create(const PtJson &params);
 
-    CString GetFunctionDeclaration()
+    const std::string &GetFunctionDeclaration()
     {
         return functionDeclaration_;
     }
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value();
+        return objectId_.value_or(-1);
     }
 
     CallFunctionOnParams &SetObjectId(RemoteObjectId objectId)
@@ -541,7 +491,7 @@ public:
         return objectId_.has_value();
     }
 
-    const CVector<std::unique_ptr<CallArgument>> *GetArguments() const
+    const std::vector<std::unique_ptr<CallArgument>> *GetArguments() const
     {
         if (!arguments_) {
             return nullptr;
@@ -620,9 +570,10 @@ public:
         return executionContextId_.has_value();
     }
 
-    CString GetObjectGroup() const
+    const std::string &GetObjectGroup() const
     {
-        return objectGroup_.value_or("");
+        ASSERT(HasObjectGroup());
+        return objectGroup_.value();
     }
 
     bool HasObjectGroup() const
@@ -644,17 +595,248 @@ private:
     NO_COPY_SEMANTIC(CallFunctionOnParams);
     NO_MOVE_SEMANTIC(CallFunctionOnParams);
 
-    CString functionDeclaration_ {};
+    std::string functionDeclaration_ {};
     std::optional<RemoteObjectId> objectId_ {};
-    std::optional<CVector<std::unique_ptr<CallArgument>>> arguments_ {};
+    std::optional<std::vector<std::unique_ptr<CallArgument>>> arguments_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
     std::optional<bool> generatePreview_ {};
     std::optional<bool> userGesture_ {};
     std::optional<bool> awaitPromise_ {};
     std::optional<ExecutionContextId> executionContextId_ {};
-    std::optional<CString> objectGroup_ {};
+    std::optional<std::string> objectGroup_ {};
     std::optional<bool> throwOnSideEffect_ {};
 };
+
+#ifdef SUPPORT_PROFILER_CDP
+class StartSamplingParams : public PtBaseParams {
+public:
+    StartSamplingParams() = default;
+    ~StartSamplingParams() override = default;
+
+    static std::unique_ptr<StartSamplingParams> Create(const PtJson &params);
+
+    int32_t GetSamplingInterval() const
+    {
+        return samplingInterval_.value_or(32768);
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartSamplingParams);
+    NO_MOVE_SEMANTIC(StartSamplingParams);
+
+    std::optional<int32_t> samplingInterval_ {32768};
+};
+
+class StartTrackingHeapObjectsParams : public PtBaseParams {
+public:
+    StartTrackingHeapObjectsParams() = default;
+    ~StartTrackingHeapObjectsParams() override = default;
+
+    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const PtJson &params);
+
+    bool GetTrackAllocations() const
+    {
+        return trackAllocations_.value_or(false);
+    }
+
+    bool HasTrackAllocations() const
+    {
+        return trackAllocations_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartTrackingHeapObjectsParams);
+    NO_MOVE_SEMANTIC(StartTrackingHeapObjectsParams);
+
+    std::optional<bool> trackAllocations_;
+};
+
+class StopTrackingHeapObjectsParams : public PtBaseParams {
+public:
+    StopTrackingHeapObjectsParams() = default;
+    ~StopTrackingHeapObjectsParams() override = default;
+
+    static std::unique_ptr<StopTrackingHeapObjectsParams> Create(const PtJson &params);
+
+    bool GetReportProgress() const
+    {
+        return reportProgress_.value_or(false);
+    }
+
+    bool HasReportProgress() const
+    {
+        return reportProgress_.has_value();
+    }
+
+    bool GetTreatGlobalObjectsAsRoots() const
+    {
+        return treatGlobalObjectsAsRoots_.value_or(false);
+    }
+
+    bool HasTreatGlobalObjectsAsRoots() const
+    {
+        return treatGlobalObjectsAsRoots_.has_value();
+    }
+
+    bool GetCaptureNumericValue() const
+    {
+        return captureNumericValue_.value_or(false);
+    }
+
+    bool HasCaptureNumericValue() const
+    {
+        return captureNumericValue_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StopTrackingHeapObjectsParams);
+    NO_MOVE_SEMANTIC(StopTrackingHeapObjectsParams);
+
+    std::optional<bool> reportProgress_ {};
+    std::optional<bool> treatGlobalObjectsAsRoots_ {};
+    std::optional<bool> captureNumericValue_ {};
+};
+
+class AddInspectedHeapObjectParams : public PtBaseParams {
+public:
+    AddInspectedHeapObjectParams() = default;
+    ~AddInspectedHeapObjectParams() override = default;
+
+    static std::unique_ptr<AddInspectedHeapObjectParams> Create(const PtJson &params);
+
+    HeapSnapshotObjectId GetHeapObjectId() const
+    {
+        return heapObjectId_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(AddInspectedHeapObjectParams);
+    NO_MOVE_SEMANTIC(AddInspectedHeapObjectParams);
+
+    HeapSnapshotObjectId heapObjectId_ {};
+};
+
+class GetHeapObjectIdParams : public PtBaseParams {
+public:
+    GetHeapObjectIdParams() = default;
+    ~GetHeapObjectIdParams() override = default;
+
+    static std::unique_ptr<GetHeapObjectIdParams> Create(const PtJson &params);
+
+    RemoteObjectId GetObjectId() const
+    {
+        return objectId_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(GetHeapObjectIdParams);
+    NO_MOVE_SEMANTIC(GetHeapObjectIdParams);
+
+    RemoteObjectId objectId_ {};
+};
+
+class GetObjectByHeapObjectIdParams : public PtBaseParams {
+public:
+    GetObjectByHeapObjectIdParams() = default;
+    ~GetObjectByHeapObjectIdParams() override = default;
+
+    static std::unique_ptr<GetObjectByHeapObjectIdParams> Create(const PtJson &params);
+
+    HeapSnapshotObjectId GetObjectId() const
+    {
+        return objectId_;
+    }
+
+    const std::string &GetObjectGroup() const
+    {
+        ASSERT(HasObjectGroup());
+        return objectGroup_.value();
+    }
+
+    bool HasObjectGroup() const
+    {
+        return objectGroup_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(GetObjectByHeapObjectIdParams);
+    NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdParams);
+
+    HeapSnapshotObjectId objectId_ {};
+    std::optional<std::string> objectGroup_ {};
+};
+
+class StartPreciseCoverageParams : public PtBaseParams {
+public:
+    StartPreciseCoverageParams() = default;
+    ~StartPreciseCoverageParams() override = default;
+
+    static std::unique_ptr<StartPreciseCoverageParams> Create(const PtJson &params);
+
+    bool GetCallCount() const
+    {
+        return callCount_.value_or(false);
+    }
+
+    bool HasCallCount() const
+    {
+        return callCount_.has_value();
+    }
+
+    bool GetDetailed() const
+    {
+        return detailed_.value_or(false);
+    }
+
+    bool HasDetailed() const
+    {
+        return detailed_.has_value();
+    }
+
+    bool GetAllowTriggeredUpdates() const
+    {
+        return allowTriggeredUpdates_.value_or(false);
+    }
+
+    bool HasAllowTriggeredUpdates() const
+    {
+        return allowTriggeredUpdates_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartPreciseCoverageParams);
+    NO_MOVE_SEMANTIC(StartPreciseCoverageParams);
+
+    std::optional<bool> callCount_ {};
+    std::optional<bool> detailed_ {};
+    std::optional<bool> allowTriggeredUpdates_ {};
+};
+
+class SetSamplingIntervalParams : public PtBaseParams {
+public:
+    SetSamplingIntervalParams() = default;
+    ~SetSamplingIntervalParams() override = default;
+
+    static std::unique_ptr<SetSamplingIntervalParams> Create(const PtJson &params);
+
+    int32_t GetInterval() const
+    {
+        return interval_;
+    }
+
+    SetSamplingIntervalParams &SetInterval(int32_t interval)
+    {
+        interval_ = interval;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SetSamplingIntervalParams);
+    NO_MOVE_SEMANTIC(SetSamplingIntervalParams);
+
+    int32_t interval_ {0};
+};
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

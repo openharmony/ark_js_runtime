@@ -23,17 +23,13 @@
 #include "ecmascript/tooling/base/pt_script.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/mem/c_containers.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::EcmaVM;
-
 class PtBaseEvents : public PtBaseTypes {
 public:
     PtBaseEvents() = default;
     ~PtBaseEvents() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
-    virtual CString GetName() = 0;
+    virtual std::string GetName() const = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseEvents);
@@ -44,10 +40,9 @@ class BreakpointResolved final : public PtBaseEvents {
 public:
     BreakpointResolved() = default;
     ~BreakpointResolved() override = default;
-    static std::unique_ptr<BreakpointResolved> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.breakpointResolved";
     }
@@ -86,26 +81,25 @@ class Paused final : public PtBaseEvents {
 public:
     Paused() = default;
     ~Paused() override = default;
-    static std::unique_ptr<Paused> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.paused";
     }
 
-    const CVector<std::unique_ptr<CallFrame>> *GetCallFrames() const
+    const std::vector<std::unique_ptr<CallFrame>> *GetCallFrames() const
     {
         return &callFrames_;
     }
 
-    Paused &SetCallFrames(CVector<std::unique_ptr<CallFrame>> call_frames)
+    Paused &SetCallFrames(std::vector<std::unique_ptr<CallFrame>> callFrames)
     {
-        callFrames_ = std::move(call_frames);
+        callFrames_ = std::move(callFrames);
         return *this;
     }
 
-    CString GetReason() const
+    const std::string &GetReason() const
     {
         return reason_;
     }
@@ -116,7 +110,7 @@ public:
         return *this;
     }
 
-    static CString GetReasonString(PauseReason reason)
+    static std::string GetReasonString(PauseReason reason)
     {
         switch (reason) {
             case AMBIGUOUS: {
@@ -181,12 +175,12 @@ public:
         return data_.has_value();
     }
 
-    CVector<BreakpointId> GetHitBreakpoints() const
+    std::vector<BreakpointId> GetHitBreakpoints() const
     {
-        return hitBreakpoints_.value_or(CVector<BreakpointId>());
+        return hitBreakpoints_.value_or(std::vector<BreakpointId>());
     }
 
-    Paused &SetHitBreakpoints(CVector<BreakpointId> hitBreakpoints)
+    Paused &SetHitBreakpoints(std::vector<BreakpointId> hitBreakpoints)
     {
         hitBreakpoints_ = std::move(hitBreakpoints);
         return *this;
@@ -201,20 +195,19 @@ private:
     NO_COPY_SEMANTIC(Paused);
     NO_MOVE_SEMANTIC(Paused);
 
-    CVector<std::unique_ptr<CallFrame>> callFrames_ {};
-    CString reason_ {};
+    std::vector<std::unique_ptr<CallFrame>> callFrames_ {};
+    std::string reason_ {};
     std::optional<std::unique_ptr<RemoteObject>> data_ {};
-    std::optional<CVector<BreakpointId>> hitBreakpoints_ {};
+    std::optional<std::vector<BreakpointId>> hitBreakpoints_ {};
 };
 
 class Resumed final : public PtBaseEvents {
 public:
     Resumed() = default;
     ~Resumed() override = default;
-    static std::unique_ptr<Resumed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.resumed";
     }
@@ -228,10 +221,9 @@ class ScriptFailedToParse final : public PtBaseEvents {
 public:
     ScriptFailedToParse() = default;
     ~ScriptFailedToParse() override = default;
-    static std::unique_ptr<ScriptFailedToParse> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.scriptFailedToParse";
     }
@@ -241,18 +233,18 @@ public:
         return scriptId_;
     }
 
-    ScriptFailedToParse &SetScriptId(const ScriptId &scriptId)
+    ScriptFailedToParse &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptFailedToParse &SetUrl(const CString &url)
+    ScriptFailedToParse &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
@@ -313,12 +305,12 @@ public:
         return *this;
     }
 
-    CString GetHash() const
+    const std::string &GetHash() const
     {
         return hash_;
     }
 
-    ScriptFailedToParse &SetHash(const CString &hash)
+    ScriptFailedToParse &SetHash(const std::string &hash)
     {
         hash_ = hash;
         return *this;
@@ -329,7 +321,7 @@ public:
         return execContextAuxData_.value_or(Local<ObjectRef>());
     }
 
-    ScriptFailedToParse &SetExecutionContextAuxData(const Local<ObjectRef> &execContextAuxData)
+    ScriptFailedToParse &SetExecutionContextAuxData(Local<ObjectRef> execContextAuxData)
     {
         execContextAuxData_ = execContextAuxData;
         return *this;
@@ -340,18 +332,19 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    CString GetSourceMapURL() const
+    const std::string &GetSourceMapURL() const
     {
-        return sourceMapUrl_.value_or("");
+        ASSERT(HasSourceMapUrl());
+        return sourceMapUrl_.value();
     }
 
-    ScriptFailedToParse &SetSourceMapURL(const CString &sourceMapUrl)
+    ScriptFailedToParse &SetSourceMapURL(const std::string &sourceMapUrl)
     {
         sourceMapUrl_ = sourceMapUrl;
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -420,12 +413,13 @@ public:
         return codeOffset_.has_value();
     }
 
-    CString GetScriptLanguage() const
+    const std::string &GetScriptLanguage() const
     {
-        return scriptLanguage_.value_or("");
+        ASSERT(HasScriptLanguage());
+        return scriptLanguage_.value();
     }
 
-    ScriptFailedToParse &SetScriptLanguage(const CString &scriptLanguage)
+    ScriptFailedToParse &SetScriptLanguage(const std::string &scriptLanguage)
     {
         scriptLanguage_ = scriptLanguage;
         return *this;
@@ -436,12 +430,13 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    CString GetEmbedderName() const
+    const std::string &GetEmbedderName() const
     {
-        return embedderName_.value_or("");
+        ASSERT(HasEmbedderName());
+        return embedderName_.value();
     }
 
-    ScriptFailedToParse &SetEmbedderName(const CString &embedderName)
+    ScriptFailedToParse &SetEmbedderName(const std::string &embedderName)
     {
         embedderName_ = embedderName;
         return *this;
@@ -456,33 +451,31 @@ private:
     NO_COPY_SEMANTIC(ScriptFailedToParse);
     NO_MOVE_SEMANTIC(ScriptFailedToParse);
 
-    ScriptId scriptId_ {};
-    CString url_ {};
+    ScriptId scriptId_ {0};
+    std::string url_ {};
     int32_t startLine_ {0};
     int32_t startColumn_ {0};
     int32_t endLine_ {0};
     int32_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
-    CString hash_ {};
+    std::string hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};
-    std::optional<CString> sourceMapUrl_ {};
+    std::optional<std::string> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
     std::optional<int32_t> length_ {};
     std::optional<int32_t> codeOffset_ {};
-    std::optional<CString> scriptLanguage_ {};
-    std::optional<CString> embedderName_ {};
+    std::optional<std::string> scriptLanguage_ {};
+    std::optional<std::string> embedderName_ {};
 };
 
 class ScriptParsed final : public PtBaseEvents {
 public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
-    static std::unique_ptr<ScriptParsed> Create(const std::unique_ptr<PtScript> &script);
-    static std::unique_ptr<ScriptParsed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.scriptParsed";
     }
@@ -492,57 +485,57 @@ public:
         return scriptId_;
     }
 
-    ScriptParsed &SetScriptId(const ScriptId &scriptId)
+    ScriptParsed &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    CString GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptParsed &SetUrl(const CString &url)
+    ScriptParsed &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    size_t GetStartLine() const
+    int32_t GetStartLine() const
     {
         return startLine_;
     }
 
-    ScriptParsed &SetStartLine(size_t startLine)
+    ScriptParsed &SetStartLine(int32_t startLine)
     {
         startLine_ = startLine;
         return *this;
     }
 
-    size_t GetStartColumn() const
+    int32_t GetStartColumn() const
     {
         return startColumn_;
     }
 
-    ScriptParsed &SetStartColumn(size_t startColumn)
+    ScriptParsed &SetStartColumn(int32_t startColumn)
     {
         startColumn_ = startColumn;
         return *this;
     }
 
-    size_t GetEndLine() const
+    int32_t GetEndLine() const
     {
         return endLine_;
     }
 
-    ScriptParsed &SetEndLine(size_t endLine)
+    ScriptParsed &SetEndLine(int32_t endLine)
     {
         endLine_ = endLine;
         return *this;
     }
 
-    size_t GetEndColumn() const
+    int32_t GetEndColumn() const
     {
         return endColumn_;
     }
@@ -564,12 +557,12 @@ public:
         return *this;
     }
 
-    CString GetHash() const
+    const std::string &GetHash() const
     {
         return hash_;
     }
 
-    ScriptParsed &SetHash(const CString &hash)
+    ScriptParsed &SetHash(const std::string &hash)
     {
         hash_ = hash;
         return *this;
@@ -596,7 +589,7 @@ public:
         return execContextAuxData_.value_or(Local<ObjectRef>());
     }
 
-    ScriptParsed &SetExecutionContextAuxData(const Local<ObjectRef> &execContextAuxData)
+    ScriptParsed &SetExecutionContextAuxData(Local<ObjectRef> execContextAuxData)
     {
         execContextAuxData_ = execContextAuxData;
         return *this;
@@ -607,18 +600,19 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    CString GetSourceMapURL() const
+    const std::string &GetSourceMapURL() const
     {
-        return sourceMapUrl_.value_or("");
+        ASSERT(HasSourceMapUrl());
+        return sourceMapUrl_.value();
     }
 
-    ScriptParsed &SetSourceMapURL(const CString &sourceMapUrl)
+    ScriptParsed &SetSourceMapURL(const std::string &sourceMapUrl)
     {
         sourceMapUrl_ = sourceMapUrl;
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -655,12 +649,12 @@ public:
         return isModule_.has_value();
     }
 
-    uint32_t GetLength() const
+    int32_t GetLength() const
     {
         return length_.value_or(0);
     }
 
-    ScriptParsed &SetLength(uint32_t length)
+    ScriptParsed &SetLength(int32_t length)
     {
         length_ = length;
         return *this;
@@ -671,12 +665,12 @@ public:
         return length_.has_value();
     }
 
-    uint32_t GetCodeOffset() const
+    int32_t GetCodeOffset() const
     {
         return codeOffset_.value_or(0);
     }
 
-    ScriptParsed &SetCodeOffset(uint32_t codeOffset)
+    ScriptParsed &SetCodeOffset(int32_t codeOffset)
     {
         codeOffset_ = codeOffset;
         return *this;
@@ -687,12 +681,13 @@ public:
         return codeOffset_.has_value();
     }
 
-    CString GetScriptLanguage() const
+    const std::string &GetScriptLanguage() const
     {
-        return scriptLanguage_.value_or("");
+        ASSERT(HasScriptLanguage());
+        return scriptLanguage_.value();
     }
 
-    ScriptParsed &SetScriptLanguage(const CString &scriptLanguage)
+    ScriptParsed &SetScriptLanguage(const std::string &scriptLanguage)
     {
         scriptLanguage_ = scriptLanguage;
         return *this;
@@ -703,12 +698,13 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    CString GetEmbedderName() const
+    const std::string &GetEmbedderName() const
     {
-        return embedderName_.value_or("");
+        ASSERT(HasEmbedderName());
+        return embedderName_.value();
     }
 
-    ScriptParsed &SetEmbedderName(const CString &embedderName)
+    ScriptParsed &SetEmbedderName(const std::string &embedderName)
     {
         embedderName_ = embedderName;
         return *this;
@@ -723,23 +719,351 @@ private:
     NO_COPY_SEMANTIC(ScriptParsed);
     NO_MOVE_SEMANTIC(ScriptParsed);
 
-    ScriptId scriptId_ {};
-    CString url_ {};
-    size_t startLine_ {0};
-    size_t startColumn_ {0};
-    size_t endLine_ {0};
-    size_t endColumn_ {0};
+    ScriptId scriptId_ {0};
+    std::string url_ {};
+    int32_t startLine_ {0};
+    int32_t startColumn_ {0};
+    int32_t endLine_ {0};
+    int32_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
-    CString hash_ {};
+    std::string hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};
     std::optional<bool> isLiveEdit_ {};
-    std::optional<CString> sourceMapUrl_ {};
+    std::optional<std::string> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
-    std::optional<uint32_t> length_ {};
-    std::optional<uint32_t> codeOffset_ {};
-    std::optional<CString> scriptLanguage_ {};
-    std::optional<CString> embedderName_ {};
+    std::optional<int32_t> length_ {};
+    std::optional<int32_t> codeOffset_ {};
+    std::optional<std::string> scriptLanguage_ {};
+    std::optional<std::string> embedderName_ {};
 };
+
+#ifdef SUPPORT_PROFILER_CDP
+class AddHeapSnapshotChunk final : public PtBaseEvents {
+public:
+    AddHeapSnapshotChunk() = default;
+    ~AddHeapSnapshotChunk() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "HeapProfiler.addHeapSnapshotChunk";
+    }
+
+    std::string &GetChunk()
+    {
+        return chunk_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(AddHeapSnapshotChunk);
+    NO_MOVE_SEMANTIC(AddHeapSnapshotChunk);
+
+    std::string chunk_ {};
+};
+
+class ConsoleProfileFinished final : public PtBaseEvents {
+public:
+    ConsoleProfileFinished() = default;
+    ~ConsoleProfileFinished() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+    std::string GetName() const override
+    {
+        return "Profile.ConsoleProfileFinished";
+    }
+
+    const std::string &GetId() const
+    {
+        return id_;
+    }
+
+    ConsoleProfileFinished &SetId(const std::string &id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Location *GetLocation() const
+    {
+        return location_.get();
+    }
+
+    ConsoleProfileFinished &SetLocation(std::unique_ptr<Location> location)
+    {
+        location_ = std::move(location);
+        return *this;
+    }
+
+    Profile *GetProfile() const
+    {
+        return profile_.get();
+    }
+
+    ConsoleProfileFinished &SetProfile(std::unique_ptr<Profile> profile)
+    {
+        profile_ = std::move(profile);
+        return *this;
+    }
+
+    const std::string &GetTitle() const
+    {
+        ASSERT(HasTitle());
+        return title_.value();
+    }
+
+    ConsoleProfileFinished &SetTitle(const std::string &title)
+    {
+        title_ = title;
+        return *this;
+    }
+
+    bool HasTitle() const
+    {
+        return title_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(ConsoleProfileFinished);
+    NO_MOVE_SEMANTIC(ConsoleProfileFinished);
+
+    std::string id_ {};
+    std::unique_ptr<Location> location_ {nullptr};
+    std::unique_ptr<Profile> profile_ {nullptr};
+    std::optional<std::string> title_ {};
+};
+
+class ConsoleProfileStarted final : public PtBaseEvents {
+public:
+    ConsoleProfileStarted() = default;
+    ~ConsoleProfileStarted() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+    std::string GetName() const override
+    {
+        return "Profile.ConsoleProfileStarted";
+    }
+
+    const std::string &GetId() const
+    {
+        return id_;
+    }
+
+    ConsoleProfileStarted &SetId(const std::string &id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Location *GetLocation() const
+    {
+        return location_.get();
+    }
+
+    ConsoleProfileStarted &SetLocation(std::unique_ptr<Location> location)
+    {
+        location_ = std::move(location);
+        return *this;
+    }
+
+    const std::string &GetTitle() const
+    {
+        ASSERT(HasTitle());
+        return title_.value();
+    }
+
+    ConsoleProfileStarted &SetTitle(const std::string &title)
+    {
+        title_ = title;
+        return *this;
+    }
+
+    bool HasTitle() const
+    {
+        return title_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(ConsoleProfileStarted);
+    NO_MOVE_SEMANTIC(ConsoleProfileStarted);
+
+    std::string id_ {};
+    std::unique_ptr<Location> location_ {nullptr};
+    std::optional<std::string> title_ {};
+};
+
+class PreciseCoverageDeltaUpdate final : public PtBaseEvents {
+public:
+    PreciseCoverageDeltaUpdate() = default;
+    ~PreciseCoverageDeltaUpdate() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+    std::string GetName() const override
+    {
+        return "Profile.PreciseCoverageDeltaUpdate";
+    }
+
+    int64_t GetTimestamp() const
+    {
+        return timestamp_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetTimestamp(int64_t timestamp)
+    {
+        timestamp_ = timestamp;
+        return *this;
+    }
+
+    const std::string &GetOccasion() const
+    {
+        return occasion_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetOccasion(const std::string &occasion)
+    {
+        occasion_ = occasion;
+        return *this;
+    }
+
+    const std::vector<std::unique_ptr<ScriptCoverage>> *GetResult() const
+    {
+        return &result_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetResult(std::vector<std::unique_ptr<ScriptCoverage>> result)
+    {
+        result_ = std::move(result);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(PreciseCoverageDeltaUpdate);
+    NO_MOVE_SEMANTIC(PreciseCoverageDeltaUpdate);
+
+    int64_t timestamp_ {0};
+    std::string occasion_ {};
+    std::vector<std::unique_ptr<ScriptCoverage>> result_ {};
+};
+
+class HeapStatsUpdate final : public PtBaseEvents {
+public:
+    HeapStatsUpdate() = default;
+    ~HeapStatsUpdate() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "HeapProfiler.heapStatsUpdate";
+    }
+
+    const std::vector<int32_t> *GetStatsUpdate() const
+    {
+        return &statsUpdate_;
+    }
+
+    HeapStatsUpdate &SetStatsUpdate(std::vector<int32_t> statsUpdate)
+    {
+        statsUpdate_ = std::move(statsUpdate);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapStatsUpdate);
+    NO_MOVE_SEMANTIC(HeapStatsUpdate);
+
+    std::vector<int32_t> statsUpdate_ {};
+};
+
+class LastSeenObjectId final : public PtBaseEvents {
+public:
+    LastSeenObjectId() = default;
+    ~LastSeenObjectId() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "HeapProfiler.lastSeenObjectId";
+    }
+
+    int32_t GetLastSeenObjectId() const
+    {
+        return lastSeenObjectId_;
+    }
+
+    LastSeenObjectId &SetLastSeenObjectId(int32_t lastSeenObjectId)
+    {
+        lastSeenObjectId_ = lastSeenObjectId;
+        return *this;
+    }
+
+    int64_t GetTimestamp() const
+    {
+        return timestamp_;
+    }
+
+    LastSeenObjectId &SetTimestamp(int64_t timestamp)
+    {
+        timestamp_ = timestamp;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(LastSeenObjectId);
+    NO_MOVE_SEMANTIC(LastSeenObjectId);
+
+    int32_t lastSeenObjectId_ {};
+    int64_t timestamp_ {};
+};
+
+class ReportHeapSnapshotProgress final : public PtBaseEvents {
+public:
+    ReportHeapSnapshotProgress() = default;
+    ~ReportHeapSnapshotProgress() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "HeapProfiler.reportHeapSnapshotProgress";
+    }
+
+    int32_t GetDone() const
+    {
+        return done_;
+    }
+
+    ReportHeapSnapshotProgress &SetDone(int32_t done)
+    {
+        done_ = done;
+        return *this;
+    }
+
+    int32_t GetTotal() const
+    {
+        return total_;
+    }
+
+    ReportHeapSnapshotProgress &SetTotal(int32_t total)
+    {
+        total_ = total;
+        return *this;
+    }
+
+    bool GetFinished() const
+    {
+        return finished_.value_or(false);
+    }
+
+    ReportHeapSnapshotProgress &SetFinished(bool finished)
+    {
+        finished_ = finished;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ReportHeapSnapshotProgress);
+    NO_MOVE_SEMANTIC(ReportHeapSnapshotProgress);
+
+    int32_t done_ {};
+    int32_t total_ {};
+    std::optional<bool> finished_ {};
+};
+#endif
 }  // namespace panda::ecmascript::tooling
 #endif

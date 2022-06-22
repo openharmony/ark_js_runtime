@@ -15,7 +15,7 @@
 
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 
 namespace panda::ecmascript {
 JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)
@@ -36,13 +36,13 @@ JSPandaFile::~JSPandaFile()
     }
 }
 
-tooling::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
+tooling::JSPtExtractor *JSPandaFile::GetJSPtExtractor()
 {
-    if (ptJSExtractor_) {
-        return ptJSExtractor_.get();
+    if (JSPtExtractor_) {
+        return JSPtExtractor_.get();
     }
-    ptJSExtractor_ = std::make_unique<tooling::PtJSExtractor>(pf_);
-    return ptJSExtractor_.get();
+    JSPtExtractor_ = std::make_unique<tooling::JSPtExtractor>(this);
+    return JSPtExtractor_.get();
 }
 
 uint32_t JSPandaFile::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)

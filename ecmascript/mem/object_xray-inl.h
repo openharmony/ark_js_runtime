@@ -18,7 +18,7 @@
 
 #include <cstdint>
 #include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"

@@ -13,18 +13,17 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/interface/debugger_api.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
+
+#include "ecmascript/tooling/backend/debugger_api.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::InterpretedFrameHandler;
-using panda::ecmascript::JSTaggedType;
-uint32_t PtJSExtractor::SingleStepper::GetStackDepth() const
+uint32_t JSPtExtractor::SingleStepper::GetStackDepth() const
 {
     return DebuggerApi::GetStackDepth(ecmaVm_);
 }
 
-bool PtJSExtractor::SingleStepper::InStepRange(uint32_t pc) const
+bool JSPtExtractor::SingleStepper::InStepRange(uint32_t pc) const
 {
     for (const auto &range : stepRanges_) {
         if (pc >= range.startBcOffset && pc < range.endBcOffset) {
@@ -34,7 +33,7 @@ bool PtJSExtractor::SingleStepper::InStepRange(uint32_t pc) const
     return false;
 }
 
-bool PtJSExtractor::SingleStepper::StepComplete(uint32_t bcOffset) const
+bool JSPtExtractor::SingleStepper::StepComplete(uint32_t bcOffset) const
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     uint32_t stackDepth = GetStackDepth();
@@ -55,7 +54,7 @@ bool PtJSExtractor::SingleStepper::StepComplete(uint32_t bcOffset) const
             }
             break;
         }
-        case SingleStepper::Type::OUT: {
+        case Type::OUT: {
             if (stackDepth_ <= stackDepth) {
                 return false;
             }
@@ -69,26 +68,26 @@ bool PtJSExtractor::SingleStepper::StepComplete(uint32_t bcOffset) const
     return true;
 }
 
-std::unique_ptr<PtJSExtractor::SingleStepper> PtJSExtractor::GetStepIntoStepper(const EcmaVM *ecmaVm)
+std::unique_ptr<JSPtExtractor::SingleStepper> JSPtExtractor::GetStepIntoStepper(const EcmaVM *ecmaVm)
 {
     return GetStepper(ecmaVm, SingleStepper::Type::INTO);
 }
 
-std::unique_ptr<PtJSExtractor::SingleStepper> PtJSExtractor::GetStepOverStepper(const EcmaVM *ecmaVm)
+std::unique_ptr<JSPtExtractor::SingleStepper> JSPtExtractor::GetStepOverStepper(const EcmaVM *ecmaVm)
 {
     return GetStepper(ecmaVm, SingleStepper::Type::OVER);
 }
 
-std::unique_ptr<PtJSExtractor::SingleStepper> PtJSExtractor::GetStepOutStepper(const EcmaVM *ecmaVm)
+std::unique_ptr<JSPtExtractor::SingleStepper> JSPtExtractor::GetStepOutStepper(const EcmaVM *ecmaVm)
 {
     return GetStepper(ecmaVm, SingleStepper::Type::OUT);
 }
 
-CList<JSPtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint32_t offset)
+std::list<JSPtStepRange> JSPtExtractor::GetStepRanges(File::EntityId methodId, uint32_t offset)
 {
-    CList<JSPtStepRange> ranges {};
-    auto table = GetLineNumberTable(methodId);
-    auto callbackFunc = [table, &ranges](size_t line, [[maybe_unused]] size_t column) -> bool {
+    std::list<JSPtStepRange> ranges {};
+    const LineNumberTable &table = GetLineNumberTable(methodId);
+    auto callbackFunc = [table, &ranges](int32_t line) -> bool {
         for (auto it = table.begin(); it != table.end(); ++it) {
             auto next = it + 1;
             if (it->line == line) {
@@ -98,21 +97,20 @@ CList<JSPtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint3
         }
         return true;
     };
-    MatchWithOffset(callbackFunc, methodId, offset);
-
+    MatchLineWithOffset(callbackFunc, methodId, offset);
     return ranges;
 }
 
-std::unique_ptr<PtJSExtractor::SingleStepper> PtJSExtractor::GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type)
+std::unique_ptr<JSPtExtractor::SingleStepper> JSPtExtractor::GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm);
     ASSERT(method != nullptr);
 
     if (type == SingleStepper::Type::OUT) {
-        return std::make_unique<SingleStepper>(ecmaVm, method, CList<JSPtStepRange> {}, type);
+        return std::make_unique<SingleStepper>(ecmaVm, method, std::list<JSPtStepRange> {}, type);
     }
 
-    CList<JSPtStepRange> ranges = GetStepRanges(method->GetFileId(), DebuggerApi::GetBytecodeOffset(ecmaVm));
+    std::list<JSPtStepRange> ranges = GetStepRanges(method->GetMethodId(), DebuggerApi::GetBytecodeOffset(ecmaVm));
     return std::make_unique<SingleStepper>(ecmaVm, method, std::move(ranges), type);
 }
 }  // namespace panda::ecmascript::tooling

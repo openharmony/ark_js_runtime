@@ -23,40 +23,8 @@ DebugEvent TestUtil::lastEvent_ = DebugEvent::UNINITIALIZED;
 bool TestUtil::initialized_ = false;
 os::memory::Mutex TestUtil::suspendMutex_;
 os::memory::ConditionVariable TestUtil::suspendCv_;
-bool TestUtil::suspended_;
+bool TestUtil::suspended_ = false;
 JSPtLocation TestUtil::lastEventLocation_("", EntityId(0), 0);
-
-std::vector<panda_file::LocalVariableInfo> TestUtil::GetVariables(JSMethod *method, uint32_t offset)
-{
-    auto methodId = method->GetFileId();
-    auto pandaFile = method->GetPandaFile()->GetFilename().c_str();
-    PtLocation location(pandaFile, methodId, offset);
-    return GetVariables(location);
-}
-
-std::vector<panda_file::LocalVariableInfo> TestUtil::GetVariables(PtLocation location)
-{
-    std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(location.GetPandaFile());
-    const panda_file::File *pf = uFile.get();
-    if (pf == nullptr) {
-        return {};
-    }
-
-    TestExtractor extractor(pf);
-    return extractor.GetLocalVariableInfo(location.GetMethodId(), location.GetBytecodeOffset());
-}
-
-int32_t TestUtil::GetValueRegister(JSMethod *method, const char *varName)
-{
-    auto variables = TestUtil::GetVariables(method, 0);
-    for (const auto &var : variables) {
-        if (var.name == varName) {
-            return var.reg_number;
-        }
-    }
-
-    return -1;
-}
 
 std::ostream &operator<<(std::ostream &out, DebugEvent value)
 {

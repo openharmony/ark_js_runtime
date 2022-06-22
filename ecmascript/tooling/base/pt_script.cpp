@@ -14,14 +14,14 @@
  */
 
 #include "ecmascript/tooling/base/pt_script.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 
 namespace panda::ecmascript::tooling {
-PtScript::PtScript(int32_t scriptId, CString fileName, CString url, CString source)
-    : scriptId_(DebuggerApi::ToCString(scriptId)),
-      fileName_(std::move(fileName)),
-      url_(std::move(url)),
-      scriptSource_(std::move(source))
+PtScript::PtScript(ScriptId scriptId, const std::string &fileName, const std::string &url, const std::string &source)
+    : scriptId_(scriptId),
+      fileName_(fileName),
+      url_(url),
+      scriptSource_(source)
 {
     endLine_ = std::count(scriptSource_.begin(), scriptSource_.end(), '\n');
 }

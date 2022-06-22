@@ -100,7 +100,7 @@ public:
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 
-    uintptr_t *ExpandHandleStorage();
+    PUBLIC_API uintptr_t *ExpandHandleStorage();
     void ShrinkHandleStorage(int prevIndex);
 
     JSTaggedType *GetHandleScopeStorageNext() const

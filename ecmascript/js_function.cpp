@@ -145,7 +145,7 @@ JSTaggedValue JSFunction::NameGetter(JSThread *thread, const JSHandle<JSObject> 
     if (target->GetPandaFile() == nullptr) {
         return JSTaggedValue::Undefined();
     }
-    CString funcName = target->ParseFunctionName();
+    std::string funcName = target->ParseFunctionName();
     if (funcName.empty()) {
         return thread->GlobalConstants()->GetEmptyString();
     }
@@ -157,7 +157,7 @@ JSTaggedValue JSFunction::NameGetter(JSThread *thread, const JSHandle<JSObject> 
     }
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    return factory->NewFromString(funcName).GetTaggedValue();
+    return factory->NewFromStdString(funcName).GetTaggedValue();
 }
 
 bool JSFunction::OrdinaryHasInstance(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,

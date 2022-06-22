@@ -16,9 +16,9 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -134,6 +134,19 @@ namespace panda::ecmascript {
         SAVE_PC();                       \
         NotifyBytecodePcChanged(thread); \
         RESTORE_ACC();                   \
+    } while (false)
+
+/*
+ * reasons of set acc with hole:
+ * 1. acc will become illegal when new error
+ * 2. debugger logic will save acc, so illegal acc will set to frame
+ * 3. when debugger trigger gc, will mark an invalid acc and crash
+ * 4. acc will set to exception later, so it can set to hole template
+ */
+#define NOTIFY_DEBUGGER_EXCEPTION_EVENT() \
+    do {                                  \
+        SET_ACC(JSTaggedValue::Hole());   \
+        NOTIFY_DEBUGGER_EVENT();          \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

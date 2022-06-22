@@ -62,144 +62,40 @@ protected:
     JSThread *thread {nullptr};
 };
 
-HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedCreateTest)
+HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToJsonTest)
 {
-    CString msg;
-    std::unique_ptr<BreakpointResolved> breakpointResolved;
+    BreakpointResolved breakpointResolved;
 
-    //  abnormal params of null msg
-    msg = CString() + R"({})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
+    auto location = std::make_unique<Location>();
+    location->SetScriptId(2).SetLine(99);
+    breakpointResolved.SetBreakpointId("00").SetLocation(std::move(location));
 
-    // abnormal params of unexist key params
-    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(breakpointResolved.ToJson()->GetObject("params", &json), Result::SUCCESS);
+    std::string breakpointId;
+    ASSERT_EQ(json->GetString("breakpointId", &breakpointId), Result::SUCCESS);
+    EXPECT_EQ(breakpointId, "00");
 
-    // abnormal params of null params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"breakpointId":"00"}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-        {"location":{"scriptId":"id2","lineNumber":99}}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(breakpointResolved, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"breakpointId":"00",
-        "location":{"scriptId":"id2","lineNumber":99}}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(breakpointResolved, nullptr);
+    std::unique_ptr<PtJson> locationJson;
+    ASSERT_EQ(json->GetObject("location", &locationJson), Result::SUCCESS);
+    std::string scriptId;
+    ASSERT_EQ(locationJson->GetString("scriptId", &scriptId), Result::SUCCESS);
+    EXPECT_EQ(scriptId, "2");
+    int32_t lineNumber;
+    ASSERT_EQ(locationJson->GetInt("lineNumber", &lineNumber), Result::SUCCESS);
+    EXPECT_EQ(lineNumber, 99);
 }
 
-HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
-{
-    CString msg;
-    std::unique_ptr<BreakpointResolved> breakpointResolved;
-    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"breakpointId":"00",
-        "location":{"scriptId":"id2","lineNumber":99}}})";
-    breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-
-    ASSERT_NE(breakpointResolved, nullptr);
-    Local<ObjectRef> object1 = breakpointResolved->ToObject(ecmaVm);
-    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-    Local<ObjectRef> object = Local<ObjectRef>(result);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "breakpointId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
-}
-
-HWTEST_F_L0(DebuggerEventsTest, PausedCreateTest)
-{
-    CString msg;
-    std::unique_ptr<Paused> paused;
-
-    //  abnormal params of null msg
-    msg = CString() + R"({})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    // abnormal params of unexist key params
-    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    // abnormal params of null params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"reason":"exception"}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    msg = CString() +
-          R"({"id":0,"method":"Debugger.Test","params":
-          {"callFrames":[)" +
-          R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":10,"functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
-          [{"type":"global","object":{"type":")" +
-          ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
-          R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})" +
-          R"(]}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(paused, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"callFrames":[)" +
-          R"({"callFrameId":"10","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
-          [{"type":"global","object":{"type":")" +
-          ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
-          R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}})" +
-          R"(],"reason":"exception"}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(paused, nullptr);
-}
-
+#ifdef CHANGE_TOJSON
 HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 {
-    CString msg;
-    std::unique_ptr<Paused> paused;
+    Paused paused;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}],"reason":"exception"}})";
-    paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(paused, nullptr);
-
-    Local<ObjectRef> object1 = paused->ToObject(ecmaVm);
+    std::vector<std::unique_ptr<CallFrame>> v;
+    paused.SetCallFrames(std::move(v))
+        .SetReason(PauseReason::EXCEPTION);
+    Local<ObjectRef> object1 = paused.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsObject());
@@ -220,17 +116,16 @@ HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
 {
-    CString msg;
-    std::unique_ptr<Resumed> resumed = std::make_unique<Resumed>();
+    Resumed resumed;
     Local<StringRef> tmpStr;
 
-    Local<ObjectRef> object = resumed->ToObject(ecmaVm);
+    Local<ObjectRef> object = resumed.ToObject(ecmaVm);
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "method");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string(resumed->GetName().c_str()), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(resumed.GetName(), Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -239,318 +134,27 @@ HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
     ASSERT_TRUE(result->IsObject());
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
-{
-    CString msg;
-    std::unique_ptr<ScriptFailedToParse> parse;
-
-    //  abnormal params of null msg
-    msg = CString() + R"({})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of unexist key params
-    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of null params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn:"10}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js"}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00"}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001"}})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432,
-    "scriptLanguage":"JavaScript"
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]}
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/"
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1}
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001"
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432,
-    "scriptLanguage":"JavaScript",
-    "embedderName":"hh"
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-}
-
 HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
 {
-    CString msg;
-    std::unique_ptr<ScriptFailedToParse> parse;
+    ScriptFailedToParse parsed;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432,
-    "scriptLanguage":"JavaScript",
-    "embedderName":"hh"
-    }})";
-    parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    Local<ObjectRef> object1 = parse->ToObject(ecmaVm);
+    parsed.SetScriptId(100)
+        .SetUrl("use/test.js")
+        .SetStartLine(0)
+        .SetStartColumn(4)
+        .SetEndLine(10)
+        .SetEndColumn(10)
+        .SetExecutionContextId(2)
+        .SetHash("hash0001")
+        .SetSourceMapURL("usr/")
+        .SetHasSourceURL(true)
+        .SetIsModule(true)
+        .SetLength(34)
+        .SetCodeOffset(432)
+        .SetScriptLanguage("JavaScript")
+        .SetEmbedderName("hh");
+    Local<ObjectRef> object1 = parsed.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsObject());
@@ -560,7 +164,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("100", Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -605,10 +209,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
+    ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "sourceMapURL");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -653,158 +254,28 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
 }
 
-HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
-{
-    CString msg;
-    std::unique_ptr<ScriptParsed> parse;
-
-    //  abnormal params of null msg
-    msg = CString() + R"({})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of unexist key params
-    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of null params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    // abnormal params of unknown params.sub-key
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn:"10}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js"}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00"}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001"}})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    EXPECT_EQ(parse, nullptr);
-
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "isLiveEdit":true,
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432,
-    "scriptLanguage":"JavaScript",
-    "embedderName":"hh"
-    }})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-}
-
 HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
 {
-    CString msg;
-    std::unique_ptr<ScriptParsed> parse;
+    ScriptParsed parsed;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
-    "url":"use/test.js",
-    "startLine":0,
-    "startColumn":4,
-    "endLine":10,
-    "endColumn":10,
-    "executionContextId":2,
-    "hash":"hash0001",
-    "executionContextAuxData":{"a":1},
-    "isLiveEdit":true,
-    "sourceMapURL":"usr/",
-    "hasSourceURL":true,
-    "isModule":true,
-    "length":34,
-    "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}]},
-    "codeOffset":432,
-    "scriptLanguage":"JavaScript",
-    "embedderName":"hh"
-    }})";
-    parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
-    ASSERT_NE(parse, nullptr);
-
-    Local<ObjectRef> object1 = parse->ToObject(ecmaVm);
+    parsed.SetScriptId(10)
+        .SetUrl("use/test.js")
+        .SetStartLine(0)
+        .SetStartColumn(4)
+        .SetEndLine(10)
+        .SetEndColumn(10)
+        .SetExecutionContextId(2)
+        .SetHash("hash0001")
+        .SetIsLiveEdit(true)
+        .SetSourceMapURL("usr/")
+        .SetHasSourceURL(true)
+        .SetIsModule(true)
+        .SetLength(34)
+        .SetCodeOffset(432)
+        .SetScriptLanguage("JavaScript")
+        .SetEmbedderName("hh");
+    Local<ObjectRef> object1 = parsed.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsObject());
@@ -814,7 +285,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("10", Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -859,10 +330,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsObject());
+    ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "isLiveEdit");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -912,4 +380,189 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
 }
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
+{
+    ConsoleProfileFinished consoleProfileFinished;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    auto location = std::make_unique<Location>();
+    location->SetScriptId(13).SetLine(20);
+    std::vector<std::unique_ptr<ProfileNode>> v;
+    auto profile = std::make_unique<Profile>();
+    profile->SetNodes(std::move(v))
+        .SetStartTime(0)
+        .SetEndTime(15)
+        .SetSamples(std::vector<int32_t>{})
+        .SetTimeDeltas(std::vector<int32_t>{});
+    consoleProfileFinished.SetId("11").SetLocation(std::move(location)).SetProfile(std::move(profile)).SetTitle("001");
+    Local<ObjectRef> object1 = consoleProfileFinished.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(result)->ToString(), "11");
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(result)->ToString(), "001");
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
+{
+    ConsoleProfileStarted consoleProfileStarted;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    auto location = std::make_unique<Location>();
+    location->SetScriptId(17).SetLine(30);
+    consoleProfileStarted.SetId("12").SetLocation(std::move(location)).SetTitle("002");
+    Local<ObjectRef> object1 = consoleProfileStarted.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(result)->ToString(), "12");
+
+    Local<ObjectRef> tmpObject = consoleProfileStarted.GetLocation()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> tmpResult = tmpObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(tmpResult)->ToString(), "17");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
+    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
+    tmpResult = tmpObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(tmpResult)->Value(), 30);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(result)->ToString(), "002");
+}
+
+HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
+{
+    PreciseCoverageDeltaUpdate preciseCoverageDeltaUpdate;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    std::vector<std::unique_ptr<ScriptCoverage>> v;
+    preciseCoverageDeltaUpdate.SetOccasion("percise")
+        .SetResult(std::move(v))
+        .SetTimestamp(77);
+    Local<ObjectRef> object1 = preciseCoverageDeltaUpdate.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "occasion");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<StringRef>(result)->ToString(), "percise");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
+
+HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
+{
+    HeapStatsUpdate heapStatsUpdate;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    heapStatsUpdate.SetStatsUpdate(std::vector<int32_t> {});
+    Local<ObjectRef> object1 = heapStatsUpdate.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "statsUpdate");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
+
+HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToObjectTest)
+{
+    LastSeenObjectId lastSeenObjectId;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    lastSeenObjectId.SetLastSeenObjectId(10).SetTimestamp(77);
+    Local<ObjectRef> object1 = lastSeenObjectId.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToObjectTest)
+{
+    ReportHeapSnapshotProgress reportHeapSnapshotProgress;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    reportHeapSnapshotProgress.SetDone(10).SetTotal(100);
+    Local<ObjectRef> object1 = reportHeapSnapshotProgress.ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "done");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "total");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 100);
+}
+#endif
 }  // namespace panda::test

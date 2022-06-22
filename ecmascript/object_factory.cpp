@@ -21,7 +21,7 @@
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_global.h"
 #include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/free_object.h"

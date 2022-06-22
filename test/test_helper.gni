@@ -17,9 +17,9 @@ import("//build/ohos.gni")
 import("//build/test.gni")
 
 if (is_standard_system) {
-  icu_path = "i18n_standard"
+  _icu_path_ = "common/common"
 } else {
-  icu_path = "i18n"
+  _icu_path_ = "global/i18n"
 }
 
 template("host_unittest_action") {
@@ -54,7 +54,7 @@ template("host_unittest_action") {
       "--env-path",
       rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
           "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) + "/test/test:" +
-          rebase_path(_root_out_dir_) + "/global/${icu_path}:" +
+          rebase_path(_root_out_dir_) + "/${_icu_path_}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 
@@ -137,7 +137,7 @@ template("host_moduletest_action") {
       "--env-path",
       rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
           "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
-          "/global/${icu_path}:" +
+          "/${_icu_path_}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 

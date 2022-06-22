@@ -19,56 +19,42 @@
 
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/agent/runtime_impl.h"
-#include "ecmascript/tooling/front_end.h"
+#ifdef SUPPORT_PROFILER_CDP
+#include "ecmascript/tooling/agent/heapprofiler_impl.h"
+#include "ecmascript/tooling/agent/profiler_impl.h"
+#endif
+#include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
-DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) : ecmaVm_(ecmaVm)
+DispatchRequest::DispatchRequest(const std::string &message)
 {
-    Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
-    if (msgValue->IsException()) {
-        DebuggerApi::ClearException(ecmaVm);
-        LOG(ERROR, DEBUGGER) << "json parse throw exception";
-        return;
-    }
-    if (!msgValue->IsObject()) {
+    std::unique_ptr<PtJson> json = PtJson::Parse(message);
+    if (json == nullptr || !json->IsObject()) {
         code_ = RequestCode::JSON_PARSE_ERROR;
         LOG(ERROR, DEBUGGER) << "json parse error";
         return;
     }
-    ObjectRef *msgObj = ObjectRef::Cast(*msgValue);
 
-    Local<StringRef> idStr = StringRef::NewFromUtf8(ecmaVm, "id");
-    Local<JSValueRef> idResult = msgObj->Get(ecmaVm, idStr);
-    if (idResult.IsEmpty()) {
+    Result ret;
+    int32_t callId;
+    ret = json->GetInt("id", &callId);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_ID_ERROR;
         LOG(ERROR, DEBUGGER) << "parse id error";
         return;
     }
-    if (!idResult->IsNumber()) {
-        code_ = RequestCode::ID_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "id format error";
-        return;
-    }
-    callId_ = static_cast<int32_t>(Local<NumberRef>(idResult)->Value());
+    callId_ = callId;
 
-    Local<StringRef> methodStr = StringRef::NewFromUtf8(ecmaVm, "method");
-    Local<JSValueRef> methodResult = msgObj->Get(ecmaVm, methodStr);
-    if (methodResult.IsEmpty()) {
+    std::string wholeMethod;
+    ret = json->GetString("method", &wholeMethod);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_METHOD_ERROR;
         LOG(ERROR, DEBUGGER) << "parse method error";
         return;
     }
-    if (!methodResult->IsString()) {
-        code_ = RequestCode::METHOD_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "method format error";
-        return;
-    }
-    CString wholeMethod =
-        DebuggerApi::ConvertToString(StringRef::Cast(*methodResult)->ToString());
-    CString::size_type length = wholeMethod.length();
-    CString::size_type indexPoint;
-    indexPoint = wholeMethod.find_first_of('.', 0);
-    if (indexPoint == CString::npos || indexPoint == 0 || indexPoint == length - 1) {
+    std::string::size_type length = wholeMethod.length();
+    std::string::size_type indexPoint = wholeMethod.find_first_of('.', 0);
+    if (indexPoint == std::string::npos || indexPoint == 0 || indexPoint == length - 1) {
         code_ = RequestCode::METHOD_FORMAT_ERROR;
         LOG(ERROR, DEBUGGER) << "method format error: " << wholeMethod;
         return;
@@ -80,20 +66,25 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) :
     LOG(DEBUG, DEBUGGER) << "domain: " << domain_;
     LOG(DEBUG, DEBUGGER) << "method: " << method_;
 
-    Local<StringRef> paramsStr = StringRef::NewFromUtf8(ecmaVm, "params");
-    Local<JSValueRef> paramsValue = msgObj->Get(ecmaVm, paramsStr);
-    if (paramsValue.IsEmpty()) {
+    std::unique_ptr<PtJson> params;
+    ret = json->GetObject("params", &params);
+    if (ret == Result::NOT_EXIST) {
         return;
     }
-    if (!paramsValue->IsObject()) {
+    if (ret == Result::TYPE_ERROR) {
         code_ = RequestCode::PARAMS_FORMAT_ERROR;
         LOG(ERROR, DEBUGGER) << "params format error";
         return;
     }
-    params_ = paramsValue;
+    params_ = std::move(params);
 }
 
-DispatchResponse DispatchResponse::Create(ResponseCode code, const CString &msg)
+DispatchRequest::~DispatchRequest()
+{
+    params_->ReleaseRoot();
+}
+
+DispatchResponse DispatchResponse::Create(ResponseCode code, const std::string &msg)
 {
     DispatchResponse response;
     response.code_ = code;
@@ -101,7 +92,7 @@ DispatchResponse DispatchResponse::Create(ResponseCode code, const CString &msg)
     return response;
 }
 
-DispatchResponse DispatchResponse::Create(std::optional<CString> error)
+DispatchResponse DispatchResponse::Create(std::optional<std::string> error)
 {
     DispatchResponse response;
     if (error.has_value()) {
@@ -116,7 +107,7 @@ DispatchResponse DispatchResponse::Ok()
     return DispatchResponse();
 }
 
-DispatchResponse DispatchResponse::Fail(const CString &message)
+DispatchResponse DispatchResponse::Fail(const std::string &message)
 {
     DispatchResponse response;
     response.code_ = ResponseCode::NOK;
@@ -125,20 +116,32 @@ DispatchResponse DispatchResponse::Fail(const CString &message)
 }
 
 void DispatcherBase::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                                  std::unique_ptr<PtBaseReturns> result)
+                                  const PtBaseReturns &result)
 {
-    if (frontend_ != nullptr) {
-        frontend_->SendResponse(request, response, std::move(result));
+    if (channel_ != nullptr) {
+        channel_->SendResponse(request, response, result);
     }
 }
 
-Dispatcher::Dispatcher(FrontEnd *front)
+Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
 {
-    std::unique_ptr<JSBackend> backend = std::make_unique<JSBackend>(front);
+#ifdef SUPPORT_PROFILER_CDP
+    // profiler
+    auto profiler = std::make_unique<ProfilerImpl>(vm, channel);
+    auto heapProfiler = std::make_unique<HeapProfilerImpl>(vm, channel);
+    dispatchers_["Profiler"] =
+        std::make_unique<ProfilerImpl::DispatcherImpl>(channel, std::move(profiler));
+    dispatchers_["HeapProfiler"] =
+        std::make_unique<HeapProfilerImpl::DispatcherImpl>(channel, std::move(heapProfiler));
+#endif
+
+    // debugger
+    auto runtime = std::make_unique<RuntimeImpl>(vm, channel);
+    auto debugger = std::make_unique<DebuggerImpl>(vm, channel, runtime.get());
     dispatchers_["Runtime"] =
-        std::make_unique<RuntimeImpl::DispatcherImpl>(front, std::make_unique<RuntimeImpl>(backend.get()));
+        std::make_unique<RuntimeImpl::DispatcherImpl>(channel, std::move(runtime));
     dispatchers_["Debugger"] =
-        std::make_unique<DebuggerImpl::DispatcherImpl>(front, std::make_unique<DebuggerImpl>(std::move(backend)));
+        std::make_unique<DebuggerImpl::DispatcherImpl>(channel, std::move(debugger));
 }
 
 void Dispatcher::Dispatch(const DispatchRequest &request)
@@ -147,7 +150,7 @@ void Dispatcher::Dispatch(const DispatchRequest &request)
         LOG(ERROR, DEBUGGER) << "Unknown request";
         return;
     }
-    CString domain = request.GetDomain();
+    const std::string &domain = request.GetDomain();
     auto dispatcher = dispatchers_.find(domain);
     if (dispatcher != dispatchers_.end()) {
         dispatcher->second->Dispatch(request);

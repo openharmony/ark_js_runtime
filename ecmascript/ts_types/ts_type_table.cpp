@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/literal_data_extractor.h"
 #include "ecmascript/object_factory.h"
