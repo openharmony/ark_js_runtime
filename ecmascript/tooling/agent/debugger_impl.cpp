@@ -25,7 +25,7 @@
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/backend/debugger_executor.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/protocol_channel.h"
+#include "ecmascript/tooling/protocol_handler.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
@@ -232,6 +232,12 @@ void DebuggerImpl::NotifyPendingJobEntry()
         singleStepper_.reset();
         pauseOnNextByteCode_ = true;
     }
+}
+
+void DebuggerImpl::NotifyHandleProtocolCommand()
+{
+    auto *handler = vm_->GetJsDebuggerManager()->GetDebuggerHandler();
+    handler->ProcessCommand();
 }
 
 void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)

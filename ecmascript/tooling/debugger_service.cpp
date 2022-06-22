@@ -14,13 +14,14 @@
  */
 
 #include "ecmascript/tooling/debugger_service.h"
+
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/tooling/protocol_handler.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
-void InitializeDebugger(const std::function<void(const void *, const std::string &)> &onResponse,
-    ::panda::ecmascript::EcmaVM *vm)
+void InitializeDebugger(::panda::ecmascript::EcmaVM *vm,
+                        const std::function<void(const void *, const std::string &)> &onResponse)
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
@@ -37,11 +38,36 @@ void UninitializeDebugger(::panda::ecmascript::EcmaVM *vm)
     vm->GetJsDebuggerManager()->SetDebuggerHandler(nullptr);
 }
 
-void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::string &message)
+void WaitForDebugger(const ::panda::ecmascript::EcmaVM *vm)
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
-    if (handler != nullptr) {
-        handler->ProcessCommand(message);
+    if (LIKELY(handler != nullptr)) {
+        handler->WaitForDebugger();
     }
+}
+
+void DispatchMessage(const ::panda::ecmascript::EcmaVM *vm, std::string &&message)
+{
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    if (LIKELY(handler != nullptr)) {
+        handler->DispatchCommand(std::move(message));
+    }
+}
+
+void ProcessMessage(const ::panda::ecmascript::EcmaVM *vm)
+{
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    if (LIKELY(handler != nullptr)) {
+        handler->ProcessCommand();
+    }
+}
+
+int32_t GetDispatchStatus(const ::panda::ecmascript::EcmaVM *vm)
+{
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    if (LIKELY(handler != nullptr)) {
+        return handler->GetDispatchStatus();
+    }
+    return ProtocolHandler::DispatchStatus::UNKNOWN;
 }
 }  // namespace panda::ecmascript::tooling
