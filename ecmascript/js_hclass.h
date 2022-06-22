@@ -1334,8 +1334,6 @@ public:
         }
     }
 
-    JSTaggedValue GetAccessor(const JSTaggedValue &key);
-
     static constexpr size_t PROTOTYPE_OFFSET = TaggedObjectSize();
     ACCESSORS(Proto, PROTOTYPE_OFFSET, LAYOUT_OFFSET);
     ACCESSORS(Layout, LAYOUT_OFFSET, TRANSTIONS_OFFSET);
