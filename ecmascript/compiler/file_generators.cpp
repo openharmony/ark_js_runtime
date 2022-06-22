@@ -38,7 +38,6 @@ void StubFileGenerator::CollectAsmStubCodeInfo(std::map<uintptr_t, std::string> 
         auto codeBuffer = modulePackage_[0].GetCodeBuffer();
         uintptr_t entry = codeBuffer + entryOffset + codeBegin;
         addr2name[entry] = cs->GetName();
-        DisassembleEachFunc(addr2name);
     }
 }
 

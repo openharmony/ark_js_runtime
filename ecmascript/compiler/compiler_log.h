@@ -34,6 +34,11 @@ public:
         return methods_.compare("all") == 0;
     }
 
+    bool IsDisassembleEnabled() const
+    {
+        return methods_.compare("asm") == 0;
+    }
+
     bool IsAlwaysDisabled() const
     {
         return methods_.compare("none") == 0;
