@@ -287,7 +287,14 @@ JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor is false", JSTaggedValue::Exception());
     }
 
-    return JSFunction::ConstructInternal(info);
+    if (func->IsJSFunction()) {
+        return JSFunction::ConstructInternal(info);
+    } else if (func->IsJSProxy()) {
+        return JSProxy::ConstructInternal(info);
+    } else {
+        ASSERT(func->IsBoundFunction());
+        return JSBoundFunction::ConstructInternal(info);
+    }
 }
 
 JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key)

@@ -218,8 +218,8 @@ JSTaggedValue ConstructProxy(JSThread *thread, JSHandle<JSProxy> ctor, JSHandle<
     uint32_t preArgsSize = preArgs->IsUndefined() ? 0 : JSHandle<TaggedArray>::Cast(preArgs)->GetLength();
     const uint32_t size = preArgsSize + argsCount;
     JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(size);
-    JSHandle<TaggedArray> tgaPreArgs = JSHandle<TaggedArray>::Cast(preArgs);
     if (preArgsSize > 0) {
+        JSHandle<TaggedArray> tgaPreArgs = JSHandle<TaggedArray>::Cast(preArgs);
         for (uint32_t i = 0; i < preArgsSize; ++i) {
             JSTaggedValue value = tgaPreArgs->Get(i);
             args->Set(thread, i, value);

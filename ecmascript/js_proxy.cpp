@@ -731,6 +731,7 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerHandle, undefined, 1);
     info.SetCallArg(targetHandle.GetTaggedValue());
     JSTaggedValue res = JSFunction::Call(&info);
+    RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
     JSHandle<JSTaggedValue> trap_res_arr(thread, res);
 
     // 9.Let trapResult be CreateListFromArrayLike(trapResultArray, «String, Symbol»).
@@ -866,15 +867,19 @@ JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
 
     // 6.ReturnIfAbrupt(trap).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    size_t argc = info->GetArgsNumber();
+    JSHandle<JSTaggedValue> thisArg = info->GetThis();
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     // 7.If trap is undefined, then
     //   a.Return Call(target, thisArgument, argumentsList).
     if (method->IsUndefined()) {
-        info->SetFunction(target.GetTaggedValue());
-        return JSFunction::Call(info);
+        EcmaRuntimeCallInfo runtimeInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, target, thisArg, undefined, argc);
+        runtimeInfo.SetCallArg(argc, 0, info, 0);
+        return JSFunction::Call(&runtimeInfo);
     }
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    size_t argc = info->GetArgsNumber();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(static_cast<uint32_t>(argc));
     for (size_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, info->GetCallArg(index));
@@ -882,9 +887,7 @@ JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
 
     // 9.Return Call(trap, handler, «target, thisArgument, argArray»).
-    JSHandle<JSTaggedValue> thisArg = info->GetThis();
     const size_t argsLength = 3;  // 3: «target, thisArgument, argArray»
-    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     EcmaRuntimeCallInfo runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, method, handler, undefined, argsLength);
     runtimeInfo.SetCallArg(target.GetTaggedValue(), thisArg.GetTaggedValue(), arrHandle.GetTaggedValue());
