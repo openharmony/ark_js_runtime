@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JSAPISTACK_H
-#define ECMASCRIPT_JSAPISTACK_H
+#ifndef ECMASCRIPT_JS_API_STACK_H
+#define ECMASCRIPT_JS_API_STACK_H
 
 #include "js_object.h"
 #include "js_tagged_value-inl.h"
@@ -73,4 +73,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_JSAPISTACK_H
+#endif  // ECMASCRIPT_JS_API_STACK_H

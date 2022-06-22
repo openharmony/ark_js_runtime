@@ -20,6 +20,8 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightmap.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_list.h"
 #include "ecmascript/js_api_plain_array.h"
@@ -957,6 +959,8 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
             JSHandle<JSAPILinkedList> linkedList = JSHandle<JSAPILinkedList>::Cast(obj);
             return linkedList->Has(key.GetTaggedValue());
         }
+        case JSType::JS_API_LIGHT_WEIGHT_MAP:
+        case JSType::JS_API_LIGHT_WEIGHT_SET:
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
@@ -978,6 +982,13 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
     switch (jsType) {
         case JSType::JS_API_ARRAY_LIST: {
             return JSAPIArrayList::OwnKeys(thread, JSHandle<JSAPIArrayList>::Cast(obj));
+        }
+        case JSType::JS_API_LIGHT_WEIGHT_MAP: {
+            return JSHandle<TaggedArray>(thread,
+                                         JSHandle<JSAPILightWeightMap>::Cast(obj)->GetValues());
+        }
+        case JSType::JS_API_LIGHT_WEIGHT_SET: {
+            return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
         }
         case JSType::JS_API_QUEUE: {
             return JSAPIQueue::OwnKeys(thread, JSHandle<JSAPIQueue>::Cast(obj));

@@ -590,6 +590,48 @@ namespace panda::ecmascript {
     V(ArrayList, Get)                         \
     V(ArrayList, Set)                         \
     V(ArrayList, GetSize)                     \
+    V(LightWeightMap, Constructor)            \
+    V(LightWeightMap, HasAll)                 \
+    V(LightWeightMap, HasKey)                 \
+    V(LightWeightMap, HasValue)               \
+    V(LightWeightMap, IncreaseCapacityTo)     \
+    V(LightWeightMap, Entries)                \
+    V(LightWeightMap, Get)                    \
+    V(LightWeightMap, GetIndexOfKey)          \
+    V(LightWeightMap, GetIndexOfValue)        \
+    V(LightWeightMap, IsEmpty)                \
+    V(LightWeightMap, GetKeyAt)               \
+    V(LightWeightMap, Keys)                   \
+    V(LightWeightMap, SetAll)                 \
+    V(LightWeightMap, Set)                    \
+    V(LightWeightMap, Remove)                 \
+    V(LightWeightMap, RemoveAt)               \
+    V(LightWeightMap, Clear)                  \
+    V(LightWeightMap, SetValueAt)             \
+    V(LightWeightMap, ForEach)                \
+    V(LightWeightMap, ToString)               \
+    V(LightWeightMap, GetValueAt)             \
+    V(LightWeightSet, Constructor)            \
+    V(LightWeightSet, Add)                    \
+    V(LightWeightSet, AddAll)                 \
+    V(LightWeightSet, IsEmpty)                \
+    V(LightWeightSet, GetValueAt)             \
+    V(LightWeightSet, HasAll)                 \
+    V(LightWeightSet, Has)                    \
+    V(LightWeightSet, HasHash)                \
+    V(LightWeightSet, Equal)                  \
+    V(LightWeightSet, IncreaseCapacityTo)     \
+    V(LightWeightSet, GetIteratorObj)         \
+    V(LightWeightSet, Values)                 \
+    V(LightWeightSet, Entries)                \
+    V(LightWeightSet, ForEach)                \
+    V(LightWeightSet, GetIndexOf)             \
+    V(LightWeightSet, Remove)                 \
+    V(LightWeightSet, RemoveAt)               \
+    V(LightWeightSet, Clear)                  \
+    V(LightWeightSet, ToString)               \
+    V(LightWeightSet, ToArray)                \
+    V(LightWeightSet, GetSize)                \
     V(PlainArray, Constructor)                \
     V(PlainArray, Add)                        \
     V(PlainArray, Clear)                      \

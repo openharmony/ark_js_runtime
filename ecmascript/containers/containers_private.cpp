@@ -17,6 +17,8 @@
 
 #include "containers_arraylist.h"
 #include "containers_deque.h"
+#include "containers_lightweightmap.h"
+#include "containers_lightweightset.h"
 #include "containers_linked_list.h"
 #include "containers_list.h"
 #include "containers_plainarray.h"
@@ -32,6 +34,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list.h"
@@ -70,28 +76,36 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             res = InitializeContainer(thread, thisValue, InitializeArrayList, "ArrayListConstructor");
             break;
         }
-        case ContainerTag::TreeMap: {
-            res = InitializeContainer(thread, thisValue, InitializeTreeMap, "TreeMapConstructor");
+        case ContainerTag::Deque: {
+            res = InitializeContainer(thread, thisValue, InitializeDeque, "DequeConstructor");
             break;
         }
-        case ContainerTag::TreeSet: {
-            res = InitializeContainer(thread, thisValue, InitializeTreeSet, "TreeSetConstructor");
+        case ContainerTag::LightWeightMap: {
+            res = InitializeContainer(thread, thisValue, InitializeLightWeightMap, "LightWeightMapConstructor");
             break;
         }
-        case ContainerTag::Stack: {
-            res = InitializeContainer(thread, thisValue, InitializeStack, "StackConstructor");
+        case ContainerTag::LightWeightSet: {
+            res = InitializeContainer(thread, thisValue, InitializeLightWeightSet, "LightWeightSetConstructor");
+            break;
+        }
+        case ContainerTag::PlainArray: {
+            res = InitializeContainer(thread, thisValue, InitializePlainArray, "PlainArrayConstructor");
             break;
         }
         case ContainerTag::Queue: {
             res = InitializeContainer(thread, thisValue, InitializeQueue, "QueueConstructor");
             break;
         }
-        case ContainerTag::Deque: {
-            res = InitializeContainer(thread, thisValue, InitializeDeque, "DequeConstructor");
+        case ContainerTag::Stack: {
+            res = InitializeContainer(thread, thisValue, InitializeStack, "StackConstructor");
             break;
         }
-        case ContainerTag::PlainArray: {
-            res = InitializeContainer(thread, thisValue, InitializePlainArray, "PlainArrayConstructor");
+        case ContainerTag::TreeMap: {
+            res = InitializeContainer(thread, thisValue, InitializeTreeMap, "TreeMapConstructor");
+            break;
+        }
+        case ContainerTag::TreeSet: {
+            res = InitializeContainer(thread, thisValue, InitializeTreeSet, "TreeSetConstructor");
             break;
         }
         case ContainerTag::Vector: {
@@ -108,8 +122,6 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
         }
         case ContainerTag::HashMap:
         case ContainerTag::HashSet:
-        case ContainerTag::LightWeightMap:
-        case ContainerTag::LightWeightSet:
         case ContainerTag::END:
             break;
         default:
@@ -309,6 +321,141 @@ void ContainersPrivate::InitializeArrayListIterator(JSThread *thread, const JSHa
     SetStringTagSymbol(thread, env, arrayListIteratorPrototype, "ArrayList Iterator");
     globalConst->SetConstant(ConstantIndex::ARRAYLIST_ITERATOR_PROTOTYPE_INDEX,
                              arrayListIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeLightWeightMap(JSThread *thread)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> funcPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> mapFuncPrototypeValue(funcPrototype);
+    JSHandle<JSHClass> lightWeightMapInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPILightWeightMap::SIZE, JSType::JS_API_LIGHT_WEIGHT_MAP, mapFuncPrototypeValue);
+    JSHandle<JSTaggedValue> lightWeightMapFunction(NewContainerConstructor(
+        thread, funcPrototype, ContainersLightWeightMap::LightWeightMapConstructor, "LightWeightMap",
+        FuncLength::ZERO));
+    JSHandle<JSFunction>::Cast(lightWeightMapFunction)->
+                               SetFunctionPrototype(thread, lightWeightMapInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(funcPrototype), constructorKey, lightWeightMapFunction);
+
+    // LightWeightMap.prototype.add()
+    SetFrozenFunction(thread, funcPrototype, "hasAll", ContainersLightWeightMap::HasAll, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "hasKey", ContainersLightWeightMap::HasKey, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "hasValue", ContainersLightWeightMap::HasValue, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "increaseCapacityTo", ContainersLightWeightMap::IncreaseCapacityTo,
+                      FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "entries", ContainersLightWeightMap::Entries, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "get", ContainersLightWeightMap::Get, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getIndexOfKey", ContainersLightWeightMap::GetIndexOfKey, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getIndexOfValue", ContainersLightWeightMap::GetIndexOfValue,
+                      FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "isEmpty", ContainersLightWeightMap::IsEmpty, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getKeyAt", ContainersLightWeightMap::GetKeyAt, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "keys", ContainersLightWeightMap::Keys, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "setAll", ContainersLightWeightMap::SetAll, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "set", ContainersLightWeightMap::Set, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "remove", ContainersLightWeightMap::Remove, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "removeAt", ContainersLightWeightMap::RemoveAt, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "clear", ContainersLightWeightMap::Clear, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "setValueAt", ContainersLightWeightMap::SetValueAt, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "forEach", ContainersLightWeightMap::ForEach, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "toString", ContainersLightWeightMap::ToString, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getValueAt", ContainersLightWeightMap::GetValueAt, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "values", ContainersLightWeightMap::Values, FuncLength::ONE);
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersLightWeightMap::Length, "length",
+                                                        FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    SetGetter(thread, funcPrototype, lengthKey, lengthGetter);
+
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetFunctionAtSymbol(thread, env, funcPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersLightWeightMap::Entries, FuncLength::ONE);
+
+    ContainersPrivate::InitializeLightWeightMapIterator(thread);
+    return lightWeightMapFunction;
+}
+
+void ContainersPrivate::InitializeLightWeightMapIterator(JSThread *thread)
+{
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSHClass> iteratorDynclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR,
+                                                                   env->GetIteratorPrototype());
+    JSHandle<JSObject> lightWeightMapIteratorPrototype(factory->NewJSObject(iteratorDynclass));
+    SetFrozenFunction(thread, lightWeightMapIteratorPrototype, "next", JSAPILightWeightMapIterator::Next,
+                      FuncLength::ONE);
+    SetStringTagSymbol(thread, env, lightWeightMapIteratorPrototype, "LightWeightMap Iterator");
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    globalConst->SetConstant(ConstantIndex::LIGHTWEIGHTMAP_ITERATOR_PROTOTYPE_INDEX,
+                             lightWeightMapIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeLightWeightSet(JSThread *thread)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // LightWeightSet.prototype
+    JSHandle<JSObject> funcPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> funcPrototypeValue(funcPrototype);
+    // LightWeightSet.prototype_or_dynclass
+    JSHandle<JSHClass> lightweightSetInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPILightWeightSet::SIZE, JSType::JS_API_LIGHT_WEIGHT_SET, funcPrototypeValue);
+    JSHandle<JSTaggedValue> lightweightSetFunction(
+        NewContainerConstructor(thread, funcPrototype, ContainersLightWeightSet::LightWeightSetConstructor,
+                                "LightWeightSet", FuncLength::ZERO));
+    JSHandle<JSFunction>::Cast(lightweightSetFunction)->SetFunctionPrototype(thread, lightweightSetInstanceDynclass.
+                                                                             GetTaggedValue());
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(funcPrototype), constructorKey, lightweightSetFunction);
+    SetFrozenFunction(thread, funcPrototype, "add", ContainersLightWeightSet::Add, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "addAll", ContainersLightWeightSet::AddAll, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "isEmpty", ContainersLightWeightSet::IsEmpty, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getValueAt", ContainersLightWeightSet::GetValueAt, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "hasAll", ContainersLightWeightSet::HasAll, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "has", ContainersLightWeightSet::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "equal", ContainersLightWeightSet::Equal, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "increaseCapacityTo",
+                      ContainersLightWeightSet::IncreaseCapacityTo, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "forEach", ContainersLightWeightSet::ForEach, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "getIndexOf", ContainersLightWeightSet::GetIndexOf, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "remove", ContainersLightWeightSet::Remove, FuncLength::ZERO);
+    SetFrozenFunction(thread, funcPrototype, "removeAt", ContainersLightWeightSet::RemoveAt, FuncLength::ZERO);
+    SetFrozenFunction(thread, funcPrototype, "clear", ContainersLightWeightSet::Clear, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "toString", ContainersLightWeightSet::ToString, FuncLength::ZERO);
+    SetFrozenFunction(thread, funcPrototype, "toArray", ContainersLightWeightSet::ToArray, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "values", ContainersLightWeightSet::Values, FuncLength::ONE);
+    SetFrozenFunction(thread, funcPrototype, "entries", ContainersLightWeightSet::Entries, FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthGetter =
+        CreateGetter(thread, ContainersLightWeightSet::GetSize, "length", FuncLength::ZERO);
+
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    SetGetter(thread, funcPrototype, lengthKey, lengthGetter);
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetFunctionAtSymbol(thread, env, funcPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersLightWeightSet::GetIteratorObj, FuncLength::ONE);
+
+    InitializeLightWeightSetIterator(thread);
+    return lightweightSetFunction;
+}
+
+void ContainersPrivate::InitializeLightWeightSetIterator(JSThread *thread)
+{
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    JSHandle<JSHClass> iteratorDynclass = JSHandle<JSHClass>(thread, globalConst->GetHandledJSAPIIteratorFuncDynClass().
+                                                             GetObject<JSHClass>());
+    JSHandle<JSObject> lightWeightSetIteratorPrototype(factory->NewJSObject(iteratorDynclass));
+    SetFrozenFunction(
+        thread, lightWeightSetIteratorPrototype, "next", JSAPILightWeightSetIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, lightWeightSetIteratorPrototype, "LightWeightSet Iterator");
+    globalConst->SetConstant(ConstantIndex::LIGHTWEIGHTSET_ITERATOR_PROTOTYPE_INDEX,
+                             lightWeightSetIteratorPrototype.GetTaggedValue());
 }
 
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)

@@ -135,6 +135,7 @@ JSTaggedValue ContainersStack::Pop(EcmaRuntimeCallInfo *argv)
 JSTaggedValue ContainersStack::ForEach(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv != nullptr);
+    BUILTINS_API_TRACE(argv->GetThread(), Stack, ForEach);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 

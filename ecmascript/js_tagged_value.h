@@ -565,6 +565,10 @@ public:
     // non ECMA standard jsapis
     bool IsJSAPIArrayList() const;
     bool IsJSAPIArrayListIterator() const;
+    bool IsJSAPILightWeightMap() const;
+    bool IsJSAPILightWeightMapIterator() const;
+    bool IsJSAPILightWeightSet() const;
+    bool IsJSAPILightWeightSetIterator() const;
     bool IsJSAPITreeMap() const;
     bool IsJSAPITreeSet() const;
     bool IsJSAPITreeMapIterator() const;

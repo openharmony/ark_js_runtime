@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JSPLAIN_ARRAY_H
-#define ECMASCRIPT_JSPLAIN_ARRAY_H
+#ifndef ECMASCRIPT_JS_API_PLAIN_ARRAY_H
+#define ECMASCRIPT_JS_API_PLAIN_ARRAY_H
 
 #include "js_object.h"
 #include "js_tagged_value-inl.h"
@@ -79,4 +79,4 @@ private:
     }
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_JSPLAIN_ARRAY_H
+#endif  // ECMASCRIPT_JS_API_PLAIN_ARRAY_H

@@ -30,6 +30,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_lightweightmap.h"
+#include "ecmascript/js_api_lightweightmap_iterator.h"
+#include "ecmascript/js_api_lightweightset.h"
+#include "ecmascript/js_api_lightweightset_iterator.h"
 #include "ecmascript/js_api_linked_list.h"
 #include "ecmascript/js_api_linked_list_iterator.h"
 #include "ecmascript/js_api_list.h"
@@ -465,6 +469,18 @@ public:
                 break;
             case JSType::JS_API_ARRAYLIST_ITERATOR:
                 JSAPIArrayListIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIGHT_WEIGHT_MAP:
+                JSAPILightWeightMap::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIGHT_WEIGHT_MAP_ITERATOR:
+                JSAPILightWeightMapIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIGHT_WEIGHT_SET:
+                JSAPILightWeightSet::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIGHT_WEIGHT_SET_ITERATOR:
+                JSAPILightWeightSetIterator::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::TS_OBJECT_TYPE:
                 TSObjectType::Cast(object)->VisitRangeSlot(visitor);
