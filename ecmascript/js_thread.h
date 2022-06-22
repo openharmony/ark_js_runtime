@@ -449,16 +449,6 @@ public:
         return gcState_;
     }
 
-    void SetCheckAndCallEnterState(bool checkAndCallEnterState)
-    {
-        checkAndCallEnterState_ = checkAndCallEnterState;
-    }
-
-    bool GetCheckAndCallEnterState() const
-    {
-        return checkAndCallEnterState_;
-    }
-
     void EnableAsmInterpreter()
     {
         isAsmInterpreter_ = true;
@@ -501,6 +491,16 @@ public:
     }
 
     void CollectBCOffsetInfo();
+
+    void SetCheckAndCallEnterState(bool state)
+    {
+        finalizationCheckState_ = state;
+    }
+
+    bool GetCheckAndCallEnterState() const
+    {
+        return finalizationCheckState_;
+    }
 
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                  JSTaggedValue,
@@ -657,7 +657,8 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 
-    bool checkAndCallEnterState_ {false};
+    bool finalizationCheckState_ {false};
+
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };
