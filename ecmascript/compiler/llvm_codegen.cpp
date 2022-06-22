@@ -292,7 +292,7 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
                     COMPILER_LOG(INFO) << methodName.c_str() << " disassemble:";
                 }
             }
-            logFlag = log.IsAlwaysEnabled() ? true : log.IncludesMethod(methodName);
+            logFlag = log.IsDisassembleEnabled() ? true : log.IncludesMethod(methodName);
 
             size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
             if (InstSize == 0) {
