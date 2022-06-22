@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,26 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
-#define ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_method.h"
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 #include "ecmascript/tooling/interface/notification_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/js_handle.h"
-#include "ecmascript/ecma_runtime_call_info.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::CUnorderedSet;
-using panda::ecmascript::JSHandle;
-using panda::ecmascript::JSTaggedValue;
-using panda::ecmascript::EcmaEntrypoint;
-using panda::ecmascript::EcmaRuntimeCallInfo;
-
 class JSBreakpoint {
 public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
@@ -79,7 +69,7 @@ public:
 
 class JSDebugger : public JSDebugInterface, RuntimeListener {
 public:
-    JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
+    explicit JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
     {
         notificationMgr_ = ecmaVm_->GetJsDebuggerManager()->GetNotificationManager();
         notificationMgr_->AddListener(this);
@@ -102,7 +92,7 @@ public:
         hooks_ = nullptr;
     }
 
-    bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) override;
+    bool SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> condFuncRef) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
@@ -119,7 +109,6 @@ public:
         }
         hooks_->VmStart();
     }
-
     void VmDeath() override
     {
         if (hooks_ == nullptr) {
@@ -127,33 +116,21 @@ public:
         }
         hooks_->VmDeath();
     }
-
-    void Init();
+    void PendingJobEntry() override
+    {
+        if (hooks_ == nullptr) {
+            return;
+        }
+        hooks_->PendingJobEntry();
+    }
 
 private:
-    using LocalEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, InterpretedFrameHandler *, int32_t, const CString &,
-                      Local<JSValueRef>)>;
-    using LexEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, int32_t, uint32_t, const CString &, Local<JSValueRef>)>;
-    using GlobalEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, const CString &, JSTaggedValue)>;
-
-    JSMethod *FindMethod(const JSPtLocation  &location) const;
+    JSMethod *FindMethod(const JSPtLocation &location) const;
     std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     bool HandleStep(const JSMethod *method, uint32_t bcOffset);
     bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
-
-    void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
-    static JSTaggedValue Evaluate(EcmaRuntimeCallInfo *argv, LocalEvalFunc localEvalFunc,
-        LexEvalFunc lexEvalFunc, GlobalEvalFunc globalEvalFunc);
-    static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
-    static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
-    static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
-    static JSTaggedValue SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue value);
-    static bool EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex);
 
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
@@ -163,4 +140,4 @@ private:
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif  // ECMASCRIPT_TOOLING_JS_DEBUGGER_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H

@@ -41,8 +41,8 @@ public:
     static void StartRuntimeStat(EcmaVM *vm);
     static void StopRuntimeStat(EcmaVM *vm);
     static size_t GetArrayBufferSize(EcmaVM *vm);
-    static size_t GetHeapTotalSize(EcmaVM *vm);
-    static size_t GetHeapUsedSize(EcmaVM *vm);
+    static size_t GetHeapTotalSize(const EcmaVM *vm);
+    static size_t GetHeapUsedSize(const EcmaVM *vm);
 };
 }
 #endif

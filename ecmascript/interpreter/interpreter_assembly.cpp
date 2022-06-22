@@ -15,7 +15,7 @@
 
 #include "ecmascript/interpreter/interpreter_assembly.h"
 
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"

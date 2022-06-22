@@ -21,12 +21,11 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/debugger_service.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 #include "ecmascript/tooling/base/pt_script.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::tooling;
-using namespace panda::tooling;
 
 namespace panda::test {
 class DebuggerScriptTest : public testing::Test {
@@ -62,8 +61,8 @@ protected:
 HWTEST_F_L0(DebuggerScriptTest, ScriptIdTest)
 {
     std::unique_ptr<PtScript> script = std::make_unique<PtScript>(1, "name_1", "url_1", "source_1");
-    script->SetScriptId("id_100");
-    ASSERT_EQ(script->GetScriptId(), "id_100");
+    script->SetScriptId(100);
+    ASSERT_EQ(script->GetScriptId(), 100);
 }
 
 HWTEST_F_L0(DebuggerScriptTest, FileNameTest)

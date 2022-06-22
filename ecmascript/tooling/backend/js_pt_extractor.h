@@ -13,29 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_JS_EXTRACTOR_H
-#define PANDA_TOOLING_JS_EXTRACTOR_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
-#include "libpandafile/debug_info_extractor.h"
+#include "ecmascript/jspandafile/debug_info_extractor.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::CList;
-using panda::ecmascript::EcmaVM;
-using panda::ecmascript::JSMethod;
-using panda::panda_file::DebugInfoExtractor;
 using panda::panda_file::File;
 
-class PtJSExtractor : public DebugInfoExtractor {
+class JSPtExtractor : public DebugInfoExtractor {
 public:
     class SingleStepper {
     public:
         enum class Type { INTO, OVER, OUT };
-        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, CList<JSPtStepRange> stepRanges, Type type)
+        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, std::list<JSPtStepRange> stepRanges, Type type)
             : ecmaVm_(ecmaVm),
               method_(method),
               stepRanges_(std::move(stepRanges)),
@@ -55,21 +50,25 @@ public:
 
         const EcmaVM *ecmaVm_;
         JSMethod *method_;
-        CList<JSPtStepRange> stepRanges_;
+        std::list<JSPtStepRange> stepRanges_;
         uint32_t stackDepth_;
         Type type_;
     };
 
-    explicit PtJSExtractor(const File *pf) : DebugInfoExtractor(pf) {}
-    virtual ~PtJSExtractor() = default;
+    explicit JSPtExtractor(const JSPandaFile *jsPandaFile) : DebugInfoExtractor(jsPandaFile) {}
+    virtual ~JSPtExtractor() = default;
 
     template<class Callback>
-    bool MatchWithLocation(const Callback &cb, size_t line, size_t column)
+    bool MatchWithLocation(const Callback &cb, int32_t line, int32_t column)
     {
+        if (line == SPECIAL_LINE_MARK) {
+            return false;
+        }
+
         auto methods = GetMethodIdList();
         for (const auto &method : methods) {
-            auto lineTable = GetLineNumberTable(method);
-            auto columnTable = GetColumnNumberTable(method);
+            const LineNumberTable &lineTable = GetLineNumberTable(method);
+            const ColumnNumberTable &columnTable = GetColumnNumberTable(method);
             for (uint32_t i = 0; i < lineTable.size(); i++) {
                 if (lineTable[i].line != line) {
                     continue;
@@ -88,44 +87,39 @@ public:
     }
 
     template<class Callback>
-    bool MatchWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
+    bool MatchLineWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
-        auto lineTable = GetLineNumberTable(methodId);
-        auto columnTable = GetColumnNumberTable(methodId);
-        size_t line = 0;
-        size_t column = 0;
-
-        for (const auto &pair : lineTable) {
-            if (offset < pair.offset) {
-                break;
-            } else if (offset == pair.offset) {
-                line = pair.line;
-                break;
-            }
-            line = pair.line;
+        int32_t line = 0;
+        const LineNumberTable &lineTable = GetLineNumberTable(methodId);
+        auto iter = std::upper_bound(lineTable.begin(), lineTable.end(), LineTableEntry {offset, 0});
+        if (iter != lineTable.begin()) {
+            line = (iter - 1)->line;
         }
-
-        for (const auto &pair : columnTable) {
-            if (offset < pair.offset) {
-                break;
-            } else if (offset == pair.offset) {
-                column = pair.column;
-                break;
-            }
-            column = pair.column;
-        }
-        return cb(line, column);
+        return cb(line);
     }
 
+    template<class Callback>
+    bool MatchColumnWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
+    {
+        int32_t column = 0;
+        const ColumnNumberTable &columnTable = GetColumnNumberTable(methodId);
+        auto iter = std::upper_bound(columnTable.begin(), columnTable.end(), ColumnTableEntry {offset, 0});
+        if (iter != columnTable.begin()) {
+            column = (iter - 1)->column;
+        }
+        return cb(column);
+    }
     std::unique_ptr<SingleStepper> GetStepIntoStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOverStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOutStepper(const EcmaVM *ecmaVm);
 
+    constexpr static int32_t SPECIAL_LINE_MARK = -1;
+
 private:
-    NO_COPY_SEMANTIC(PtJSExtractor);
-    NO_MOVE_SEMANTIC(PtJSExtractor);
-    CList<JSPtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
+    NO_COPY_SEMANTIC(JSPtExtractor);
+    NO_MOVE_SEMANTIC(JSPtExtractor);
+    std::list<JSPtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
     std::unique_ptr<SingleStepper> GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type);
 };
 }  // namespace panda::ecmascript::tooling
-#endif
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H

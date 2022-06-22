@@ -13,29 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_AGENT_JS_PT_HOOKS_H
-#define ECMASCRIPT_TOOLING_AGENT_JS_PT_HOOKS_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_PT_HOOKS_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_PT_HOOKS_H
 
 #include "libpandabase/macros.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/base/pt_script.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 
 namespace panda::ecmascript::tooling {
-class JSBackend;
+class DebuggerImpl;
 
 class JSPtHooks : public PtHooks {
 public:
-    explicit JSPtHooks(JSBackend *backend) : backend_(backend) {}
+    explicit JSPtHooks(DebuggerImpl *debugger) : debugger_(debugger) {}
     ~JSPtHooks() override = default;
 
     void Breakpoint(const JSPtLocation &location) override;
     void LoadModule(std::string_view pandaFileName) override;
-    void Paused(PauseReason reason) override;
     void Exception(const JSPtLocation &location) override;
     bool SingleStep(const JSPtLocation &location) override;
-
+    void PendingJobEntry() override;
     void VmStart() override {}
     void VmDeath() override {}
 
@@ -43,8 +42,8 @@ private:
     NO_COPY_SEMANTIC(JSPtHooks);
     NO_MOVE_SEMANTIC(JSPtHooks);
 
-    JSBackend *backend_{nullptr};
+    DebuggerImpl *debugger_ {nullptr};
     bool firstTime_ {true};
 };
 }  // namespace panda::ecmascript::tooling
-#endif
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_PT_HOOKS_H

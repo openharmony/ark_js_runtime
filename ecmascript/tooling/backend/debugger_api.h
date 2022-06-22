@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,17 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
-#define ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H
+#define ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H
 
 #include <functional>
 
 #include "ecmascript/common.h"
-#include "ecmascript/mem/c_string.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/scope_info_extractor.h"
 #include "ecmascript/lexical_env.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 
 namespace panda {
 namespace ecmascript {
@@ -31,10 +30,9 @@ class InterpretedFrameHandler;
 class EcmaVM;
 class JSMethod;
 class JSThread;
-
 namespace tooling {
 class JSDebugger;
-}  // tooling
+}
 }  // ecmascript
 }  // panda
 
@@ -47,35 +45,33 @@ enum StackState {
 
 class PUBLIC_API DebuggerApi {
 public:
-    // CString
-    static uint64_t CStringToULL(const CString &str);
-    static CString ToCString(int32_t number);
-    static CString ConvertToString(const std::string &str);
-
     // InterpretedFrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
     static std::shared_ptr<InterpretedFrameHandler> NewFrameHandler(const EcmaVM *ecmaVm);
     static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
-    static void SetClosureVariables(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler,
-        Local<ObjectRef> &localObj);
-    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, size_t index);
-    static void SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value);
     static uint32_t GetBytecodeOffset(const InterpretedFrameHandler *frameHandler);
     static JSMethod *GetMethod(const InterpretedFrameHandler *frameHandler);
     static JSTaggedValue GetEnv(const InterpretedFrameHandler *frameHandler);
     static JSTaggedType *GetSp(const InterpretedFrameHandler *frameHandler);
+    static int32_t GetVregIndex(const InterpretedFrameHandler *frameHandler, std::string_view name);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
-        const InterpretedFrameHandler *frameHandler, size_t index);
+                                          const InterpretedFrameHandler *frameHandler, size_t index);
+    static void SetVRegValue(InterpretedFrameHandler *frameHandler, size_t index, Local<JSValueRef> value);
+
+    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler,
+                                           int32_t level, uint32_t slot);
+    static void SetProperties(const EcmaVM *vm, const InterpretedFrameHandler *frameHandler,
+                              int32_t level, uint32_t slot, Local<JSValueRef> value);
+    static std::pair<int32_t, uint32_t> GetLevelSlot(const InterpretedFrameHandler *frameHandler, std::string_view name);
+    static Local<JSValueRef> GetGlobalValue(const EcmaVM *vm, Local<StringRef> name);
+    static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 
     // JSThread
     static Local<JSValueRef> GetAndClearException(const EcmaVM *ecmaVm);
     static void SetException(const EcmaVM *ecmaVm, Local<JSValueRef> exception);
     static void ClearException(const EcmaVM *ecmaVm);
-
-    // EcmaVM
-    static const panda_file::File *FindPandaFile(const EcmaVM *ecmaVm, const CString &fileName);
 
     // NumberHelper
     static double StringToDouble(const uint8_t *start, const uint8_t *end, uint8_t radix);
@@ -85,26 +81,16 @@ public:
     static void DestroyJSDebugger(JSDebugger *debugger);
     static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
     static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
-        const Local<FunctionRef> &condFuncRef);
+        Local<FunctionRef> condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
-
-    // JSMehthod
-    static CString ParseFunctionName(const JSMethod *method);
-
-    // ScopeInfo
-    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot);
-    static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
-    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
-    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
-    static void InitJSDebugger(JSDebugger *debugger);
-    static bool HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
-    static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size);
-    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
+    static void HandleUncaughtException(const EcmaVM *ecmaVm, std::string &message);
+    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, Local<FunctionRef> funcRef,
         std::shared_ptr<InterpretedFrameHandler> &frameHandler);
+    static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size);
 
-private:
-    static JSTaggedValue GetCurrentEvaluateEnv(const EcmaVM *ecmaVm);
+    // JSMethod
+    static std::string ParseFunctionName(const JSMethod *method);
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif  // ECMASCRIPT_TOOLING_DEBUGGER_API_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H

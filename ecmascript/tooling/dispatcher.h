@@ -19,16 +19,13 @@
 #include <map>
 #include <memory>
 
-#include "libpandabase/macros.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/c_string.h"
-#include "include/tooling/debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
+#include "ecmascript/tooling/base/pt_returns.h"
+#include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
-using panda::ecmascript::CMap;
-using panda::ecmascript::CString;
-class FrontEnd;
+class ProtocolChannel;
 class PtBaseReturns;
 class PtBaseEvents;
 
@@ -50,7 +47,8 @@ enum class ResponseCode : uint8_t { OK, NOK };
 
 class DispatchRequest {
 public:
-    explicit DispatchRequest(const EcmaVM *ecmaVm, const CString &message);
+    explicit DispatchRequest(const std::string &message);
+    ~DispatchRequest();
 
     bool IsValid() const
     {
@@ -60,33 +58,26 @@ public:
     {
         return callId_;
     }
-    Local<JSValueRef> GetParams() const
+    const PtJson &GetParams() const
     {
-        return params_;
+        return *params_;
     }
-    CString GetDomain() const
+    const std::string &GetDomain() const
     {
         return domain_;
     }
-    CString GetMethod() const
+    const std::string &GetMethod() const
     {
         return method_;
     }
-    const EcmaVM *GetEcmaVM() const
-    {
-        return ecmaVm_;
-    }
-
-    ~DispatchRequest() = default;
 
 private:
-    const EcmaVM *ecmaVm_ {nullptr};
-    int32_t callId_ {-1};
-    CString domain_ {};
-    CString method_ {};
-    Local<JSValueRef> params_ {};
+    int32_t callId_ = -1;
+    std::string domain_ {};
+    std::string method_ {};
+    std::unique_ptr<PtJson> params_ = std::make_unique<PtJson>();
     RequestCode code_ {RequestCode::OK};
-    CString errorMsg_ {};
+    std::string errorMsg_ {};
 };
 
 class DispatchResponse {
@@ -101,15 +92,15 @@ public:
         return code_;
     }
 
-    CString GetMessage() const
+    const std::string &GetMessage() const
     {
         return errorMsg_;
     }
 
-    static DispatchResponse Create(ResponseCode code, const CString &msg = "");
-    static DispatchResponse Create(std::optional<CString> error);
+    static DispatchResponse Create(ResponseCode code, const std::string &msg = "");
+    static DispatchResponse Create(std::optional<std::string> error);
     static DispatchResponse Ok();
-    static DispatchResponse Fail(const CString &message);
+    static DispatchResponse Fail(const std::string &message);
 
     ~DispatchResponse() = default;
 
@@ -117,24 +108,24 @@ private:
     DispatchResponse() = default;
 
     ResponseCode code_ {ResponseCode::OK};
-    CString errorMsg_ {};
+    std::string errorMsg_ {};
 };
 
 class DispatcherBase {
 public:
-    explicit DispatcherBase(FrontEnd *frontend) : frontend_(frontend) {}
+    explicit DispatcherBase(ProtocolChannel *channel) : channel_(channel) {}
     virtual ~DispatcherBase()
     {
-        frontend_ = nullptr;
+        channel_ = nullptr;
     };
     virtual void Dispatch(const DispatchRequest &request) = 0;
 
 protected:
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                      std::unique_ptr<PtBaseReturns> result);
+                      const PtBaseReturns &result = PtBaseReturns());
 
 private:
-    FrontEnd *frontend_ {nullptr};
+    ProtocolChannel *channel_ {nullptr};
 
     NO_COPY_SEMANTIC(DispatcherBase);
     NO_MOVE_SEMANTIC(DispatcherBase);
@@ -142,12 +133,12 @@ private:
 
 class Dispatcher {
 public:
-    explicit Dispatcher(FrontEnd *front);
+    explicit Dispatcher(const EcmaVM *vm, ProtocolChannel *channel);
     ~Dispatcher() = default;
     void Dispatch(const DispatchRequest &request);
 
 private:
-    CMap<CString, std::unique_ptr<DispatcherBase>> dispatchers_ {};
+    std::unordered_map<std::string, std::unique_ptr<DispatcherBase>> dispatchers_ {};
 
     NO_COPY_SEMANTIC(Dispatcher);
     NO_MOVE_SEMANTIC(Dispatcher);

@@ -16,21 +16,23 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H
 
-#include "ecmascript/tooling/agent/js_pt_hooks.h"
-#include "ecmascript/tooling/agent/js_backend.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
+#include "ecmascript/tooling/backend/js_pt_hooks.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::ecmascript::tooling::test {
 class TestHooks : public PtHooks {
 public:
-    TestHooks(const char *testName, const EcmaVM *vm)
+    TestHooks(const std::string &testName, const EcmaVM *vm) : vm_(vm)
     {
-        backend_ = std::make_unique<JSBackend>(vm);
+        runtime_ = std::make_unique<RuntimeImpl>(vm, nullptr);
+        debugger_ = std::make_unique<DebuggerImpl>(vm, nullptr, runtime_.get());
         testName_ = testName;
         test_ = TestUtil::GetTest(testName);
-        test_->backend_ = backend_.get();
-        test_->debugInterface_ = backend_->GetDebugger();
-        debugInterface_ = backend_->GetDebugger();
+        test_->vm_ = vm;
+        test_->debugger_ = debugger_.get();
+        test_->debugInterface_ = debugger_->jsDebugger_;
+        debugInterface_ = debugger_->jsDebugger_;
         TestUtil::Reset();
         debugInterface_->RegisterHooks(this);
     }
@@ -56,26 +58,20 @@ public:
         }
     }
 
-    void Paused(PauseReason reason) override
-    {
-        if (test_->paused) {
-            test_->paused(reason);
-        }
-    };
-
     void Exception(const JSPtLocation &location) override
     {
         if (test_->exception) {
-            Local<JSValueRef> exception = DebuggerApi::GetAndClearException(backend_->GetEcmaVm());
+            Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
+
             test_->exception(location);
 
             if (!exception->IsHole()) {
-                DebuggerApi::SetException(backend_->GetEcmaVm(), exception);
+                DebuggerApi::SetException(vm_, exception);
             }
         }
     }
 
-    bool SingleStep(const JSPtLocation  &location) override
+    bool SingleStep(const JSPtLocation &location) override
     {
         if (test_->singleStep) {
             return test_->singleStep(location);
@@ -96,11 +92,14 @@ public:
         if (test_->vmStart) {
             test_->vmStart();
         }
+        TestUtil::Event(DebugEvent::VM_START);
     }
+
+    void PendingJobEntry() override {}
 
     void TerminateTest()
     {
-        debugInterface_->RegisterHooks(nullptr);
+        debugInterface_->UnregisterHooks();
         if (TestUtil::IsTestFinished()) {
             return;
         }
@@ -110,9 +109,11 @@ public:
     ~TestHooks() = default;
 
 private:
-    std::unique_ptr<JSBackend> backend_ {nullptr};
+    const EcmaVM *vm_ {nullptr};
+    std::unique_ptr<RuntimeImpl> runtime_ {nullptr};
+    std::unique_ptr<DebuggerImpl> debugger_ {nullptr};
     JSDebugger *debugInterface_;
-    const char *testName_;
+    std::string testName_;
     TestEvents *test_;
 };
 }  // namespace panda::ecmascript::tooling::test

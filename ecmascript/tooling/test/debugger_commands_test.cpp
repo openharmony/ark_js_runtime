@@ -21,11 +21,10 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/debugger_service.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::tooling;
-using namespace panda::tooling;
 
 namespace panda::test {
 class DebuggerCommandsTest : public testing::Test {

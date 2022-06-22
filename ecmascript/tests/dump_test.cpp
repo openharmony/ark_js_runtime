@@ -15,7 +15,7 @@
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_dictionary-inl.h"

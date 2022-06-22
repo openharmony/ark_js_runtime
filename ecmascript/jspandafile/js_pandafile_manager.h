@@ -19,7 +19,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
 
@@ -32,8 +32,14 @@ class EcmaVm;
 namespace ecmascript {
 class Program;
 
-class JSPandaFileManager {
+class PUBLIC_API JSPandaFileManager {
 public:
+    static JSPandaFileManager *GetInstance()
+    {
+        static JSPandaFileManager jsFileManager;
+        return &jsFileManager;
+    }
+
     JSPandaFileManager() = default;
     ~JSPandaFileManager();
 
@@ -47,7 +53,7 @@ public:
 
     const JSPandaFile *CreateJSPandaFile(const panda_file::File *pf, const CString &desc);
 
-    tooling::PtJSExtractor *GetOrCreatePtJSExtractor(const panda_file::File *pf);
+    tooling::JSPtExtractor *GetJSPtExtractor(const JSPandaFile *pf);
 
     static void RemoveJSPandaFile(void *pointer, void *data);
 

@@ -16,8 +16,9 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 #include "ecmascript/tooling/test/utils/test_events.h"
 #include "ecmascript/tooling/test/utils/test_extractor.h"
 #include "os/mutex.h"
@@ -25,30 +26,22 @@
 namespace panda::ecmascript::tooling::test {
 template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = panda::ecmascript::CUnorderedMap<Key, T, Hash, KeyEqual>;
-using TestMap = CUnorderedMap<panda_file::SourceLang, CUnorderedMap<const char *, std::unique_ptr<TestEvents>>>;
+using TestMap = CUnorderedMap<std::string, std::unique_ptr<TestEvents>>;
 
 class TestUtil {
 public:
-    static void RegisterTest(panda_file::SourceLang language, const char *testName, std::unique_ptr<TestEvents> test)
+    static void RegisterTest(const std::string &testName, std::unique_ptr<TestEvents> test)
     {
-        auto it = testMap_.find(language);
-        if (it == testMap_.end()) {
-            CUnorderedMap<const char *, std::unique_ptr<TestEvents>> entry;
-            auto res = testMap_.emplace(language, std::move(entry));
-            it = res.first;
-        }
-        it->second.insert({testName, std::move(test)});
+        testMap_.insert({testName, std::move(test)});
     }
 
-    static TestEvents *GetTest(const char *name)
+    static TestEvents *GetTest(const std::string &name)
     {
-        for (auto it = testMap_.begin(); it != testMap_.end(); ++it) {
-            auto &internalMap = it->second;
-            auto internalIt = std::find_if(internalMap.begin(), internalMap.end(),
-                                           [name](auto &it) { return !::strcmp(it.first, name); });
-            if (internalIt != internalMap.end()) {
-                return internalIt->second.get();
-            }
+        auto iter = std::find_if(testMap_.begin(), testMap_.end(), [&name](auto &it) {
+            return it.first == name;
+        });
+        if (iter != testMap_.end()) {
+            return iter->second.get();
         }
         LOG(FATAL, DEBUGGER) << "Test " << name << " not found";
         return nullptr;
@@ -81,7 +74,7 @@ public:
 
     static bool WaitForInit()
     {
-        return WaitForEvent(DebugEvent::VM_INITIALIZATION,
+        return WaitForEvent(DebugEvent::VM_START,
             []() REQUIRES(eventMutex_) {
                 return initialized_;
             }, [] {});
@@ -93,7 +86,7 @@ public:
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
         lastEventLocation_ = location;
-        if (event == DebugEvent::VM_INITIALIZATION) {
+        if (event == DebugEvent::VM_START) {
             initialized_ = true;
         }
         eventCv_.Signal();
@@ -119,49 +112,36 @@ public:
 
     static JSPtLocation GetLocation(const char *sourceFile, int32_t line, int32_t column, const char *pandaFile)
     {
-        std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
-        const panda_file::File *pf = uFile.get();
-        if (pf == nullptr) {
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->LoadPfAbc(pandaFile);
+        if (jsPandaFile == nullptr) {
             return JSPtLocation("", EntityId(0), 0);
         }
-        TestExtractor extractor(pf);
+        TestExtractor extractor(jsPandaFile);
         auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line, column});
-        return JSPtLocation("", EntityId(0), 0);
+        return JSPtLocation(pandaFile, id, offset);
     }
 
     static SourceLocation GetSourceLocation(const JSPtLocation &location, const char *pandaFile)
     {
-        std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
-        const panda_file::File *pf = uFile.get();
-        if (pf == nullptr) {
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->LoadPfAbc(pandaFile);
+        if (jsPandaFile == nullptr) {
             return SourceLocation();
         }
-        TestExtractor extractor(pf);
+        TestExtractor extractor(jsPandaFile);
         return extractor.GetSourceLocation(location.GetMethodId(), location.GetBytecodeOffset());
     }
 
-    static std::vector<panda_file::LocalVariableInfo> GetVariables(JSMethod *method, uint32_t offset);
-
-    static std::vector<panda_file::LocalVariableInfo> GetVariables(PtLocation location);
-
-    static int32_t GetValueRegister(JSMethod *method, const char *varName);
-
     static bool SuspendUntilContinue(DebugEvent reason, JSPtLocation location)
     {
-        {
-            os::memory::LockHolder lock(suspendMutex_);
-            suspended_ = true;
-        }
+        os::memory::LockHolder lock(suspendMutex_);
+        suspended_ = true;
 
         // Notify the debugger thread about the suspend event
         Event(reason, location);
 
         // Wait for continue
-        {
-            os::memory::LockHolder lock(suspendMutex_);
-            while (suspended_) {
-                suspendCv_.Wait(&suspendMutex_);
-            }
+        while (suspended_) {
+            suspendCv_.Wait(&suspendMutex_);
         }
 
         return true;
@@ -184,7 +164,7 @@ private:
             if (lastEvent_ == DebugEvent::VM_DEATH) {
                 return false;
             }
-            constexpr uint64_t TIMEOUT_MSEC = 100000U;
+            constexpr uint64_t TIMEOUT_MSEC = 10000U;
             bool timeExceeded = eventCv_.TimedWait(&eventMutex_, TIMEOUT_MSEC);
             if (timeExceeded) {
                 LOG(FATAL, DEBUGGER) << "Time limit exceeded while waiting " << event;
@@ -199,7 +179,7 @@ private:
     static os::memory::Mutex eventMutex_;
     static os::memory::ConditionVariable eventCv_ GUARDED_BY(eventMutex_);
     static DebugEvent lastEvent_ GUARDED_BY(eventMutex_);
-    static JSPtLocation  lastEventLocation_ GUARDED_BY(eventMutex_);
+    static JSPtLocation lastEventLocation_ GUARDED_BY(eventMutex_);
     static os::memory::Mutex suspendMutex_;
     static os::memory::ConditionVariable suspendCv_ GUARDED_BY(suspendMutex_);
     static bool suspended_ GUARDED_BY(suspendMutex_);

@@ -19,7 +19,9 @@
 #include <climits>
 #include <csignal>
 #include <fstream>
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/platform/platform.h"
+
 namespace panda::ecmascript {
 CMap<JSMethod *, struct StackInfo> CpuProfiler::staticStackInfo_ = CMap<JSMethod *, struct StackInfo>();
 std::atomic<CpuProfiler*> CpuProfiler::singleton_ = nullptr;
@@ -189,25 +191,25 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
 void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, InterpretedFrameHandler frameHandler)
 {
     struct StackInfo codeEntry;
-    auto ecmaVm = thread->GetEcmaVM();
     if (method != nullptr && method->IsNative()) {
         codeEntry.codeType = "other";
         codeEntry.functionName = "native";
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
     } else {
         codeEntry.codeType = "JS";
-        const CString &functionName = method->ParseFunctionName();
+        const std::string &functionName = method->ParseFunctionName();
         if (functionName.empty()) {
             codeEntry.functionName = "anonymous";
         } else {
             codeEntry.functionName = functionName.c_str();
         }
         // source file
-        tooling::PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
+        tooling::JSPtExtractor *debugExtractor =
+            JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
         if (method == nullptr) {
             return;
         }
-        const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
+        const std::string &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
         if (sourceFile.empty()) {
             codeEntry.url = "";
         } else {
@@ -221,15 +223,25 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
             }
         }
         // line number
-        int lineNumber = 0;
-        auto callbackFunc = [&](size_t line, [[maybe_unused]] size_t column) -> bool {
+        int32_t lineNumber = 0;
+        int32_t columnNumber = 0;
+        auto callbackLineFunc = [&](int32_t line) -> bool {
             lineNumber = line + 1;
             return true;
         };
-        if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+        auto callbackColumnFunc = [&](int32_t column) -> bool {
+            columnNumber = column + 1;
+            return true;
+        };
+        panda_file::File::EntityId methodId = method->GetFileId();
+        uint32_t offset = frameHandler.GetBytecodeOffset();
+        if (!debugExtractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+            !debugExtractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
             codeEntry.lineNumber = 0;
+            codeEntry.columnNumber = 0;
         } else {
             codeEntry.lineNumber = lineNumber;
+            codeEntry.columnNumber = columnNumber;
         }
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
     }

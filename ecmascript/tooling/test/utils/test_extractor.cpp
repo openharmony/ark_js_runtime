@@ -39,29 +39,19 @@ std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLo
     return {retId, retOffset};
 }
 
-std::vector<panda_file::LocalVariableInfo> TestExtractor::GetLocalVariableInfo(EntityId methodId, size_t offset)
-{
-    const std::vector<panda_file::LocalVariableInfo> &variables = GetLocalVariableTable(methodId);
-    std::vector<panda_file::LocalVariableInfo> result;
-
-    for (const auto &variable : variables) {
-        if (variable.start_offset <= offset && offset <= variable.end_offset) {
-            result.push_back(variable);
-        }
-    }
-    return result;
-}
-
 SourceLocation TestExtractor::GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset)
 {
     SourceLocation location {GetSourceFile(methodId), 0, 0};
-    auto callbackFunc = [&location](size_t line, size_t column) -> bool {
+    auto callbackLineFunc = [&location](int32_t line) -> bool {
         location.line = line;
+        return true;
+    };
+    auto callbackColumnFunc = [&location](int32_t column) -> bool {
         location.column = column;
         return true;
     };
-    MatchWithOffset(callbackFunc, methodId, bytecodeOffset);
-
+    MatchLineWithOffset(callbackLineFunc, methodId, bytecodeOffset);
+    MatchColumnWithOffset(callbackColumnFunc, methodId, bytecodeOffset);
     return location;
 }
 }  // namespace  panda::ecmascript::tooling::test

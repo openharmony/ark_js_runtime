@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 
 namespace panda::ecmascript {
 static const size_t MALLOC_SIZE_LIMIT = 2147483648; // Max internal memory used by the VM declared in options
@@ -153,15 +153,12 @@ void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
     delete jsPandaFile;
 }
 
-tooling::PtJSExtractor *JSPandaFileManager::GetOrCreatePtJSExtractor(const panda_file::File *pf)
+tooling::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *pf)
 {
-    os::memory::LockHolder lock(jsPandaFileLock_);
-    const JSPandaFile *existJSPandaFile = GetJSPandaFile(pf);
-    if (existJSPandaFile == nullptr) {
-        LOG_ECMA(FATAL) << "can not get PtJSExtrjsPandaFile from unknown jsPandaFile";
+    if (pf == nullptr) {
         return nullptr;
     }
-    return const_cast<JSPandaFile *>(existJSPandaFile)->GetOrCreatePtJSExtractor();
+    return const_cast<JSPandaFile *>(pf)->GetJSPtExtractor();
 }
 
 const JSPandaFile *JSPandaFileManager::CreateJSPandaFile(const panda_file::File *pf, const CString &desc)

@@ -15,17 +15,10 @@
 
 #include "ecmascript/tooling/protocol_handler.h"
 
-#include "ecmascript/base/string_helper.h"
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "utils/logger.h"
 
 namespace panda::ecmascript::tooling {
-ProtocolHandler::ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
-    : callback_(std::move(callback)), vm_(vm)
-{
-    dispatcher_ = std::make_unique<Dispatcher>(this);
-}
-
 void ProtocolHandler::WaitForDebugger()
 {
     waitingForDebugger_ = true;
@@ -40,77 +33,57 @@ void ProtocolHandler::RunIfWaitingForDebugger()
     waitingForDebugger_ = false;
 }
 
-void ProtocolHandler::ProcessCommand(const CString &msg)
+void ProtocolHandler::ProcessCommand(const std::string &msg)
 {
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
     [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
-    dispatcher_->Dispatch(DispatchRequest(vm_, msg));
-    DebuggerApi::ClearException(vm_);
-    if (!exception->IsHole()) {
-        DebuggerApi::SetException(vm_, exception);
-    }
-    CString startDebugging("Runtime.runIfWaitingForDebugger");
-    if (msg.find(startDebugging, 0) != CString::npos) {
-        waitingForDebugger_ = false;
-    }
+    dispatcher_.Dispatch(DispatchRequest(msg));
+    DebuggerApi::SetException(vm_, exception);
 }
 
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-    std::unique_ptr<PtBaseReturns> result)
+    const PtBaseReturns &result)
 {
     LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
-    const EcmaVM *ecmaVm = request.GetEcmaVM();
 
-    Local<ObjectRef> reply = PtBaseTypes::NewObject(ecmaVm);
-    reply->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "id"), IntegerRef::New(ecmaVm, request.GetCallId()));
-    Local<ObjectRef> resultObj;
-    if (response.IsOk() && result != nullptr) {
-        resultObj = result->ToObject(ecmaVm);
+    std::unique_ptr<PtJson> reply = PtJson::CreateObject();
+    reply->Add("id", request.GetCallId());
+    std::unique_ptr<PtJson> resultObj;
+    if (response.IsOk()) {
+        resultObj = result.ToJson();
     } else {
-        resultObj = CreateErrorReply(ecmaVm, response);
+        resultObj = CreateErrorReply(response);
     }
-    reply->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "result"), Local<JSValueRef>(resultObj));
-    SendReply(ecmaVm, reply);
+    reply->Add("result", resultObj);
+    SendReply(*reply);
 }
 
-void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
+void ProtocolHandler::SendNotification(const PtBaseEvents &events)
 {
-    if (!ecmaVm->GetJsDebuggerManager()->IsDebugMode() || events == nullptr) {
-        return;
-    }
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
-    SendReply(ecmaVm, events->ToObject(ecmaVm));
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events.GetName();
+    SendReply(*events.ToJson());
 }
 
-void ProtocolHandler::SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply)
+void ProtocolHandler::SendReply(const PtJson &reply)
 {
-    Local<JSValueRef> str = JSON::Stringify(ecmaVm, reply);
-    if (str->IsException()) {
-        DebuggerApi::ClearException(ecmaVm);
-        LOG(ERROR, DEBUGGER) << "json stringifier throw exception";
-        return;
-    }
-    if (!str->IsString()) {
+    std::string str = reply.Stringify();
+    if (str.empty()) {
         LOG(ERROR, DEBUGGER) << "ProtocolHandler::SendReply: json stringify error";
         return;
     }
 
-    callback_(StringRef::Cast(*str)->ToString());
+    callback_(str);
 }
 
-Local<ObjectRef> ProtocolHandler::CreateErrorReply(const EcmaVM *ecmaVm, const DispatchResponse &response)
+std::unique_ptr<PtJson> ProtocolHandler::CreateErrorReply(const DispatchResponse &response)
 {
-    Local<ObjectRef> result = PtBaseTypes::NewObject(ecmaVm);
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     if (!response.IsOk()) {
-        result->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "code")),
-            IntegerRef::New(ecmaVm, static_cast<int32_t>(response.GetError())));
-        result->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "message")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, response.GetMessage().c_str())));
+        result->Add("code", static_cast<int32_t>(response.GetError()));
+        result->Add("message", response.GetMessage().c_str());
     }
 
     return result;

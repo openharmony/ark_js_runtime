@@ -16,9 +16,11 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
 
+#include "ecmascript/ecma_vm.h"
+
 namespace panda::ecmascript::tooling::test {
-int StartDebuggerImpl();
-int StopDebuggerImpl();
+bool StartDebuggerImpl(const std::string &name, EcmaVM *vm, bool isDebugMode);
+bool StopDebuggerImpl(const std::string &name);
 }  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H

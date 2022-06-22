@@ -28,7 +28,7 @@ class JsDebuggerManager {
 public:
     using LibraryHandle = os::library_loader::LibraryHandle;
     using ObjectUpdaterFunc =
-        std::function<void(const InterpretedFrameHandler *, const CString &, const Local<JSValueRef> &)>;
+        std::function<void(const InterpretedFrameHandler *, std::string_view, Local<JSValueRef>)>;
 
     JsDebuggerManager() = default;
     ~JsDebuggerManager()
@@ -94,7 +94,7 @@ public:
         updaterFunc_ = updaterFunc;
     }
 
-    void NotifyLocalScopeUpdated(const CString &varName, const Local<JSValueRef> &value)
+    void NotifyLocalScopeUpdated(std::string_view varName, Local<JSValueRef> value)
     {
         if (updaterFunc_ != nullptr) {
             (*updaterFunc_)(frameHandler_.get(), varName, value);

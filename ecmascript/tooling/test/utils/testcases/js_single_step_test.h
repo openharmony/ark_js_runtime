@@ -41,9 +41,9 @@ public:
                     return true;
                 }
                 flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
-                auto error = debugInterface_->SetBreakpoint(locationEnd_, condFuncRef);
-                ASSERT_FALSE(error);
+                auto condFuncRef = FunctionRef::Undefined(vm_);
+                auto ret = debugInterface_->SetBreakpoint(locationEnd_, condFuncRef);
+                ASSERT_TRUE(ret);
             }
             return true;
         };
@@ -77,14 +77,14 @@ public:
         };
     }
 
-    std::pair<CString, CString> GetEntryPoint() override
+    std::pair<std::string, std::string> GetEntryPoint() override
     {
         return {pandaFile_, entryPoint_};
     }
 
 private:
-    CString pandaFile_ = "/data/test/Sample.abc";
-    CString entryPoint_ = "_GLOBAL::func_main_0";
+    std::string pandaFile_ = DEBUGGER_ABC_DIR "Sample.abc";
+    std::string entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation locationStart_ {nullptr, JSPtLocation::EntityId(0), 0};
     JSPtLocation locationEnd_ {nullptr, JSPtLocation::EntityId(0), 0};
     JSPtLocation locationStep_ {nullptr, JSPtLocation::EntityId(0), 0};

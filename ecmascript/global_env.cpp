@@ -16,7 +16,7 @@
 #include "ecmascript/global_env.h"
 #include "ecma_module.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
