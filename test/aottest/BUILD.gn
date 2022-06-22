@@ -23,6 +23,7 @@ group("ark_aot_test") {
     "createobjectwithbuffer:createobjectwithbufferAotAction",
     "createregexpwithliteral:createregexpwithliteralAotAction",
     "dec:decAotAction",
+    "defineclasswithbuffer:defineclasswithbufferAotAction",
 
     # "definefunc:definefuncAotAction",
     # "definemethod:definemethodAotAction",
