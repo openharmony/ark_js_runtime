@@ -1220,7 +1220,7 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
     uint8_t opcode = currentPc[0];
     asmDispatchTable[opcode](thread, currentPc, sp, constpool, profileTypeInfo, acc, hotnessCounter.GetInt());
     sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
-    return JSTaggedValue(reinterpret_cast<uintptr_t>(sp)).GetRawData();
+    return JSTaggedValue(reinterpret_cast<uint64_t>(sp)).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(NotifyBytecodePcChanged)
