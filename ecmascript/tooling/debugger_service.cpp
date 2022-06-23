@@ -19,7 +19,8 @@
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
-void InitializeDebugger(const std::function<void(const std::string &)> &onResponse, ::panda::ecmascript::EcmaVM *vm)
+void InitializeDebugger(const std::function<void(const void *, const std::string &)> &onResponse,
+    ::panda::ecmascript::EcmaVM *vm)
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {

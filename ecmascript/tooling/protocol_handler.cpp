@@ -74,7 +74,7 @@ void ProtocolHandler::SendReply(const PtJson &reply)
         return;
     }
 
-    callback_(str);
+    callback_(reinterpret_cast<const void *>(vm_), str);
 }
 
 std::unique_ptr<PtJson> ProtocolHandler::CreateErrorReply(const DispatchResponse &response)
