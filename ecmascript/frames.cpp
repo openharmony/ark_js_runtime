@@ -222,7 +222,7 @@ ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
     }
 }
 
-ARK_INLINE JSTaggedType* OptimizedJSFunctionFrame::GetArgv(const FrameIterator &it)
+ARK_INLINE JSTaggedType* OptimizedJSFunctionFrame::GetArgv(const FrameIterator &it) const
 {
     auto thread = it.GetThread();
     ASSERT(thread != nullptr);

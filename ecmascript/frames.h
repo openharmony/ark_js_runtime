@@ -375,18 +375,18 @@ public:
     {
         return prevFp;
     }
-    uintptr_t* ComputePrevFrameSp(const JSTaggedType *sp, int delta)
+    uintptr_t* ComputePrevFrameSp(const JSTaggedType *sp, int delta) const
     {
         uintptr_t *preFrameSp = reinterpret_cast<uintptr_t *>(const_cast<JSTaggedType *>(sp))
             + delta / sizeof(uintptr_t);
         return preFrameSp;
     }
-    JSTaggedType* GetArgv(uintptr_t *preFrameSp)
+    JSTaggedType* GetArgv(uintptr_t *preFrameSp) const
     {
         return reinterpret_cast<JSTaggedType *>(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
     }
 
-    JSTaggedType* GetArgv(const FrameIterator &it);
+    JSTaggedType* GetArgv(const FrameIterator &it) const;
 
     uintptr_t GetReturnAddr() const
     {
