@@ -25,6 +25,12 @@
 #include "libpandafile/bytecode_instruction-inl.h"
 
 namespace panda::ecmascript {
+FrameHandler::FrameHandler(const JSThread *thread)
+    : sp_(const_cast<JSTaggedType *>(thread->GetCurrentFrame())), thread_(thread)
+{
+    stackmapParser_ = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser();
+    AdvanceToInterpretedFrame();
+}
 ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
 {
     if (!thread_->IsAsmInterpreter()) {
@@ -414,7 +420,7 @@ void FrameHandler::CollectBCOffsetInfo()
             case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME:
             case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
                 auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
-                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
+                auto constInfo = stackmapParser_->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
                     auto name = GetAotExceptionFuncName(frame->GetArgv(it));
                     thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
