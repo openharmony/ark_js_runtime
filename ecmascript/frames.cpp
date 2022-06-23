@@ -199,7 +199,7 @@ bool FrameIterator::CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<Derive
                                    uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     return stackmapParser_->CollectGCSlots(optimizedReturnAddr_, reinterpret_cast<uintptr_t>(current_),
-                                   baseSet, data, isVerifying, optimizedCallSiteSp_);
+                                           baseSet, data, isVerifying, optimizedCallSiteSp_);
 }
 
 ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
