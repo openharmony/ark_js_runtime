@@ -82,12 +82,6 @@ public:
     static void JSCallWithArgV(ExtendedAssembler *assembler);
 
 private:
-    static void PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister, Register argcRegister,
-        Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister,
-        Register fpRegister, Register callFieldRegister);
-    static void PushArgsSlowPath(ExtendedAssembler *assembler, Register glueRegister,
-        Register declaredNumArgsRegister, Register argcRegister, Register argvRegister, Register callTargetRegister,
-        Register methodRegister, Register prevSpRegister, Register callFieldRegister);
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSpRegister, Register fpRegister,
         Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister);
     static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register prevSpRegister,
@@ -111,6 +105,7 @@ private:
     static void StackOverflowCheck(ExtendedAssembler *assembler);
     static void PushCallThis(ExtendedAssembler *assembler, JSCallMode mode);
     static Register GetThisRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
+    static Register GetNewTargetRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
     static void PushVregs(ExtendedAssembler *assembler);
     static void DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister);
     static void CallNativeEntry(ExtendedAssembler *assemblSer);
