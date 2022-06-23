@@ -382,6 +382,9 @@ public:
     {
         return reinterpret_cast<JSTaggedType *>(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
     }
+
+    JSTaggedType* GetArgv(const FrameIterator &it);
+
     uintptr_t GetReturnAddr() const
     {
         return returnAddr;
