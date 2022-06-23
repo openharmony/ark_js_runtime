@@ -73,6 +73,16 @@ public:
         }
     }
 
+    void SetAllBits(size_t bitSize)
+    {
+        GCBitsetWord *words = Words();
+        uint32_t wordCount = static_cast<uint32_t>(WordCount(bitSize));
+        GCBitsetWord mask = 0;
+        for (uint32_t i = 0; i < wordCount; i++) {
+            words[i] = ~mask;
+        }
+    }
+
     template <AccessType mode = AccessType::NON_ATOMIC>
     bool SetBit(uintptr_t offset);
 

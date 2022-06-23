@@ -35,6 +35,7 @@ enum MemSpaceType {
     SNAPSHOT_SPACE,
     COMPRESS_SPACE,
     LOCAL_SPACE,
+    READ_ONLY_SPACE,
     SPACE_TYPE_LAST,  // Count of different types
 
     FREE_LIST_NUM = MACHINE_CODE_SPACE - OLD_SPACE + 1,
@@ -57,6 +58,8 @@ static inline std::string ToSpaceTypeName(MemSpaceType type)
             return "snapshot space";
         case COMPRESS_SPACE:
             return "compress space";
+        case READ_ONLY_SPACE:
+            return "read only space";
         default:
             return "unknown space";
     }

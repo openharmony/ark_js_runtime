@@ -64,6 +64,8 @@ void Heap::Initialize()
     inactiveSemiSpace_ = new SemiSpace(this, minSemiSpaceCapacity, maxSemiSpaceCapacity);
     // not set up from space
 
+    size_t readOnlySpaceCpacity = config.GetDefaultReadOnlySpaceSize();
+    readOnlySpace_ = new ReadOnlySpace(this, readOnlySpaceCpacity, readOnlySpaceCpacity);
     size_t nonmovableSpaceCapacity = config.GetDefaultNonMovableSpaceSize();
     if (ecmaVm_->GetJSOptions().WasSetMaxNonmovableSpaceCapacity()) {
         nonmovableSpaceCapacity = ecmaVm_->GetJSOptions().MaxNonmovableSpaceCapacity();
@@ -130,6 +132,10 @@ void Heap::Initialize()
 void Heap::Destroy()
 {
     Prepare();
+    if (workManager_ != nullptr) {
+        delete workManager_;
+        workManager_ = nullptr;
+    }
     if (activeSemiSpace_ != nullptr) {
         activeSemiSpace_->Destroy();
         delete activeSemiSpace_;
@@ -170,9 +176,12 @@ void Heap::Destroy()
         delete hugeObjectSpace_;
         hugeObjectSpace_ = nullptr;
     }
-    if (workManager_ != nullptr) {
-        delete workManager_;
-        workManager_ = nullptr;
+
+    if (readOnlySpace_ != nullptr) {
+        readOnlySpace_->ClearReadOnly();
+        readOnlySpace_->Destroy();
+        delete readOnlySpace_;
+        readOnlySpace_ = nullptr;
     }
     if (stwYoungGC_ != nullptr) {
         delete stwYoungGC_;
@@ -257,6 +266,11 @@ void Heap::Resume(TriggerGCType gcType)
     } else {
         ReclaimRegions(gcType);
     }
+}
+
+void Heap::CompactHeapBeforeFork()
+{
+    fullGC_->RunPhasesForAppSpawn();
 }
 
 TriggerGCType Heap::SelectGCType() const

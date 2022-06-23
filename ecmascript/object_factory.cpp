@@ -252,6 +252,17 @@ JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t siz
     return JSHandle<JSHClass>(thread_, newClass);
 }
 
+JSHandle<JSHClass> ObjectFactory::NewEcmaReadOnlyDynClass(JSHClass *hclass, uint32_t size, JSType type,
+                                                          uint32_t inlinedProps)
+{
+    NewObjectHook();
+    uint32_t classSize = JSHClass::SIZE;
+    auto *newClass = static_cast<JSHClass *>(heap_->AllocateReadOnlyOrHugeObject(hclass, classSize));
+    newClass->Initialize(thread_, size, type, inlinedProps);
+
+    return JSHandle<JSHClass>(thread_, newClass);
+}
+
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type, uint32_t inlinedProps)
 {
     return NewEcmaDynClass(JSHClass::Cast(thread_->GlobalConstants()->GetHClassClass().GetTaggedObject()),
@@ -1936,7 +1947,7 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
 JSHandle<TaggedArray> ObjectFactory::NewEmptyArray()
 {
     NewObjectHook();
-    auto header = heap_->AllocateNonMovableOrHugeObject(
+    auto header = heap_->AllocateReadOnlyOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), TaggedArray::SIZE);
     JSHandle<TaggedArray> array(thread_, header);
     array->SetLength(0);

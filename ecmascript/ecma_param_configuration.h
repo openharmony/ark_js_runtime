@@ -46,6 +46,7 @@ public:
         if (maxHeapSize_ < MEDIUM_MEMORY) { // 64_MB ~ 128_MB
             minSemiSpaceSize_ = 2_MB;
             maxSemiSpaceSize_ = 4_MB;
+            defaultReadOnlySpaceSize_ = 256_KB;
             defaultNonMovableSpaceSize_ = 2_MB;
             defaultSnapshotSpaceSize_ = 512_KB;
             defaultMachineCodeSpaceSize_ = 2_MB;
@@ -57,6 +58,7 @@ public:
         } else if (maxHeapSize_ < HIGH_MEMORY) { // 128_MB ~ 256_MB
             minSemiSpaceSize_ = 2_MB;
             maxSemiSpaceSize_ = 8_MB;
+            defaultReadOnlySpaceSize_ = 256_KB;
             defaultNonMovableSpaceSize_ = 4_MB;
             defaultSnapshotSpaceSize_ = 512_KB;
             defaultMachineCodeSpaceSize_ = 2_MB;
@@ -68,6 +70,7 @@ public:
         }  else { // 256_MB
             minSemiSpaceSize_ = 2_MB;
             maxSemiSpaceSize_ = 16_MB;
+            defaultReadOnlySpaceSize_ = 256_KB;
             defaultNonMovableSpaceSize_ = 4_MB;
             defaultSnapshotSpaceSize_ = 4_MB;
             defaultMachineCodeSpaceSize_ = 8_MB;
@@ -96,6 +99,11 @@ public:
         return maxSemiSpaceSize_;
     }
 
+    size_t GetDefaultReadOnlySpaceSize() const
+    {
+        return defaultReadOnlySpaceSize_;
+    }
+        
     size_t GetDefaultNonMovableSpaceSize() const
     {
         return defaultNonMovableSpaceSize_;
@@ -149,6 +157,7 @@ private:
     size_t maxHeapSize_ {0};
     size_t minSemiSpaceSize_ {0};
     size_t maxSemiSpaceSize_ {0};
+    size_t defaultReadOnlySpaceSize_ {0};
     size_t defaultNonMovableSpaceSize_ {0};
     size_t defaultSnapshotSpaceSize_ {0};
     size_t defaultMachineCodeSpaceSize_ {0};

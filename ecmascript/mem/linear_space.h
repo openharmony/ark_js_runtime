@@ -107,5 +107,29 @@ public:
 private:
     size_t liveObjectSize_ {0};
 };
+
+class ReadOnlySpace : public LinearSpace {
+public:
+    explicit ReadOnlySpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity);
+    ~ReadOnlySpace() override = default;
+    void SetReadOnly()
+    {
+        auto cb = [](Region *region) {
+            region->SetReadOnlyAndMarked();
+        };
+        EnumerateRegions(cb);
+    }
+
+    void ClearReadOnly()
+    {
+        auto cb = [](Region *region) {
+            region->ClearReadOnly();
+        };
+        EnumerateRegions(cb);
+    }
+
+    NO_COPY_SEMANTIC(ReadOnlySpace);
+    NO_MOVE_SEMANTIC(ReadOnlySpace);
+};
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_LINEAR_SPACE_H
