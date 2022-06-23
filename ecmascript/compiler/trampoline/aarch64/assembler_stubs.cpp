@@ -452,9 +452,10 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
     Register jstype(X3, W);
     __ And(jstype, bitfield, LogicalImmediate::Create(0xFF, RegWSize));
     // 4 : 4 means JSType::JS_FUNCTION_BEGIN
-    __ Sub(jstype, jstype, Immediate(4));
+    __ Sub(jstype, jstype, Immediate(static_cast<int>(JSType::JS_FUNCTION_BEGIN)));
     // 9 : 9 means JSType::JS_FUNCTION_END - JSType::JS_FUNCTION_BEGIN + 1
-    __ Cmp(jstype, Immediate(9));
+    __ Cmp(jstype, Immediate(static_cast<int>(JSType::JS_FUNCTION_END)
+         - static_cast<int>(JSType::JS_FUNCTION_BEGIN) + 1));
     __ B(Condition::HS, &notJSFunction);
 
     Register method(X2);
@@ -526,7 +527,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         Register fp(X29);
         __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
         __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        Register argVEnd(X4);
+        Register argVEnd(X6);
         __ Add(argVEnd, fp, Immediate(GetStackArgOffSetToFp(0)));
         __ Ldr(actualArgC, MemoryOperand(argVEnd, 0));
         // callee save

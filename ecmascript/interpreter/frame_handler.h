@@ -27,14 +27,13 @@ namespace panda {
 namespace ecmascript {
 class JSThread;
 class ConstantPool;
+namespace kungfu {
+    class LLVMStackMapParser;
+};
 
 class FrameHandler {
 public:
-    explicit FrameHandler(const JSThread *thread)
-        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentFrame())), thread_(thread)
-    {
-        AdvanceToInterpretedFrame();
-    }
+    explicit FrameHandler(const JSThread *thread);
     ~FrameHandler() = default;
 
     DEFAULT_COPY_SEMANTIC(FrameHandler);
@@ -189,6 +188,7 @@ private:
     JSTaggedType *sp_ {nullptr};
     JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};
+    const kungfu::LLVMStackMapParser *stackmapParser_ {nullptr};
 };
 
 class StackAssertScope {

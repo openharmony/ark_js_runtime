@@ -25,6 +25,12 @@
 #include "libpandafile/bytecode_instruction-inl.h"
 
 namespace panda::ecmascript {
+FrameHandler::FrameHandler(const JSThread *thread)
+    : sp_(const_cast<JSTaggedType *>(thread->GetCurrentFrame())), thread_(thread)
+{
+    stackmapParser_ = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser();
+    AdvanceToInterpretedFrame();
+}
 ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
 {
     if (!thread_->IsAsmInterpreter()) {
@@ -390,10 +396,9 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
     }
 }
 
-std::string FrameHandler::GetAotExceptionFuncName(JSTaggedType* fp) const
+std::string FrameHandler::GetAotExceptionFuncName(JSTaggedType* argv) const
 {
-    ASSERT(FrameHandler::GetFrameType(fp) == FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
-    JSTaggedValue func = JSTaggedValue(*(fp + 3)); // 3: skip returnaddr and argc
+    JSTaggedValue func = JSTaggedValue(*(argv)); // 3: skip returnaddr and argc
     JSMethod *method = JSFunction::Cast(func.GetTaggedObject())->GetMethod();
     return method->GetMethodName();
 }
@@ -402,30 +407,30 @@ void FrameHandler::CollectBCOffsetInfo()
 {
     thread_->GetEcmaVM()->ClearExceptionBCList();
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
-    for (FrameIterator it(current, thread_); !it.Done(); it.Advance()) {
+    FrameIterator it(current, thread_);
+    ASSERT(it.GetFrameType() == FrameType::LEAVE_FRAME);
+    auto leaveFrame = it.GetFrame<OptimizedLeaveFrame>();
+    auto returnAddr = leaveFrame->GetReturnAddr();
+    // skip native function, need to fixit later.
+    it.Advance();
+
+    for (; !it.Done(); it.Advance()) {
         FrameType type = it.GetFrameType();
         switch (type) {
             case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME:
             case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
                 auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
-                auto returnAddr = frame->GetReturnAddr();
-                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
+                auto constInfo = stackmapParser_->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
-                    auto prevFp = frame->GetPrevFrameFp();
-                    auto name = GetAotExceptionFuncName(prevFp);
+                    auto name = GetAotExceptionFuncName(frame->GetArgv(it));
                     thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
                 }
+                returnAddr = frame->GetReturnAddr();
                 break;
             }
             case FrameType::LEAVE_FRAME: {
                 auto frame = it.GetFrame<OptimizedLeaveFrame>();
-                auto returnAddr = frame->GetReturnAddr();
-                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
-                if (!constInfo.empty()) {
-                    auto prevFp = frame->GetPrevFrameFp();
-                    auto name = GetAotExceptionFuncName(prevFp);
-                    thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
-                }
+                returnAddr = frame->GetReturnAddr();
                 break;
             }
             case FrameType::OPTIMIZED_ENTRY_FRAME:
