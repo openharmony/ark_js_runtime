@@ -992,8 +992,8 @@ public:
     {
         return thread_;
     }
-    bool CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, 
-                        uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
+    bool CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
+                        bool isVerifying) const;
 private:
     JSTaggedType *current_ {nullptr};
     const JSThread *thread_ {nullptr};
