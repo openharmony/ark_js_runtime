@@ -213,13 +213,13 @@ public:
 
     void PUBLIC_API CalculateFuncFpDelta(Func2FpDelta info);
     int PUBLIC_API GetFuncFpDelta(uintptr_t callsitePc) const;
-    ConstInfo GetConstInfo(uintptr_t callsite)
+    ConstInfo GetConstInfo(uintptr_t callsite) const
     {
         // next optimization can be performed via sorted/map to accelerate the search
         for (auto &pc2ConstInfo : pc2ConstInfoVec_) {
             auto it = pc2ConstInfo.find(callsite);
             if (it != pc2ConstInfo.end()) {
-                return pc2ConstInfo[callsite];
+                return pc2ConstInfo.at(callsite);
             }
         }
         return {};

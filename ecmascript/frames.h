@@ -239,6 +239,9 @@ namespace panda::ecmascript {
 class JSThread;
 class EcmaVM;
 class FrameIterator;
+namespace kungfu {
+    class LLVMStackMapParser;
+};
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
@@ -942,9 +945,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
 
 class FrameIterator {
 public:
-    explicit FrameIterator(JSTaggedType *sp, const JSThread *thread = nullptr) : current_(sp), thread_(thread)
-    {
-    }
+    explicit FrameIterator(JSTaggedType *sp, const JSThread *thread = nullptr);
     FrameType GetFrameType() const
     {
         ASSERT(current_ != nullptr);
@@ -991,9 +992,12 @@ public:
     {
         return thread_;
     }
+    bool CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, 
+                        uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
 private:
     JSTaggedType *current_ {nullptr};
     const JSThread *thread_ {nullptr};
+    const kungfu::LLVMStackMapParser *stackmapParser_ {nullptr};
     uintptr_t optimizedCallSiteSp_ {0};
     uintptr_t optimizedReturnAddr_ {0};
 };

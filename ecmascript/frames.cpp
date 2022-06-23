@@ -30,6 +30,13 @@ JSTaggedType *OptimizedLeaveFrame::GetJsFuncFrameArgv(JSThread *thread) const
     return argv;
 }
 
+FrameIterator::FrameIterator(JSTaggedType *sp, const JSThread *thread) : current_(sp), thread_(thread)
+{
+    if (thread != nullptr) {
+        stackmapParser_ = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser();
+    }
+}
+
 void FrameIterator::Advance()
 {
     ASSERT(!Done());
@@ -188,6 +195,13 @@ uintptr_t FrameIterator::GetPrevFrameCallSiteSp(uintptr_t curPc) const
     }
 }
 
+bool FrameIterator::CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey,
+                                   uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
+{
+    return stackmapParser_->CollectGCSlots(optimizedReturnAddr_, reinterpret_cast<uintptr_t>(current_),
+                                   baseSet, data, isVerifying, optimizedCallSiteSp_);
+}
+
 ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
     const RootVisitor &v0,
     [[maybe_unused]] const RootRangeVisitor &v1,
@@ -195,11 +209,7 @@ ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
     bool isVerifying) const
 {
     std::set<uintptr_t> slotAddrs;
-    const JSThread *thread = it.GetThread();
-    ASSERT(thread != nullptr);
-    bool ret = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
-        it.GetOptimizedReturnAddr(), reinterpret_cast<uintptr_t>(it.GetSp()), slotAddrs, derivedPointers,
-        isVerifying, it.GetCallSiteSp());
+    bool ret = it.CollectGCSlots(slotAddrs, derivedPointers, isVerifying);
     if (!ret) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << it.GetOptimizedReturnAddr();
@@ -243,9 +253,7 @@ ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
     }
 
     std::set<uintptr_t> slotAddrs;
-    bool ret = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
-        it.GetOptimizedReturnAddr(), reinterpret_cast<uintptr_t>(it.GetSp()),
-        slotAddrs, derivedPointers, isVerifying, it.GetCallSiteSp());
+    bool ret = it.CollectGCSlots(slotAddrs, derivedPointers, isVerifying);
     if (!ret) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << it.GetOptimizedReturnAddr();
@@ -275,10 +283,7 @@ ARK_INLINE void AsmInterpretedFrame::GCIterate(const FrameIterator &it,
     }
 
     std::set<uintptr_t> slotAddrs;
-    const JSThread *thread = it.GetThread();
-    bool ret = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
-        it.GetOptimizedReturnAddr(), reinterpret_cast<uintptr_t>(it.GetSp()), slotAddrs, derivedPointers, isVerifying,
-        it.GetCallSiteSp());
+    bool ret = it.CollectGCSlots(slotAddrs, derivedPointers, isVerifying);
     if (!ret) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << it.GetOptimizedReturnAddr();
