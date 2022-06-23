@@ -556,6 +556,8 @@ private:
     JSHandle<JSHClass> NewEcmaDynClassClass(JSHClass *hclass, uint32_t size, JSType type);
     JSHandle<JSHClass> NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type,
                                        uint32_t inlinedProps = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+    JSHandle<JSHClass> NewEcmaReadOnlyDynClass(JSHClass *hclass, uint32_t size, JSType type,
+                                               uint32_t inlinedProps = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
     JSHandle<JSHClass> InitClassClass();
 
     // used to create nonmovable js_object

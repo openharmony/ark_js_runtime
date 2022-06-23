@@ -146,10 +146,10 @@ void CompressGCMarker::ProcessMarkStack(uint32_t threadId)
             break;
         }
 
-        auto jsHclass = obj->GetClass();
+        auto jsHClass = obj->GetClass();
         ObjectSlot objectSlot(ToUintPtr(obj));
-        MarkObject(threadId, jsHclass, objectSlot);
-        objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(obj, jsHclass, visitor);
+        MarkObject(threadId, jsHClass, objectSlot);
+        objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(obj, jsHClass, visitor);
     }
 }
 }  // namespace panda::ecmascript

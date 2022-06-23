@@ -50,6 +50,14 @@ void FullGC::RunPhases()
     ECMA_GC_LOG() << "FullGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
+void FullGC::RunPhasesForAppSpawn()
+{
+    auto marker = reinterpret_cast<CompressGCMarker*>(heap_->GetCompressGCMarker());
+    marker->SetAppSpawn(true);
+    RunPhases();
+    marker->SetAppSpawn(false);
+}
+
 void FullGC::Initialize()
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Initialize");
