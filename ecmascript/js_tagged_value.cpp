@@ -500,7 +500,11 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
                                            const JSHandle<JSTaggedValue> &key)
 {
     if (obj->IsUndefined() || obj->IsNull() || obj->IsHole()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Obj is not a valid object",
+        std::string keyStr = base::StringHelper::ToStdString(*(ToString(thread, key)));
+        std::string objStr = base::StringHelper::ToStdString(*(ToString(thread, obj)));
+        std::string message = "Cannot read property ";
+        message.append(keyStr).append(" of ").append(objStr);
+        THROW_TYPE_ERROR_AND_RETURN(thread, message.c_str(),
                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
     }
     ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
@@ -525,7 +529,10 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
 OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj, uint32_t key)
 {
     if (obj->IsUndefined() || obj->IsNull() || obj->IsHole()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Obj is not a valid object",
+        std::string objStr = base::StringHelper::ToStdString(*(ToString(thread, obj)));
+        std::string message = "Cannot read property ";
+        message.append(ToCString(key)).append(" of ").append(objStr);
+        THROW_TYPE_ERROR_AND_RETURN(thread, message.c_str(),
                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
     }
 
@@ -550,7 +557,11 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
                                            const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &receiver)
 {
     if (obj->IsUndefined() || obj->IsNull() || obj->IsHole()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Obj is not a valid object",
+        std::string keyStr = base::StringHelper::ToStdString(*(ToString(thread, key)));
+        std::string objStr = base::StringHelper::ToStdString(*(ToString(thread, obj)));
+        std::string message = "Cannot read property ";
+        message.append(keyStr).append(" of ").append(objStr);
+        THROW_TYPE_ERROR_AND_RETURN(thread, message.c_str(),
                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
     }
     ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
