@@ -132,7 +132,9 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     FrameHandler frameHandler(this);
     frameHandler.Iterate(v0, v1);
     // visit tagged handle storage roots
+#if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
     size_t handleCount = 0;
+#endif
     if (currentHandleStorageIndex_ != -1) {
         int32_t nid = currentHandleStorageIndex_;
         for (int32_t i = 0; i <= nid; ++i) {
@@ -140,17 +142,25 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
             auto start = node->data();
             auto end = (i != nid) ? &(node->data()[NODE_BLOCK_SIZE]) : handleScopeStorageNext_;
             v1(ecmascript::Root::ROOT_HANDLE, ObjectSlot(ToUintPtr(start)), ObjectSlot(ToUintPtr(end)));
+#if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
             handleCount += (ToUintPtr(end) - ToUintPtr(start)) / sizeof(JSTaggedType);
+#endif
         }
     }
 
+#if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
     size_t globalCount = 0;
     globalStorage_->IterateUsageGlobal([v0, &globalCount](EcmaGlobalStorage::Node *node) {
+#else
+    globalStorage_->IterateUsageGlobal([v0](EcmaGlobalStorage::Node *node) {
+#endif
         JSTaggedValue value(node->GetObject());
         if (value.IsHeapObject()) {
             v0(ecmascript::Root::ROOT_HANDLE, ecmascript::ObjectSlot(node->GetObjectAddress()));
         }
+#if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
         globalCount++;
+#endif
     });
 #if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
     LOG(INFO, RUNTIME) << "Iterate root handle count:" << handleCount << ", global handle count:" << globalCount;
