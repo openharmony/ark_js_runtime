@@ -405,7 +405,7 @@ void FrameHandler::CollectBCOffsetInfo()
     ASSERT(it.GetFrameType() == FrameType::LEAVE_FRAME);
     auto leaveFrame = it.GetFrame<OptimizedLeaveFrame>();
     auto returnAddr = leaveFrame->GetReturnAddr();
-    // skip native function, need fixed it later.
+    // skip native function, need to fixit later.
     it.Advance();
 
     for (; !it.Done(); it.Advance()) {
@@ -416,12 +416,7 @@ void FrameHandler::CollectBCOffsetInfo()
                 auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
                 auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
-                    int delta =
-                        thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser() \
-                               ->GetFuncFpDelta(it.GetOptimizedReturnAddr());
-                    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it.GetSp(), delta);
-                    JSTaggedType *argv = frame->GetArgv(reinterpret_cast<uintptr_t *>(preFrameSp));
-                    auto name = GetAotExceptionFuncName(argv);
+                    auto name = GetAotExceptionFuncName(frame->GetArgv(it));
                     thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
                 }
                 returnAddr = frame->GetReturnAddr();

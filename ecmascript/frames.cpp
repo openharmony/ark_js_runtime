@@ -212,6 +212,15 @@ ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
     }
 }
 
+ARK_INLINE JSTaggedType* OptimizedJSFunctionFrame::GetArgv(const FrameIterator &it)
+{
+    auto thread = it.GetThread();
+    ASSERT(thread != nullptr);
+    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(it.GetOptimizedReturnAddr());
+    uintptr_t *preFrameSp = ComputePrevFrameSp(it.GetSp(), delta);
+    return GetArgv(preFrameSp);
+}
+
 ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
     const RootVisitor &v0,
     const RootRangeVisitor &v1,
