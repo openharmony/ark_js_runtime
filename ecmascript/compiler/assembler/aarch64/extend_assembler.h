@@ -37,9 +37,11 @@ public:
     void RestoreFpAndLr();
     void SaveLrAndFp();
     void RestoreLrAndFp();
-    void PushArgsWithArgv(Register argc, Register argv, Register op, panda::ecmascript::Label *next);
-    void PushArgc(int32_t argc, Register op);
-    void PushArgc(Register argc, Register op);
+    void PushArgsWithArgv(Register argc, Register argv, Register op,
+        Register fp, panda::ecmascript::Label *next);
+    void PushArgc(int32_t argc, Register op, Register fp);
+    void PushArgc(Register argc, Register op, Register fp);
+    void Align16(Register fp);
 
     Register TempRegister1()
     {
