@@ -365,4 +365,112 @@ HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ(objectData->GetInterval(), 500);
 }
+
+HWTEST_F_L0(DebuggerParamsTest, RecordClockSyncMarkerParamsCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<RecordClockSyncMarkerParams> objectData;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    objectData = RecordClockSyncMarkerParams::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = RecordClockSyncMarkerParams::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = RecordClockSyncMarkerParams::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = RecordClockSyncMarkerParams::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"syncId":"101"}})";
+    objectData = RecordClockSyncMarkerParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ(objectData->GetSyncId(), "101");
+}
+
+HWTEST_F_L0(DebuggerParamsTest, RequestMemoryDumpParamsCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<RequestMemoryDumpParams> objectData;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    objectData = RequestMemoryDumpParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = RequestMemoryDumpParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = RequestMemoryDumpParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = RequestMemoryDumpParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"deterministic":true,
+            "levelOfDetail":"background"}})";
+    objectData = RequestMemoryDumpParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    ASSERT_TRUE(objectData->GetDeterministic());
+    EXPECT_EQ(objectData->GetLevelOfDetail(), "background");
+}
+
+HWTEST_F_L0(DebuggerParamsTest, StartParamsCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<StartParams> objectData;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    objectData = StartParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = StartParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = StartParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = StartParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"categories":"filter1",
+            "options":"1", "bufferUsageReportingInterval":11, "transferMode":"ReportEvents", "streamFormat":"json",
+            "streamCompression":"none", "traceConfig": {"recordMode":"recordUntilFull"}, "perfettoConfig":"categories",
+            "tracingBackend":"auto"}})";
+    objectData = StartParams::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ(objectData->GetCategories(), "filter1");
+    EXPECT_EQ(objectData->GetOptions(), "1");
+    EXPECT_EQ(objectData->GetBufferUsageReportingInterval(), 11);
+    EXPECT_EQ(objectData->GetTransferMode(), "ReportEvents");
+    EXPECT_EQ(objectData->GetStreamFormat(), "json");
+    EXPECT_EQ(objectData->GetStreamCompression(), "none");
+    TraceConfig *traceConfig = objectData->GetTraceConfig();
+    ASSERT_NE(traceConfig, nullptr);
+    EXPECT_EQ(traceConfig->GetRecordMode(), "recordUntilFull");
+    EXPECT_EQ(objectData->GetPerfettoConfig(), "categories");
+    EXPECT_EQ(objectData->GetTracingBackend(), "auto");
+}
 }  // namespace panda::test

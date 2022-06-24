@@ -2387,4 +2387,251 @@ HWTEST_F_L0(DebuggerTypesTest, ScriptCoverageToJsonTest)
     ASSERT_NE(tmpJson, nullptr);
     EXPECT_EQ(tmpJson->GetSize(), 1);
 }
+
+HWTEST_F_L0(DebuggerTypesTest, TypeObjectCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<TypeObject> typeObject;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeObject, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeObject, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeObject, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeObject, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "name":"Create1"}})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(typeObject, nullptr);
+    EXPECT_EQ(typeObject->GetName(), "Create1");
+}
+
+HWTEST_F_L0(DebuggerTypesTest, TypeObjectToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<TypeObject> typeObject;
+    std::string tmpStr;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "name":"Create1"}})";
+    typeObject = TypeObject::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(typeObject, nullptr);
+    auto json = typeObject->ToJson();
+
+    ret = json->GetString("name", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpStr, "Create1");
+}
+
+HWTEST_F_L0(DebuggerTypesTest, TypeProfileEntryCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<TypeProfileEntry> typeProfileEntry;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeProfileEntry, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeProfileEntry, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeProfileEntry, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(typeProfileEntry, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "offset":11,"types":[{"name":"Create1"}]}})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(typeProfileEntry, nullptr);
+    EXPECT_EQ(typeProfileEntry->GetOffset(), 11);
+    const std::vector<std::unique_ptr<TypeObject>> *typeObject = typeProfileEntry->GetTypes();
+    ASSERT_NE(typeObject, nullptr);
+    EXPECT_EQ((int)typeObject->size(), 1);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, TypeProfileEntryToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<TypeProfileEntry> typeProfileEntry;
+    int32_t tmpInt;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "offset":11,"types":[{"name":"Create1"}]}})";
+    typeProfileEntry = TypeProfileEntry::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(typeProfileEntry, nullptr);
+    auto json = typeProfileEntry->ToJson();
+
+    ret = json->GetInt("offset", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 11);
+
+    ret = json->GetArray("types", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    EXPECT_EQ(tmpJson->GetSize(), 1);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, ScriptTypeProfileCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<ScriptTypeProfile> scriptTypeProfile;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(scriptTypeProfile, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(scriptTypeProfile, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(scriptTypeProfile, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    EXPECT_EQ(scriptTypeProfile, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"122","url":"url15","entries":[{"offset":11,"types":[{"name":"Create1"}]}]}})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(scriptTypeProfile, nullptr);
+    EXPECT_EQ(scriptTypeProfile->GetScriptId(), "122");
+    EXPECT_EQ(scriptTypeProfile->GetUrl(), "url15");
+    const std::vector<std::unique_ptr<TypeProfileEntry>> *typeProfileEntry = scriptTypeProfile->GetEntries();
+    ASSERT_NE(typeProfileEntry, nullptr);
+    EXPECT_EQ((int)typeProfileEntry->size(), 1);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, ScriptTypeProfileToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<ScriptTypeProfile> scriptTypeProfile;
+    std::string tmpStr;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"122","url":"url15","entries":[{"offset":11,"types":[{"name":"Create1"}]}]}})";
+    scriptTypeProfile = ScriptTypeProfile::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(scriptTypeProfile, nullptr);
+    auto json = scriptTypeProfile->ToJson();
+
+    ret = json->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpStr, "122");
+
+    ret = json->GetString("url", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpStr, "url15");
+
+    ret = json->GetArray("entries", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    EXPECT_EQ(tmpJson->GetSize(), 1);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, TraceConfigCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<TraceConfig> traceConfig;
+
+    //  abnormal params of null msg
+    msg = std::string() + R"({})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+
+    // abnormal params of unexist key params
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "recordMode":"recordUntilFull", "enableSampling":true, "enableSystrace":true,
+          "enableArgumentFilter":true}})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+
+    EXPECT_EQ(traceConfig->GetRecordMode(), "recordUntilFull");
+    ASSERT_TRUE(traceConfig->GetEnableSampling());
+    ASSERT_TRUE(traceConfig->GetEnableSystrace());
+    ASSERT_TRUE(traceConfig->GetEnableArgumentFilter());
+}
+
+HWTEST_F_L0(DebuggerTypesTest, TraceConfigToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<TraceConfig> traceConfig;
+    std::string tmpStr;
+    std::unique_ptr<PtJson> tmpJson;
+    bool tmpBool;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "recordMode":"recordUntilFull", "enableSampling":true, "enableSystrace":true,
+          "enableArgumentFilter":true}})";
+    traceConfig = TraceConfig::Create(DispatchRequest(msg).GetParams());
+    ASSERT_NE(traceConfig, nullptr);
+    auto json = traceConfig->ToJson();
+
+    ret = json->GetString("recordMode", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpStr, "recordUntilFull");
+
+    ret = json->GetBool("enableSampling", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = json->GetBool("enableSystrace", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = json->GetBool("enableArgumentFilter", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+}
 }  // namespace panda::test

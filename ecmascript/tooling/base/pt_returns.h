@@ -391,5 +391,37 @@ private:
 
     std::vector<std::unique_ptr<ScriptTypeProfile>> result_ {};
 };
+
+class GetCategoriesReturns : public PtBaseReturns {
+public:
+    explicit GetCategoriesReturns(std::vector<std::string> categories)
+        : categories_(std::move(categories))
+    {}
+    ~GetCategoriesReturns() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+private:
+    GetCategoriesReturns() = default;
+    NO_COPY_SEMANTIC(GetCategoriesReturns);
+    NO_MOVE_SEMANTIC(GetCategoriesReturns);
+
+    std::vector<std::string> categories_ {};
+};
+
+class RequestMemoryDumpReturns : public PtBaseReturns {
+public:
+    explicit RequestMemoryDumpReturns(std::string dumpGuid, bool success)
+        : dumpGuid_(dumpGuid), success_(success) {}
+    ~RequestMemoryDumpReturns() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+private:
+    RequestMemoryDumpReturns() = default;
+    NO_COPY_SEMANTIC(RequestMemoryDumpReturns);
+    NO_MOVE_SEMANTIC(RequestMemoryDumpReturns);
+
+    std::string dumpGuid_ {};
+    bool success_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

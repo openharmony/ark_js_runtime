@@ -32,6 +32,7 @@ debugger_sources = [
   "agent/heapprofiler_impl.cpp",
   "agent/profiler_impl.cpp",
   "agent/runtime_impl.cpp",
+  "agent/tracing_impl.cpp",
   "backend/debugger_executor.cpp",
   "backend/js_pt_extractor.cpp",
   "backend/js_pt_hooks.cpp",

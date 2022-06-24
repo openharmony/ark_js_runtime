@@ -305,4 +305,28 @@ std::unique_ptr<PtJson> TakeTypeProfileReturns::ToJson() const
 
     return result;
 }
+
+std::unique_ptr<PtJson> GetCategoriesReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> categories = PtJson::CreateArray();
+    size_t len = categories_.size();
+    for (size_t i = 0; i < len; i++) {
+        categories->Push(categories_[i].c_str());
+    }
+    result->Add("categories", categories);
+
+    return result;
+}
+
+std::unique_ptr<PtJson> RequestMemoryDumpReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("dumpGuid", dumpGuid_.c_str());
+    result->Add("success", success_);
+
+    return result;
+}
 }  // namespace panda::ecmascript::tooling

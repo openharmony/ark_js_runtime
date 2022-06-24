@@ -1063,5 +1063,174 @@ private:
     int32_t total_ {};
     std::optional<bool> finished_ {};
 };
+
+class BufferUsage final : public PtBaseEvents {
+public:
+    BufferUsage() = default;
+    ~BufferUsage() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "Tracing.BufferUsage";
+    }
+
+    int32_t GetPercentFull() const
+    {
+        return percentFull_.value();
+    }
+
+    BufferUsage &SetPercentFull(int32_t percentFull)
+    {
+        percentFull_ = percentFull;
+        return *this;
+    }
+
+    bool HasPercentFull() const
+    {
+        return percentFull_.has_value();
+    }
+
+    int32_t GetEventCount() const
+    {
+        return eventCount_.value();
+    }
+
+    BufferUsage &SetEventCount(int32_t eventCount)
+    {
+        eventCount_ = eventCount;
+        return *this;
+    }
+
+    bool HasEventCount() const
+    {
+        return eventCount_.has_value();
+    }
+
+    int32_t GetValue() const
+    {
+        return value_.value();
+    }
+
+    BufferUsage &SetValue(int32_t value)
+    {
+        value_ = value;
+        return *this;
+    }
+
+    bool HasValue() const
+    {
+        return value_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(BufferUsage);
+    NO_MOVE_SEMANTIC(BufferUsage);
+
+    std::optional<int32_t> percentFull_ {0};
+    std::optional<int32_t> eventCount_ {0};
+    std::optional<int32_t> value_ {0};
+};
+
+class DataCollected final : public PtBaseEvents {
+public:
+    DataCollected() = default;
+    ~DataCollected() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "Tracing.DataCollected";
+    }
+
+    const std::vector<std::unique_ptr<PtJson>> *GetValue() const
+    {
+        return &value_;
+    }
+
+    DataCollected &SetValue(std::vector<std::unique_ptr<PtJson>> value)
+    {
+        value_ = std::move(value);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(DataCollected);
+    NO_MOVE_SEMANTIC(DataCollected);
+
+    std::vector<std::unique_ptr<PtJson>> value_ {};
+};
+
+class TracingComplete final : public PtBaseEvents {
+public:
+    TracingComplete() = default;
+    ~TracingComplete() override = default;
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetName() const override
+    {
+        return "Tracing.TracingComplete";
+    }
+
+    bool GetDataLossOccurred() const
+    {
+        return dataLossOccurred_;
+    }
+
+    TracingComplete &SetDataLossOccurred(bool dataLossOccurred)
+    {
+        dataLossOccurred_ = dataLossOccurred;
+        return *this;
+    }
+
+    StreamFormat *GetTraceFormat() const
+    {
+        if (traceFormat_) {
+            return traceFormat_->get();
+        }
+        return nullptr;
+    }
+
+    TracingComplete &SetTraceFormat(std::unique_ptr<StreamFormat> traceFormat)
+    {
+        traceFormat_ = std::move(traceFormat);
+        return *this;
+    }
+
+    bool HasTraceFormat() const
+    {
+        return traceFormat_.has_value();
+    }
+
+    StreamCompression *GetStreamCompression() const
+    {
+        if (streamCompression_) {
+            return streamCompression_->get();
+        }
+        return nullptr;
+    }
+
+    TracingComplete &SetStreamCompression(std::unique_ptr<StreamCompression> streamCompression)
+    {
+        streamCompression_ = std::move(streamCompression);
+        return *this;
+    }
+
+    bool HasStreamCompression() const
+    {
+        return streamCompression_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(TracingComplete);
+    NO_MOVE_SEMANTIC(TracingComplete);
+
+    bool dataLossOccurred_ {};
+    /*
+     * { TracingComplete.stream }   IO is currently not supported;
+     */
+    std::optional<std::unique_ptr<StreamFormat>> traceFormat_ {};
+    std::optional<std::unique_ptr<StreamCompression>> streamCompression_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
