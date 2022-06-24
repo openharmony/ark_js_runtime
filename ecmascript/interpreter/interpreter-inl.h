@@ -902,6 +902,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             state->function = JSTaggedValue(funcTagged);
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
+            SAVE_PC();
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
             thread->SetCurrentSPFrame(sp);
@@ -1966,6 +1967,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 thread->SetCurrentSPFrame(newSp);
 
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
+                SAVE_PC();
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
                 thread->SetCurrentSPFrame(sp);
@@ -3466,6 +3468,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue thisFunc = GET_ACC();
         JSTaggedValue newTarget = GetNewTarget(sp);
 
+        SAVE_PC();
         JSTaggedValue superCtor = SlowRuntimeStub::GetSuperConstructor(thread, thisFunc);
         INTERPRETER_RETURN_IF_ABRUPT(superCtor);
 
