@@ -211,7 +211,7 @@ GlobalTSTypeRef TSLoader::GetGTFromPandaFile(const panda_file::File &pf, uint32_
                 auto *elemName = reinterpret_cast<const char *>(pf.GetStringData(adae.GetNameId()).data);
                 ASSERT(elemName != nullptr);
                 uint32_t elemCount = adae.GetArrayValue().GetCount();
-                if (::strcmp("typeOfVreg", elemName) == 0) { // verg table -> [v1, 1, v2, 51, v3, 56]
+                if (::strcmp("_TypeOfInstruction", elemName) == 0) {
                     for (uint32_t j = 0; j < elemCount; j = j + 2) { // + 2 means localId index
                         auto value = adae.GetArrayValue().Get<panda_file::File::EntityId>(j).GetOffset();
                         if (value == vregId) {
