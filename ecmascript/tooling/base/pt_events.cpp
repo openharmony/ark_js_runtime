@@ -279,4 +279,62 @@ std::unique_ptr<PtJson> ReportHeapSnapshotProgress::ToJson() const
 
     return object;
 }
+
+std::unique_ptr<PtJson> BufferUsage::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (percentFull_) {
+        result->Add("percentFull", percentFull_.value());
+    }
+    if (eventCount_) {
+        result->Add("eventCount", eventCount_.value());
+    }
+    if (value_) {
+        result->Add("value", value_.value());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
+std::unique_ptr<PtJson> DataCollected::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = value_.size();
+    for (size_t i = 0; i < len; i++) {
+        array->Push(value_[i]);
+    }
+    result->Add("value", array);
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
+std::unique_ptr<PtJson> TracingComplete::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("dataLossOccurred", dataLossOccurred_);
+    if (traceFormat_) {
+        result->Add("traceFormat", traceFormat_.value()->c_str());
+    }
+    if (streamCompression_) {
+        result->Add("streamCompression", streamCompression_.value()->c_str());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
 }  // namespace panda::ecmascript::tooling

@@ -836,5 +836,261 @@ private:
 
     int32_t interval_ {0};
 };
+
+class RecordClockSyncMarkerParams : public PtBaseParams {
+public:
+    RecordClockSyncMarkerParams() = default;
+    ~RecordClockSyncMarkerParams() override = default;
+
+    static std::unique_ptr<RecordClockSyncMarkerParams> Create(const PtJson &params);
+
+    std::string GetSyncId() const
+    {
+        return syncId_;
+    }
+
+    RecordClockSyncMarkerParams &SetSyncId(std::string syncId)
+    {
+        syncId_ = syncId;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(RecordClockSyncMarkerParams);
+    NO_MOVE_SEMANTIC(RecordClockSyncMarkerParams);
+
+    std::string syncId_ {};
+};
+
+class RequestMemoryDumpParams : public PtBaseParams {
+public:
+    RequestMemoryDumpParams() = default;
+    ~RequestMemoryDumpParams() override = default;
+
+    static std::unique_ptr<RequestMemoryDumpParams> Create(const PtJson &params);
+
+    bool GetDeterministic() const
+    {
+        return deterministic_.value();
+    }
+
+    RequestMemoryDumpParams &SetDeterministic(bool deterministic)
+    {
+        deterministic_ = deterministic;
+        return *this;
+    }
+
+    bool HasDeterministic() const
+    {
+        return deterministic_.has_value();
+    }
+
+    MemoryDumpLevelOfDetail GetLevelOfDetail() const
+    {
+        return levelOfDetail_.value();
+    }
+
+    RequestMemoryDumpParams &SetLevelOfDetail(const MemoryDumpLevelOfDetail &levelOfDetail)
+    {
+        levelOfDetail_ = levelOfDetail;
+        return *this;
+    }
+
+    bool HasLevelOfDetail() const
+    {
+        return levelOfDetail_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(RequestMemoryDumpParams);
+    NO_MOVE_SEMANTIC(RequestMemoryDumpParams);
+
+    std::optional<bool> deterministic_ {};
+    std::optional<MemoryDumpLevelOfDetail> levelOfDetail_ {};
+};
+
+class StartParams : public PtBaseParams {
+public:
+    StartParams() = default;
+    ~StartParams() override = default;
+
+    static std::unique_ptr<StartParams> Create(const PtJson &params);
+
+    std::string GetCategories() const
+    {
+        return categories_.value();
+    }
+
+    StartParams &SetCategories(std::string categories)
+    {
+        categories_ = categories;
+        return *this;
+    }
+
+    bool HasCategories() const
+    {
+        return categories_.has_value();
+    }
+
+    std::string GetOptions() const
+    {
+        return options_.value();
+    }
+
+    StartParams &SetOptions(std::string options)
+    {
+        options_ = options;
+        return *this;
+    }
+
+    bool HasOptions() const
+    {
+        return options_.has_value();
+    }
+
+    int32_t GetBufferUsageReportingInterval() const
+    {
+        return bufferUsageReportingInterval_.value();
+    }
+
+    StartParams &SetBufferUsageReportingInterval(int32_t bufferUsageReportingInterval)
+    {
+        bufferUsageReportingInterval_ = bufferUsageReportingInterval;
+        return *this;
+    }
+
+    bool HasBufferUsageReportingInterval() const
+    {
+        return bufferUsageReportingInterval_.has_value();
+    }
+
+    std::string GetTransferMode() const
+    {
+        return transferMode_.value();
+    }
+
+    StartParams &SetTransferMode(std::string transferMode)
+    {
+        transferMode_ = transferMode;
+        return *this;
+    }
+
+    bool HasTransferMode() const
+    {
+        return transferMode_.has_value();
+    }
+
+    struct TransferModeValues {
+        static bool Valid(const std::string &values)
+        {
+            return values == ReportEvents() || values == ReturnAsStream();
+        }
+        static std::string ReportEvents()
+        {
+            return "ReportEvents";
+        }
+        static std::string ReturnAsStream()
+        {
+            return "ReturnAsStream";
+        }
+    };
+
+    StreamFormat GetStreamFormat() const
+    {
+        return streamFormat_.value();
+    }
+
+    StartParams &SetStreamFormat(const StreamFormat &streamFormat)
+    {
+        streamFormat_ = streamFormat;
+        return *this;
+    }
+
+    bool HasStreamFormat() const
+    {
+        return streamFormat_.has_value();
+    }
+
+    StreamCompression GetStreamCompression() const
+    {
+        return streamCompression_.value();
+    }
+
+    StartParams &SetStreamCompression(const StreamCompression &streamCompression)
+    {
+        streamCompression_ = streamCompression;
+        return *this;
+    }
+
+    bool HasStreamCompression() const
+    {
+        return streamCompression_.has_value();
+    }
+
+    TraceConfig *GetTraceConfig() const
+    {
+        if (traceConfig_) {
+            return traceConfig_->get();
+        }
+        return nullptr;
+    }
+
+    StartParams &SetTraceConfig(std::unique_ptr<TraceConfig> &traceConfig)
+    {
+        traceConfig_ = std::move(traceConfig);
+        return *this;
+    }
+
+    bool HasTraceConfig() const
+    {
+        return traceConfig_.has_value();
+    }
+
+    std::string GetPerfettoConfig() const
+    {
+        return perfettoConfig_.value();
+    }
+
+    StartParams &SetPerfettoConfig(std::string perfettoConfig)
+    {
+        perfettoConfig_ = perfettoConfig;
+        return *this;
+    }
+
+    bool HasPerfettoConfig() const
+    {
+        return perfettoConfig_.has_value();
+    }
+
+    TracingBackend GetTracingBackend() const
+    {
+        return tracingBackend_.value();
+    }
+
+    StartParams &SetTracingBackend(const TracingBackend &tracingBackend)
+    {
+        tracingBackend_ = tracingBackend;
+        return *this;
+    }
+
+    bool HasTracingBackend() const
+    {
+        return tracingBackend_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartParams);
+    NO_MOVE_SEMANTIC(StartParams);
+
+    std::optional<std::string> categories_ {};
+    std::optional<std::string> options_ {};
+    std::optional<int32_t> bufferUsageReportingInterval_ {0};
+    std::optional<std::string> transferMode_ {};
+    std::optional<StreamFormat> streamFormat_ {};
+    std::optional<StreamCompression> streamCompression_ {};
+    std::optional<std::unique_ptr<TraceConfig>> traceConfig_ {};
+    std::optional<std::string> perfettoConfig_ {};
+    std::optional<TracingBackend> tracingBackend_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

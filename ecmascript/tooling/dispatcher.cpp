@@ -21,6 +21,7 @@
 #include "ecmascript/tooling/agent/runtime_impl.h"
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
 #include "ecmascript/tooling/agent/profiler_impl.h"
+#include "ecmascript/tooling/agent/tracing_impl.h"
 #include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
@@ -127,10 +128,13 @@ Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
     // profiler
     auto profiler = std::make_unique<ProfilerImpl>(vm, channel);
     auto heapProfiler = std::make_unique<HeapProfilerImpl>(vm, channel);
+    auto tracing = std::make_unique<TracingImpl>(vm, channel);
     dispatchers_["Profiler"] =
         std::make_unique<ProfilerImpl::DispatcherImpl>(channel, std::move(profiler));
     dispatchers_["HeapProfiler"] =
         std::make_unique<HeapProfilerImpl::DispatcherImpl>(channel, std::move(heapProfiler));
+    dispatchers_["Tracing"] =
+        std::make_unique<TracingImpl::DispatcherImpl>(channel, std::move(tracing));
 
     // debugger
     auto runtime = std::make_unique<RuntimeImpl>(vm, channel);

@@ -2322,4 +2322,157 @@ std::unique_ptr<PtJson> ScriptTypeProfile::ToJson() const
     
     return result;
 }
+
+std::unique_ptr<TraceConfig> TraceConfig::Create(const PtJson &params)
+{
+    std::string error;
+    auto traceConfig = std::make_unique<TraceConfig>();
+    Result ret;
+
+    std::string recordMode;
+    ret = params.GetString("recordMode", &recordMode);
+    if (ret == Result::SUCCESS) {
+        if (TraceConfig::RecordModeValues::Valid(recordMode)) {
+            traceConfig->recordMode_ = std::move(recordMode);
+        } else {
+            error += "'recordMode' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'recordMode';";
+    }
+
+    bool enableSampling;
+    ret = params.GetBool("enableSampling", &enableSampling);
+    if (ret == Result::SUCCESS) {
+        traceConfig->enableSampling_ = enableSampling;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'enableSampling';";
+    }
+
+    bool enableSystrace;
+    ret = params.GetBool("enableSystrace", &enableSystrace);
+    if (ret == Result::SUCCESS) {
+        traceConfig->enableSystrace_ = enableSystrace;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'enableSystrace';";
+    }
+
+    bool enableArgumentFilter;
+    ret = params.GetBool("enableArgumentFilter", &enableArgumentFilter);
+    if (ret == Result::SUCCESS) {
+        traceConfig->enableArgumentFilter_ = enableArgumentFilter;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'enableArgumentFilter';";
+    }
+
+    std::unique_ptr<PtJson> includedCategories;
+    ret = params.GetArray("includedCategories", &includedCategories);
+    if (ret == Result::SUCCESS) {
+        int32_t includedCategoriesLen = includedCategories->GetSize();
+        for (int32_t i = 0; i < includedCategoriesLen; ++i) {
+            std::string pIncludedCategories = includedCategories->Get(i)->GetString();
+            traceConfig->includedCategories_.value().emplace_back(pIncludedCategories);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'includedCategories';";
+    }
+
+    std::unique_ptr<PtJson> excludedCategories;
+    ret = params.GetArray("excludedCategories", &excludedCategories);
+    if (ret == Result::SUCCESS) {
+        int32_t excludedCategoriesLen = excludedCategories->GetSize();
+        for (int32_t i = 0; i < excludedCategoriesLen; ++i) {
+            std::string pExcludedCategories = excludedCategories->Get(i)->GetString();
+            traceConfig->excludedCategories_.value().emplace_back(pExcludedCategories);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'excludedCategories';";
+    }
+
+    std::unique_ptr<PtJson> syntheticDelays;
+    ret = params.GetArray("syntheticDelays", &syntheticDelays);
+    if (ret == Result::SUCCESS) {
+        int32_t syntheticDelaysLen = includedCategories->GetSize();
+        for (int32_t i = 0; i < syntheticDelaysLen; ++i) {
+            std::string pSyntheticDelays = syntheticDelays->Get(i)->GetString();
+            traceConfig->syntheticDelays_.value().emplace_back(pSyntheticDelays);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'syntheticDelays';";
+    }
+
+    std::unique_ptr<PtJson> memoryDumpConfig;
+    ret = params.GetObject("memoryDumpConfig", &memoryDumpConfig);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<MemoryDumpConfig> tmpMemory = std::move(memoryDumpConfig);
+        if (tmpMemory == nullptr) {
+            error += "'memoryDumpConfig' format error;";
+        } else {
+            traceConfig->memoryDumpConfig_ = std::move(tmpMemory);
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'memoryDumpConfig';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "TraceConfig::Create " << error;
+        return nullptr;
+    }
+
+    return traceConfig;
+}
+
+std::unique_ptr<PtJson> TraceConfig::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (recordMode_) {
+        result->Add("recordMode", recordMode_.value().c_str());
+    }
+
+    if (enableSampling_) {
+        result->Add("enableSampling", enableSampling_.value());
+    }
+
+    if (enableSystrace_) {
+        result->Add("enableSystrace", enableSystrace_.value());
+    }
+
+    if (enableArgumentFilter_) {
+        result->Add("enableArgumentFilter", enableArgumentFilter_.value());
+    }
+
+    if (includedCategories_) {
+        std::unique_ptr<PtJson> includedCategories = PtJson::CreateArray();
+        size_t includedCategoriesLen = includedCategories_->size();
+        for (size_t i = 0; i < includedCategoriesLen; i++) {
+            includedCategories->Push(includedCategories_.value()[i].c_str());
+        }
+        result->Add("includedCategories", includedCategories);
+    }
+
+    if (excludedCategories_) {
+        std::unique_ptr<PtJson> excludedCategories = PtJson::CreateArray();
+        size_t excludedCategoriesLen = excludedCategories_->size();
+        for (size_t i = 0; i < excludedCategoriesLen; i++) {
+            excludedCategories->Push(excludedCategories_.value()[i].c_str());
+        }
+        result->Add("excludedCategories", excludedCategories);
+    }
+
+    if (syntheticDelays_) {
+        std::unique_ptr<PtJson> syntheticDelays = PtJson::CreateArray();
+        size_t syntheticDelaysLen = syntheticDelays_->size();
+        for (size_t i = 0; i < syntheticDelaysLen; i++) {
+            syntheticDelays->Push(syntheticDelays_.value()[i].c_str());
+        }
+        result->Add("syntheticDelays", syntheticDelays);
+    }
+
+    if (memoryDumpConfig_) {
+        result->Add("functionLocation", memoryDumpConfig_.value());
+    }
+
+    return result;
+}
 }  // namespace panda::ecmascript::tooling
