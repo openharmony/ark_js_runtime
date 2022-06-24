@@ -187,7 +187,8 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-using InterpreterEntry = JSTaggedType (*)(uintptr_t glue, uint32_t argc, uintptr_t argv);
+using InterpreterEntry = JSTaggedType (*)(uintptr_t glue, ECMAObject *callTarget,
+    JSMethod *method, uint64_t callField, uint32_t argc, uintptr_t argv);
 using GeneratorReEnterInterpEntry = JSTaggedType (*)(uintptr_t glue, JSTaggedType context);
 
 void InterpreterAssembly::InitStackFrame(JSThread *thread)
@@ -217,7 +218,11 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     size_t argc = info->GetArgsNumber();
     uintptr_t argv = reinterpret_cast<uintptr_t>(info->GetArgs());
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_AsmInterpreterEntry);
-    auto acc = reinterpret_cast<InterpreterEntry>(entry)(thread->GetGlueAddr(), argc, argv);
+
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
+    JSMethod *method = callTarget->GetCallTarget();
+    auto acc = reinterpret_cast<InterpreterEntry>(entry)(thread->GetGlueAddr(),
+        callTarget, method, method->GetCallField(), argc, argv);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_ENTRY_FRAME);
     auto prevEntry = InterpretedEntryFrame::GetFrameFromSp(sp)->GetPrevFrameFp();

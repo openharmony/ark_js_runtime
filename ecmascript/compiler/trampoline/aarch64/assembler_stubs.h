@@ -110,15 +110,17 @@ private:
     static void PushCallThis(ExtendedAssembler *assembler, JSCallMode mode);
 
     static Register GetThisRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
+    static Register GetNewTargetRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
 
     static void PushVregs(ExtendedAssembler *assembler);
 
     static void DispatchCall(ExtendedAssembler *assembler, Register pc, Register newSp);
 
-    static void CallNativeInternal(ExtendedAssembler *assembler, Register glue, Register numArgs, Register stackArgs,
+    static void CallNativeInternal(ExtendedAssembler *assembler, Register glue, Register numArgs,
         Register nativeCode);
 
-    static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type, Register op);
+    static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue,
+        FrameType type, Register op, Register next);
 
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSp, Register fp, Register callTarget,
         Register method, Register pc, Register op);
@@ -134,14 +136,11 @@ private:
         Register declaredNumArgs);
 
     static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc, Register temp,
-        panda::ecmascript::Label *next);
+        Register fp, panda::ecmascript::Label *next);
 
     static void SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate jumpSize);
 
     static void GlueToThread(ExtendedAssembler *assembler, Register glue, Register thread);
-
-    static void ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register thread, Register numArgs,
-        Register stackArgs);
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 
@@ -159,14 +158,6 @@ private:
     static void CallNativeEntry(ExtendedAssembler *assembler);
 
     static void CallNativeWithArgv(ExtendedAssembler *assembler, bool callNew);
-
-    static void PushArgsFastPath(ExtendedAssembler *assembler,
-        Register &glue, Register &argc, Register &argv, Register &callTarget,
-        Register &method, Register &prevSp, Register &fp, Register &callField);
-
-    static void PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
-        Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
-        Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister);
     static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler);
     static void PushArgsWithArgV(ExtendedAssembler *assembler, Register jsfunc,
                                  Register actualNumArgs, Register argV, Label *pushCallThis);

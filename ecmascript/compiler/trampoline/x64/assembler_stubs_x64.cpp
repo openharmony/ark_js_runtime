@@ -892,10 +892,12 @@ void AssemblerStubsX64::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 }
 
 // Generate code for Entering asm interpreter
-// c++ calling convention
-// Input: %rdi - glue
-//        %rsi - argc
-//        %rdx - argv(<callTarget, newTarget, this> are at the beginning of argv)
+// Input: glue           - %rdi
+//        callTarget     - %rsi
+//        method         - %rdx
+//        callField      - %rcx
+//        argc           - %r8
+//        argv           - %r9(<callTarget, newTarget, this> are at the beginning of argv)
 void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
@@ -962,28 +964,24 @@ void AssemblerStubsX64::GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *ass
     CallBCStub(assembler, newSpRegister, glueRegister, callTargetRegister, methodRegister, pcRegister);
 }
 
-// Input: glueRegister   - %rdi
-//        argcRegister   - %rsi
-//        argvRegister   - %rdx(<callTarget, newTarget, this> are at the beginning of argv)
-//        prevSpRegister - %rbp
+// Input: glue           - %rdi
+//        callTarget     - %rsi
+//        method         - %rdx
+//        callField      - %rcx
+//        argc           - %r8
+//        argv           - %r9(<callTarget, newTarget, this> are at the beginning of argv)
+//        prevSp         - %rbp
 void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
 {
     Label notJSFunction;
     Label callNativeEntry;
     Label callJSFunctionEntry;
-    Label pushArgsSlowPath;
-    Label callJSProxyEntry;
     Label notCallable;
     Register glueRegister = rdi;
-    Register argcRegister = rsi;
-    Register argvRegister = rdx;
-    Register prevSpRegister = rbp;
-
-    Register callTargetRegister = r9;
-    Register methodRegister = rcx;
+    Register callTargetRegister = rsi;
+    Register argvRegister = r9;
     Register bitFieldRegister = r12;
     Register tempRegister = r11;  // can not be used to store any variable
-    __ Movq(Operand(rdx, 0), callTargetRegister);
     __ Movq(Operand(callTargetRegister, 0), tempRegister);  // hclass
     __ Movq(Operand(tempRegister, JSHClass::BIT_FIELD_OFFSET), bitFieldRegister);
     __ Cmpb(static_cast<int32_t>(JSType::JS_FUNCTION_BEGIN), bitFieldRegister);
@@ -994,38 +992,19 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
     {
         __ Testq(static_cast<int64_t>(1ULL << JSHClass::CallableBit::START_BIT), bitFieldRegister);
         __ Jz(&notCallable);
-        __ Cmpb(static_cast<int32_t>(JSType::JS_PROXY), bitFieldRegister);
-        __ Je(&callJSProxyEntry);
-        // bound function branch, default native
-        __ Movq(Operand(callTargetRegister, JSFunctionBase::METHOD_OFFSET), methodRegister);
         // fall through
     }
     __ Bind(&callNativeEntry);
     CallNativeEntry(assembler);
-    __ Bind(&callJSProxyEntry);
-    {
-        __ Movq(Operand(callTargetRegister, JSProxy::METHOD_OFFSET), methodRegister);
-        __ Jmp(&callNativeEntry);
-    }
     __ Bind(&callJSFunctionEntry);
     {
-        __ Movq(Operand(callTargetRegister, JSFunctionBase::METHOD_OFFSET), methodRegister);
-        Register callFieldRegister = r14;
-        __ Movq(Operand(methodRegister, JSMethod::GetCallFieldOffset(false)), callFieldRegister);
+        Register callFieldRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::CALL_FIELD);
         __ Btq(JSMethod::IsNativeBit::START_BIT, callFieldRegister);
         __ Jb(&callNativeEntry);
-        Register declaredNumArgsRegister = r11;
-        GetDeclaredNumArgsFromCallField(assembler, callFieldRegister, declaredNumArgsRegister);
-        __ Cmpq(declaredNumArgsRegister, argcRegister);
-        __ Jne(&pushArgsSlowPath);
-        // fast path
-        Register fpRegister = r10;
-        __ Movq(rsp, fpRegister);
-        PushArgsFastPath(assembler, glueRegister, argcRegister, argvRegister, callTargetRegister, methodRegister,
-            prevSpRegister, fpRegister, callFieldRegister);
-        __ Bind(&pushArgsSlowPath);
-        PushArgsSlowPath(assembler, glueRegister, declaredNumArgsRegister, argcRegister, argvRegister,
-            callTargetRegister, methodRegister, prevSpRegister, callFieldRegister);
+
+        __ Leaq(Operand(argvRegister, BuiltinFrame::RESERVED_CALL_ARGCOUNT * JSTaggedValue::TaggedTypeSize()),
+            argvRegister);
+        JSCallCommonEntry(assembler, JSCallMode::CALL_ENTRY);
     }
     __ Bind(&notCallable);
     {
@@ -1043,117 +1022,6 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
         __ Addq(16, rsp);  // 16: skip argc and runtime_id
         __ Ret();
     }
-}
-
-// Input: glueRegister       - %rdi
-//        argcRegister       - %rsi
-//        argvRegister       - %rdx(<callTarget, newTarget, this> are at the beginning of argv)
-//        callTargetRegister - %r9
-//        methodRegister     - %rcx
-//        prevSpRegister     - %rbp
-//        fpRegister         - %r10
-//        callFieldRegister  - %r14
-void AssemblerStubsX64::PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister,
-    Register argcRegister, Register argvRegister, Register callTargetRegister, Register methodRegister,
-    Register prevSpRegister, Register fpRegister, Register callFieldRegister)
-{
-    Label pushCallThis;
-    Label pushNewTarget;
-    Label pushCallTarget;
-    Label pushVregs;
-    Label pushFrameState;
-
-    __ Cmpq(0, argcRegister);
-    __ Jbe(&pushCallThis);  // skip push args
-    Register argvOnlyHaveArgsRegister = r12;
-    __ Leaq(Operand(argvRegister, BuiltinFrame::RESERVED_CALL_ARGCOUNT * JSTaggedValue::TaggedTypeSize()),
-        argvOnlyHaveArgsRegister);
-    Register tempRegister = r11;
-    __ PushArgsWithArgv(argcRegister, argvOnlyHaveArgsRegister, tempRegister);  // args
-
-    __ Bind(&pushCallThis);
-    __ Testb(CALL_TYPE_MASK, callFieldRegister);
-    __ Jz(&pushVregs);
-    __ Testq(JSMethod::HaveThisBit::Mask(), callFieldRegister);
-    __ Jz(&pushNewTarget);
-    __ Movq(Operand(argvRegister, 16), tempRegister);  // 16: skip callTarget, newTarget
-    __ Pushq(tempRegister);  // this
-
-    __ Bind(&pushNewTarget);
-    __ Testq(JSMethod::HaveNewTargetBit::Mask(), callFieldRegister);
-    __ Jz(&pushCallTarget);
-    __ Movq(Operand(argvRegister, 8), tempRegister);  // 8: skip callTarget
-    __ Pushq(tempRegister);  // newTarget
-
-    __ Bind(&pushCallTarget);
-    __ Testq(JSMethod::HaveFuncBit::Mask(), callFieldRegister);
-    __ Jz(&pushVregs);
-    __ Pushq(callTargetRegister);  // callTarget
-
-    __ Bind(&pushVregs);
-    {
-        Register numVregsRegister = r11;
-        GetNumVregsFromCallField(assembler, callFieldRegister, numVregsRegister);
-        __ Cmpq(0, numVregsRegister);
-        __ Jz(&pushFrameState);
-        PushUndefinedWithArgc(assembler, numVregsRegister);
-    }
-
-    __ Bind(&pushFrameState);
-    Register newSpRegister = r8;
-    __ Movq(rsp, newSpRegister);
-
-    StackOverflowCheck(assembler);
-
-    Register pcRegister = r12;  // reuse r12
-    PushFrameState(assembler, prevSpRegister, fpRegister, callTargetRegister, methodRegister, pcRegister, tempRegister);
-    CallBCStub(assembler, newSpRegister, glueRegister, callTargetRegister, methodRegister, pcRegister);
-}
-
-// Input: glueRegister       - %rdi
-//        declaredNumArgsRegister - %r11
-//        argcRegister       - %rsi
-//        argvRegister       - %rdx(<callTarget, newTarget, this> are at the beginning of argv)
-//        callTargetRegister - %r9
-//        methodRegister     - %rcx
-//        prevSpRegister     - %rbp
-//        callFieldRegister  - %r14
-void AssemblerStubsX64::PushArgsSlowPath(ExtendedAssembler *assembler, Register glueRegister,
-    Register declaredNumArgsRegister, Register argcRegister, Register argvRegister, Register callTargetRegister,
-    Register methodRegister, Register prevSpRegister, Register callFieldRegister)
-{
-    Label jumpToFastPath;
-    Label haveExtra;
-    Label pushUndefined;
-    Register fpRegister = r10;
-    Register tempRegister = r12;
-    __ Movq(rsp, fpRegister);
-    __ Testq(JSMethod::HaveExtraBit::Mask(), callFieldRegister);
-    __ Jnz(&haveExtra);
-    __ Movq(declaredNumArgsRegister, tempRegister);
-    __ Subq(argcRegister, declaredNumArgsRegister);
-    __ Cmpq(0, declaredNumArgsRegister);
-    __ Jg(&pushUndefined);
-    __ Movq(tempRegister, argcRegister);  // std::min(declare, actual)
-    __ Jmp(&jumpToFastPath);
-    // fall through
-    __ Bind(&haveExtra);
-    {
-        Register tempArgcRegister = r15;
-        __ PushArgc(argcRegister, tempArgcRegister);
-        __ Subq(argcRegister, declaredNumArgsRegister);
-        __ Cmpq(0, declaredNumArgsRegister);
-        __ Jle(&jumpToFastPath);
-        // fall through
-    }
-    __ Bind(&pushUndefined);
-    {
-        PushUndefinedWithArgc(assembler, declaredNumArgsRegister);
-        // fall through
-    }
-    __ Bind(&jumpToFastPath);
-    PushArgsFastPath(assembler, glueRegister, argcRegister, argvRegister, callTargetRegister, methodRegister,
-        prevSpRegister, fpRegister, callFieldRegister);
 }
 
 void AssemblerStubsX64::PushFrameState(ExtendedAssembler *assembler, Register prevSpRegister, Register fpRegister,
@@ -1527,11 +1395,32 @@ Register AssemblerStubsX64::GetThisRegsiter(ExtendedAssembler *assembler, JSCall
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::CALL_THIS_WITH_ARGV:
             return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG2);
+        case JSCallMode::CALL_ENTRY:
         case JSCallMode::CALL_FROM_AOT: {
             Register argvRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
             Register thisRegister = __ AvailableRegister2();
             __ Movq(Operand(argvRegister, -8), thisRegister);  // 8: this is just before the argv list
             return thisRegister;
+        }
+        default:
+            UNREACHABLE();
+    }
+    return rInvalid;
+}
+
+Register AssemblerStubsX64::GetNewTargetRegsiter(ExtendedAssembler *assembler, JSCallMode mode)
+{
+    switch (mode) {
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+            return __ CallDispatcherArgument(kungfu::CallDispatchInputs::CALL_TARGET);
+        case JSCallMode::CALL_FROM_AOT:
+        case JSCallMode::CALL_ENTRY: {
+            Register argvRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+            Register newTargetRegister = __ AvailableRegister2();
+            // 16: new Target offset
+            __ Movq(Operand(argvRegister, -16), newTargetRegister);
+            return newTargetRegister;
         }
         default:
             UNREACHABLE();
@@ -1574,7 +1463,8 @@ void AssemblerStubsX64::PushCallThis(ExtendedAssembler *assembler,
         if (!haveNewTarget) {
             __ Pushq(JSTaggedValue::Undefined().GetRawData());
         } else {
-            __ Pushq(callTargetRegister);
+            Register newTargetRegister = GetNewTargetRegsiter(assembler, mode);
+            __ Pushq(newTargetRegister);
         }
     }
     // fall through
@@ -1736,10 +1626,10 @@ void AssemblerStubsX64::CallNativeWithArgv(ExtendedAssembler *assembler, bool ca
 void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler)
 {
     Register glue = rdi;
-    Register argc = rsi;
-    Register argv = rdx;
-    Register method = rcx;
-    Register function = r9;
+    Register argc = r8;
+    Register argv = r9;
+    Register method = rdx;
+    Register function = rsi;
     Register nativeCode = r10;
 
     __ Push(function);
