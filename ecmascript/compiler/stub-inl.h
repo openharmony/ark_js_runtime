@@ -703,31 +703,31 @@ inline GateRef Stub::TaggedGetInt(GateRef x)
 
 inline GateRef Stub::Int8BuildTaggedTypeWithNoGC(GateRef x)
 {
-    GateRef val = ZExtInt8ToInt64(x);
+    GateRef val = SExtInt8ToInt64(x);
     return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 inline GateRef Stub::Int16BuildTaggedWithNoGC(GateRef x)
 {
-    GateRef val = ZExtInt16ToInt64(x);
+    GateRef val = SExtInt16ToInt64(x);
     return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
 }
 
 inline GateRef Stub::Int16BuildTaggedTypeWithNoGC(GateRef x)
 {
-    GateRef val = ZExtInt16ToInt64(x);
+    GateRef val = SExtInt16ToInt64(x);
     return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 inline GateRef Stub::IntBuildTaggedWithNoGC(GateRef x)
 {
-    GateRef val = ZExtInt32ToInt64(x);
+    GateRef val = SExtInt32ToInt64(x);
     return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
 }
 
 inline GateRef Stub::IntBuildTaggedTypeWithNoGC(GateRef x)
 {
-    GateRef val = ZExtInt32ToInt64(x);
+    GateRef val = SExtInt32ToInt64(x);
     return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
@@ -1608,6 +1608,16 @@ inline GateRef Stub::CastInt64ToFloat64(GateRef x)
 }
 
 inline GateRef Stub::SExtInt32ToInt64(GateRef x)
+{
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
+}
+
+inline GateRef Stub::SExtInt16ToInt64(GateRef x)
+{
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
+}
+
+inline GateRef Stub::SExtInt8ToInt64(GateRef x)
 {
     return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
