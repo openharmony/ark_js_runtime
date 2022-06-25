@@ -675,9 +675,7 @@ void EcmaVM::SetupRegExpResultCache()
 
 void EcmaVM::LoadStubFile()
 {
-    std::string file = options_.GetStubFile();
-    LOG(INFO, RUNTIME) << "Try to load stub file" << file.c_str();
-    fileLoader_->LoadStubFile(file);
+    fileLoader_->LoadStubFile();
 }
 
 void EcmaVM::LoadAOTFiles()
