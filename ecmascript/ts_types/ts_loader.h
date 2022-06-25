@@ -217,6 +217,29 @@ public:
         return JSHandle<EcmaString>(reinterpret_cast<uintptr_t>(&(constantStringTable_.at(index))));
     }
 
+    CVector<JSTaggedType> GetStaticHClassTable() const
+    {
+        return staticHClassTable_;
+    }
+
+    void AddStaticHClassInCompilePhase(GlobalTSTypeRef gt, JSTaggedValue hclass)
+    {
+        staticHClassTable_.emplace_back(hclass.GetRawData());
+        gtHClassIndexMap_[gt] = staticHClassTable_.size() - 1;
+    }
+
+    void AddStaticHClassInRuntimePhase(JSTaggedValue hclass)
+    {
+        staticHClassTable_.emplace_back(hclass.GetRawData());
+    }
+
+    std::map<GlobalTSTypeRef, uint32_t> GetGtHClassIndexMap()
+    {
+        return gtHClassIndexMap_;
+    }
+
+    void GenerateStaticHClass(JSHandle<TSTypeTable> tsTypeTable);
+
 private:
 
     NO_COPY_SEMANTIC(TSLoader);
@@ -239,6 +262,8 @@ private:
     EcmaVM *vm_ {nullptr};
     JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
     CVector<JSTaggedType> constantStringTable_ {};
+    CVector<JSTaggedType> staticHClassTable_ {};  // store hclass which produced from static type info
+    std::map<GlobalTSTypeRef, uint32_t> gtHClassIndexMap_ {};  // record gt and static hclass index mapping relation
     friend class EcmaVM;
 };
 }  // namespace panda::ecmascript

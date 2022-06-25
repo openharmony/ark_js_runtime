@@ -733,7 +733,7 @@ bool JSSerializer::WriteAllKeys(const JSHandle<JSTaggedValue> &objValue)
     uint32_t propertiesLength = obj->GetNumberOfKeys();
     uint32_t currentLength = propertiesLength;
     keyVector.clear();
-    JSObject::GetAllKeys(thread_, obj, keyVector);
+    JSObject::GetAllKeys(obj, keyVector);
     if (IsNativeBindingObject(keyVector)) {
         currentLength = propertiesLength - 2; // 2 : two params
     }
@@ -779,7 +779,7 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(objValue);
     std::vector<JSTaggedValue> keyVector;
     uint32_t propertiesLength = obj->GetNumberOfKeys();
-    JSObject::GetAllKeys(thread_, obj, keyVector);
+    JSObject::GetAllKeys(obj, keyVector);
     if (keyVector.size() != propertiesLength) {
         return false;
     }

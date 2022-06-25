@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_COMPILER_GENERIC_LOWERING_H
-#define ECMASCRIPT_COMPILER_GENERIC_LOWERING_H
+#ifndef ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H
+#define ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H
 
 #include "circuit.h"
 #include "bytecode_circuit_builder.h"
@@ -273,4 +273,4 @@ private:
     bool enableLog_ {false};
 };
 }  // panda::ecmascript::kungfu
-#endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H
+#endif  // ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H

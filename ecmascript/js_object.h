@@ -558,8 +558,7 @@ public:
                                                          const JSHandle<TaggedArray> &properties);
     static void GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,
                            const JSHandle<TaggedArray> &keyArray);
-    static void GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
-                           std::vector<JSTaggedValue> &keyVector);
+    static void GetAllKeys(const JSHandle<JSObject> &obj, std::vector<JSTaggedValue> &keyVector);
     static void GetAllElementKeys(JSThread *thread, const JSHandle<JSObject> &obj, int offset,
                                   const JSHandle<TaggedArray> &keyArray);
     static void GetALLElementKeysIntoVector(const JSThread *thread, const JSHandle<JSObject> &obj,

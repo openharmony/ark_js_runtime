@@ -19,19 +19,19 @@
 namespace panda::ecmascript::builtins {
 using StringHelper = base::StringHelper;
 
-JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *msg)
+JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(msg);
-    JSThread *thread = msg->GetThread();
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<EcmaString> str = JSTaggedValue::ToString(thread, GetCallArg(msg, 0));
+    JSHandle<EcmaString> str = JSTaggedValue::ToString(thread, GetCallArg(info, 0));
     // The default log level of ace_engine and js_runtime is error
     LOG(ERROR, RUNTIME) << ": " << base::StringHelper::ToStdString(*str);
 
-    uint32_t numArgs = msg->GetArgsNumber();
+    uint32_t numArgs = info->GetArgsNumber();
     for (uint32_t i = 1; i < numArgs; i++) {
-        JSHandle<JSTaggedValue> obj = GetCallArg(msg, i);
+        JSHandle<JSTaggedValue> obj = GetCallArg(info, i);
         std::ostringstream oss;
         obj->Dump(oss);
 
@@ -42,14 +42,14 @@ JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *msg)
     return JSTaggedValue::Undefined();
 }
 
-JSTaggedValue BuiltinsArkTools::CompareHClass(EcmaRuntimeCallInfo *msg)
+JSTaggedValue BuiltinsArkTools::CompareHClass(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(msg);
-    JSThread *thread = msg->GetThread();
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> obj1 = GetCallArg(msg, 0);
-    JSHandle<JSTaggedValue> obj2 = GetCallArg(msg, 1);
+    JSHandle<JSTaggedValue> obj1 = GetCallArg(info, 0);
+    JSHandle<JSTaggedValue> obj2 = GetCallArg(info, 1);
     JSHClass* obj1Hclass = obj1->GetTaggedObject()->GetClass();
     JSHClass* obj2Hclass = obj2->GetTaggedObject()->GetClass();
     std::ostringstream oss;
@@ -61,18 +61,43 @@ JSTaggedValue BuiltinsArkTools::CompareHClass(EcmaRuntimeCallInfo *msg)
     return JSTaggedValue(res);
 }
 
-JSTaggedValue BuiltinsArkTools::DumpHClass(EcmaRuntimeCallInfo *msg)
+JSTaggedValue BuiltinsArkTools::DumpHClass(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(msg);
-    JSThread *thread = msg->GetThread();
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> obj = GetCallArg(msg, 0);
+    JSHandle<JSTaggedValue> obj = GetCallArg(info, 0);
     JSHClass* objHclass = obj->GetTaggedObject()->GetClass();
     std::ostringstream oss;
     objHclass->Dump(oss);
 
     LOG(ERROR, RUNTIME) << "hclass:" << oss.str();
     return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue BuiltinsArkTools::IsTSHClass(EcmaRuntimeCallInfo *info)
+{
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    ASSERT(info->GetArgsNumber() == 1);
+    JSHandle<JSTaggedValue> object = GetCallArg(info, 0);
+    JSHClass* hclass = object->GetTaggedObject()->GetClass();
+    bool isTSHClass = hclass->IsTSType();
+    return GetTaggedBoolean(isTSHClass);
+}
+
+JSTaggedValue BuiltinsArkTools::GetHClass(EcmaRuntimeCallInfo *info)
+{
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    ASSERT(info->GetArgsNumber() == 1);
+    JSHandle<JSTaggedValue> object = GetCallArg(info, 0);
+    JSHClass* hclass = object->GetTaggedObject()->GetClass();
+    return JSTaggedValue(hclass);
 }
 }  // namespace panda::ecmascript::builtins

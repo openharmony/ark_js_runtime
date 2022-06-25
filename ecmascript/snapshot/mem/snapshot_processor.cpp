@@ -1188,13 +1188,14 @@ void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObject
                                          size_t objType, size_t &constSpecialIndex)
 {
     switch (type) {
-        case SnapshotType::VM_ROOT:
+        case SnapshotType::VM_ROOT: {
             if (JSType(objType) == JSType::GLOBAL_ENV) {
                 vm_->SetGlobalEnv(reinterpret_cast<GlobalEnv *>(rootObjectAddr));
             } else if (JSType(objType) == JSType::MICRO_JOB_QUEUE) {
                 vm_->SetMicroJobQueue(reinterpret_cast<job::MicroJobQueue *>(rootObjectAddr));
             }
             break;
+        }
         case SnapshotType::BUILTINS: {
             JSTaggedValue result(rootObjectAddr);
             auto constants = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
@@ -1208,6 +1209,13 @@ void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObject
                 vm_->SetGlobalEnv(reinterpret_cast<GlobalEnv *>(rootObjectAddr));
             }
             constSpecialIndex++;
+            break;
+        }
+        case SnapshotType::TS_LOADER: {
+            if (JSType(objType) == JSType::HCLASS) {
+                TSLoader *tsLoader = vm_->GetTSLoader();
+                tsLoader->AddStaticHClassInRuntimePhase(JSTaggedValue(rootObjectAddr));
+            }
             break;
         }
         default:

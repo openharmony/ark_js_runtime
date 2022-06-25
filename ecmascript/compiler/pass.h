@@ -18,6 +18,7 @@
 
 #include "bytecode_circuit_builder.h"
 #include "common_stubs.h"
+#include "type_lowering.h"
 #include "llvm_codegen.h"
 #include "scheduler.h"
 #include "slowpath_lowering.h"
@@ -73,6 +74,17 @@ public:
     {
         TypeInfer typeInfer(builder, data->GetCircuit(), tsLoader, enableLog);
         typeInfer.TraverseCircuit();
+        return true;
+    }
+};
+
+class TypeLoweringPass {
+public:
+    bool Run(PassData *data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg,
+             TSLoader *tsLoader)
+    {
+        TypeLowering lowering(builder, data->GetCircuit(), cmpCfg, tsLoader, enableLog);
+        lowering.RunTypeLowering();
         return true;
     }
 };
