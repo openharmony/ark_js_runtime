@@ -210,7 +210,7 @@ public:
     StubModulePackInfo() = default;
     ~StubModulePackInfo() override = default;
     void Save(const std::string &filename);
-    bool Load(EcmaVM *vm, const std::string &filename);
+    bool Load(EcmaVM *vm);
 
     void AddModuleDes(ModuleSectionDes moduleDes)
     {
@@ -225,7 +225,7 @@ using BytecodeStubCSigns = kungfu::BytecodeStubCSigns;
 public:
     explicit FileLoader(EcmaVM *vm);
     virtual ~FileLoader();
-    void LoadStubFile(const std::string &fileName);
+    void LoadStubFile();
     void LoadAOTFile(const std::string &fileName);
     void AddAOTPackInfo(AOTModulePackInfo packInfo)
     {
@@ -273,6 +273,18 @@ private:
     void InitializeStubEntries(const std::vector<AOTModulePackInfo::FuncEntryDes>& stubs);
     void AdjustBCStubAndDebuggerStubEntries(JSThread *thread, const std::vector<ModulePackInfo::FuncEntryDes> &stubs,
         const AsmInterParsedOption &asmInterOpt);
+};
+
+class BinaryBufferParser {
+public:
+    BinaryBufferParser(uint8_t *buffer, uint32_t length) : buffer_(buffer), length_(length) {}
+    ~BinaryBufferParser() = default;
+    void ParseBuffer(void *dst, uint32_t count);
+
+private:
+    uint8_t *buffer_ {nullptr};
+    uint32_t length_ {0};
+    uint32_t offset_ {0};
 };
 }
 #endif // ECMASCRIPT_COMPILER_FILE_LOADER_H
