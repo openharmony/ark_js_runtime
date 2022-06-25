@@ -16,6 +16,7 @@
 #include "ecmascript/jobs/micro_job_queue.h"
 
 #include "ecmascript/global_env.h"
+#include "ecmascript/jobs/hitrace_scope.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_handle.h"
@@ -38,6 +39,7 @@ void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueu
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<PendingJob> pendingJob(factory->NewPendingJob(job, argv));
+    ENQUEUE_JOB_HITRACE(pendingJob, queueType);
     if (queueType == QueueType::QUEUE_PROMISE) {
         JSHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();

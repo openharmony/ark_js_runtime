@@ -18,6 +18,7 @@
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"

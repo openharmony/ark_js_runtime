@@ -17,7 +17,6 @@
 #define ECMASCRIPT_JOBS_MICRO_JOB_QUEUE_H
 
 #include "ecmascript/ecma_string.h"
-#include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
