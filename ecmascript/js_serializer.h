@@ -28,8 +28,8 @@
 #include "ecmascript/mem/dyn_chunk.h"
 
 namespace panda::ecmascript {
-typedef void* (*DetachFunc)(void);
-typedef void (*AttachFunc)(void* buffer);
+typedef void* (*DetachFunc)(void *param1, void *param2);
+typedef void* (*AttachFunc)(void *buffer);
 
 enum class SerializationUID : uint8_t {
     // JS special values
@@ -117,11 +117,14 @@ private:
     bool WriteJSRegExp(const JSHandle<JSTaggedValue> &value);
     bool WriteEcmaString(const JSHandle<JSTaggedValue> &value);
     bool WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, SerializationUID uId);
+    bool WriteAllKeys(const JSHandle<JSTaggedValue> &value);
     bool WritePlainObject(const JSHandle<JSTaggedValue> &value);
-    bool WriteNativeBindingObject(const JSHandle<JSTaggedValue> &value, std::vector<JSTaggedValue> keyVector);
+    bool WriteNativeBindingObject(const JSHandle<JSTaggedValue> &value);
     bool WriteNativeFunctionPointer(const JSHandle<JSTaggedValue> &value);
     bool WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value);
     bool WriteDesc(const PropertyDescriptor &desc);
+    bool IsNativeBindingObject(std::vector<JSTaggedValue> keyVector);
+    bool IsTargetSymbol(JSTaggedValue symbolVal);
     bool IsSerialized(uintptr_t addr) const;
     bool WriteIfSerialized(uintptr_t addr);
 
