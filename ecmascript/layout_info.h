@@ -78,12 +78,16 @@ public:
 
     int FindElementWithCache(JSThread *thread, JSHClass *cls, JSTaggedValue key, int propertiesNumber);
     int BinarySearch(JSTaggedValue key, int propertiesNumber);
-    void GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray);
-    void GetAllKeys(const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector);
-    void GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray, uint32_t *keys);
-    void GetAllNames(const JSThread *thread, int end, const JSHandle<TaggedArray> &keyArray, uint32_t *length);
+    void GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray,
+                    const JSHandle<JSObject> object);
+    void GetAllKeys(int end, std::vector<JSTaggedValue> &keyVector, const JSHandle<JSObject> object);
+    void GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray, uint32_t *keys,
+                        const JSHandle<JSObject> object);
 
     DECL_DUMP()
+
+private:
+    bool IsUninitializedProperty(const JSHandle<JSObject> object, uint32_t index);
 };
 }  // namespace panda::ecmascript
 

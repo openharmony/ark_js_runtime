@@ -278,6 +278,10 @@ void JSObject::DeletePropertyInternal(JSThread *thread, const JSHandle<JSObject>
     }
 
     if (!array->IsDictionaryMode()) {
+        if (obj->GetJSHClass()->IsTSType()) {
+            obj->SetPropertyInlinedProps(thread, index, JSTaggedValue::Hole());
+            return;
+        }
         JSHandle<NameDictionary> dictHandle(TransitionToDictionary(thread, obj));
         int entry = dictHandle->FindEntry(key.GetTaggedValue());
         ASSERT(entry != -1);
@@ -300,7 +304,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
         int end = static_cast<int>(obj->GetJSHClass()->NumberOfProps());
         if (end > 0) {
             LayoutInfo::Cast(obj->GetJSHClass()->GetLayout().GetTaggedObject())
-                ->GetAllKeys(thread, end, offset, *keyArray);
+                ->GetAllKeys(thread, end, offset, *keyArray, obj);
         }
         return;
     }
@@ -315,8 +319,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
 }
 
 // For Serialization use. Does not support JSGlobalObject
-void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
-                          std::vector<JSTaggedValue> &keyVector)
+void JSObject::GetAllKeys(const JSHandle<JSObject> &obj, std::vector<JSTaggedValue> &keyVector)
 {
     DISALLOW_GARBAGE_COLLECTION;
     ASSERT_PRINT(!obj->IsJSGlobalObject(), "Do not support get key of JSGlobal Object");
@@ -324,8 +327,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
     if (!array->IsDictionaryMode()) {
         int end = static_cast<int>(obj->GetJSHClass()->NumberOfProps());
         if (end > 0) {
-            LayoutInfo::Cast(obj->GetJSHClass()->GetLayout().GetTaggedObject())
-                ->GetAllKeys(thread, end, keyVector);
+            LayoutInfo::Cast(obj->GetJSHClass()->GetLayout().GetTaggedObject())->GetAllKeys(end, keyVector, obj);
         }
     } else {
         NameDictionary *dict = NameDictionary::Cast(obj->GetProperties().GetTaggedObject());
@@ -357,7 +359,7 @@ JSHandle<TaggedArray> JSObject::GetAllEnumKeys(const JSThread *thread, const JSH
         int end = static_cast<int>(jsHclass->NumberOfProps());
         if (end > 0) {
             LayoutInfo::Cast(jsHclass->GetLayout().GetTaggedObject())
-                ->GetAllEnumKeys(thread, end, offset, *keyArray, keys);
+                ->GetAllEnumKeys(thread, end, offset, *keyArray, keys, obj);
             if (*keys == keyArray->GetLength()) {
                 jsHclass->SetEnumCache(thread, keyArray.GetTaggedValue());
             }

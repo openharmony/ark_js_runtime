@@ -215,7 +215,7 @@ void ObjectOperator::ToPropertyDescriptor(PropertyDescriptor &desc) const
             result = PropertyBox::Cast(result.GetTaggedObject())->GetValue();
         }
         AccessorData *accessor = AccessorData::Cast(result.GetTaggedObject());
-    
+
         if (UNLIKELY(accessor->IsInternal())) {
             desc.SetWritable(IsWritable());
             auto val = accessor->CallInternalGet(thread_, JSHandle<JSObject>::Cast(GetHolder()));
@@ -332,6 +332,9 @@ void ObjectOperator::LookupPropertyInlinedProps(const JSHandle<JSObject> &obj)
         JSTaggedValue value;
         if (attr.IsInlinedProps()) {
             value = obj->GetPropertyInlinedProps(entry);
+            if (value.IsHole()) {  // properties from ts type are all inlined
+                return;
+            }
         } else {
             entry -= static_cast<int>(jshclass->GetInlinedProperties());
             value = array->Get(entry);

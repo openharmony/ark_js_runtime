@@ -178,6 +178,7 @@ source_set("ark_aot_compiler_set") {
     "aot_compiler.cpp",
     "pass_manager.cpp",
     "slowpath_lowering.cpp",
+    "type_lowering.cpp",
   ]
 
   public_configs = [

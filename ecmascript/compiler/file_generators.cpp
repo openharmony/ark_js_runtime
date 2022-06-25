@@ -113,7 +113,11 @@ void AOTFileGenerator::GenerateSnapshotFile()
     TSLoader *tsLoader = vm_->GetTSLoader();
     Snapshot snapshot(vm_);
     CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
+    CVector<JSTaggedType> staticHClassTable = tsLoader->GetStaticHClassTable();
+    CVector<JSTaggedType> tsLoaderSerializeTable(constStringTable);
+    tsLoaderSerializeTable.insert(tsLoaderSerializeTable.end(), staticHClassTable.begin(), staticHClassTable.end());
     const CString snapshotPath(vm_->GetJSOptions().GetSnapshotOutputFile().c_str());
-    snapshot.Serialize(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), snapshotPath);
+    snapshot.Serialize(reinterpret_cast<uintptr_t>(tsLoaderSerializeTable.data()), tsLoaderSerializeTable.size(),
+                       snapshotPath);
 }
 }  // namespace panda::ecmascript::kungfu

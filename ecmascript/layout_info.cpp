@@ -15,6 +15,7 @@
 
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/ecma_string.h"
+#include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/mem/assert_scope.h"
 
@@ -42,7 +43,8 @@ void LayoutInfo::AddKey(const JSThread *thread, [[maybe_unused]] int index, cons
     SetSortedIndex(thread, insertIndex, number);
 }
 
-void LayoutInfo::GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray)
+void LayoutInfo::GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray,
+                            const JSHandle<JSObject> object)
 {
     ASSERT(end <= NumberOfElements());
     ASSERT_PRINT(offset + end <= static_cast<int>(keyArray->GetLength()),
@@ -53,6 +55,9 @@ void LayoutInfo::GetAllKeys(const JSThread *thread, int end, int offset, TaggedA
     for (int i = 0; i < end; i++) {
         JSTaggedValue key = GetKey(i);
         if (key.IsString()) {
+            if (IsUninitializedProperty(object, i)) {
+                continue;
+            }
             keyArray->Set(thread, enumKeys + offset, key);
             enumKeys++;
         }
@@ -69,19 +74,22 @@ void LayoutInfo::GetAllKeys(const JSThread *thread, int end, int offset, TaggedA
     }
 }
 
-void LayoutInfo::GetAllKeys([[maybe_unused]] const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector)
+void LayoutInfo::GetAllKeys(int end, std::vector<JSTaggedValue> &keyVector, const JSHandle<JSObject> object)
 {
     ASSERT(end <= NumberOfElements());
     for (int i = 0; i < end; i++) {
         JSTaggedValue key = GetKey(i);
         if (key.IsString() || key.IsSymbol()) {
+            if (IsUninitializedProperty(object, i)) {
+                continue;
+            }
             keyVector.emplace_back(key);
         }
     }
 }
 
 void LayoutInfo::GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray,
-                                uint32_t *keys)
+                                uint32_t *keys, const JSHandle<JSObject> object)
 {
     ASSERT(end <= NumberOfElements());
     ASSERT_PRINT(offset + end <= static_cast<int>(keyArray->GetLength()),
@@ -92,6 +100,9 @@ void LayoutInfo::GetAllEnumKeys(const JSThread *thread, int end, int offset, Tag
     for (int i = 0; i < end; i++) {
         JSTaggedValue key = GetKey(i);
         if (key.IsString() && GetAttr(i).IsEnumerable()) {
+            if (IsUninitializedProperty(object, i)) {
+                continue;
+            }
             keyArray->Set(thread, enumKeys + offset, key);
             enumKeys++;
         }
@@ -99,20 +110,14 @@ void LayoutInfo::GetAllEnumKeys(const JSThread *thread, int end, int offset, Tag
     *keys += enumKeys;
 }
 
-void LayoutInfo::GetAllNames(const JSThread *thread, int end, const JSHandle<TaggedArray> &keyArray,
-                             uint32_t *length)
+bool LayoutInfo::IsUninitializedProperty(const JSHandle<JSObject> object, uint32_t index)
 {
-    DISALLOW_GARBAGE_COLLECTION;
-    int arrayIndex = 0;
-    for (int i = 0; i < end; i++) {
-        JSTaggedValue key = GetKey(i);
-        if (key.IsString()) {
-            PropertyAttributes attr = GetAttr(i);
-            if (attr.IsEnumerable()) {
-                keyArray->Set(thread, arrayIndex++, key);
-            }
-        }
+    PropertyAttributes attr = GetAttr(index);
+    if (!attr.IsInlinedProps()) {
+        return false;
     }
-    *length += arrayIndex;
+
+    JSTaggedValue val = object->GetPropertyInlinedProps(attr.GetOffset());
+    return val.IsHole();
 }
 }  // namespace panda::ecmascript

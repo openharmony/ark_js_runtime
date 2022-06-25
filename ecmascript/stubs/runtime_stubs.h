@@ -225,7 +225,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(SuspendAotGenerator)                \
     V(NewAotObjDynRange)                  \
     V(GetTypeArrayPropertyByIndex)        \
-    V(SetTypeArrayPropertyByIndex)
+    V(SetTypeArrayPropertyByIndex)        \
+    V(AotNewObjWithIHClass)
 
 #define RUNTIME_STUB_LIST(V)                     \
     RUNTIME_ASM_STUB_LIST(V)                     \
@@ -478,6 +479,8 @@ private:
     static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
                                                            const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc);
+
+    static inline JSTaggedValue RuntimeAotNewObjWithIHClass(JSThread *thread, uintptr_t argv, uint32_t argc);
 };
 }  // namespace panda::ecmascript
 #endif

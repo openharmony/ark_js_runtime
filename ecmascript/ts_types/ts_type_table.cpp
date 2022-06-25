@@ -37,6 +37,7 @@ void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
     // Set TStypeTable -> GlobleModuleTable
     JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypetable), fileName);
+    tsLoader->GenerateStaticHClass(tsTypetable);
 
     // management dependency module
     while (recordImportModules.size() > 0) {

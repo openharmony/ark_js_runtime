@@ -24,11 +24,16 @@ class BuiltinsArkTools : public base::BuiltinsBase {
 public:
     // Make sure the ECMASCRIPT_OBJECT_DUMP in config.h has been opened before use it
     // Use through ArkTools.print(msg, [obj1, obj2, ... objn]) in js
-    static JSTaggedValue ObjectDump(EcmaRuntimeCallInfo *msg);
+    static JSTaggedValue ObjectDump(EcmaRuntimeCallInfo *info);
 
-    static JSTaggedValue CompareHClass(EcmaRuntimeCallInfo *msg);
+    static JSTaggedValue CompareHClass(EcmaRuntimeCallInfo *info);
 
-    static JSTaggedValue DumpHClass(EcmaRuntimeCallInfo *msg);
+    static JSTaggedValue DumpHClass(EcmaRuntimeCallInfo *info);
+
+    // return whether the hclass used for object is created by static ts type
+    static JSTaggedValue IsTSHClass(EcmaRuntimeCallInfo *info);
+
+    static JSTaggedValue GetHClass(EcmaRuntimeCallInfo *info);
 };
 }  // namespace panda::ecmascript::builtins
 
