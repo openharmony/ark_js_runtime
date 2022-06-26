@@ -83,6 +83,7 @@ host_unittest_action("EcmaVm_002_Test") {
     "js_forin_iterator_test.cpp",
     "js_function_test.cpp",
     "js_handle_test.cpp",
+    "js_hclass_test.cpp",
     "js_iterator_test.cpp",
     "js_locale_test.cpp",
     "js_map_test.cpp",
