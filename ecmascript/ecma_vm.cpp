@@ -171,6 +171,7 @@ bool EcmaVM::Initialize()
         globalConst->InitSpecialForSnapshot();
         Builtins builtins;
         builtins.InitializeForSnapshot(thread_);
+        globalConstInitialized_ = true;
     }
 
     SetupRegExpResultCache();
