@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <climits>
 #include "ecmascript/js_bigint.h"
 #include "ecmascript/tests/test_helper.h"
 
@@ -342,5 +343,149 @@ HWTEST_F_L0(JSBigintTest, Exponentiate_Multiply_Divide_Remainder)
     EXPECT_TRUE(BigInt::Equal(remRes2.GetTaggedValue(), expBigint2.GetTaggedValue()));
     JSHandle<BigInt> remRes3 = BigInt::Remainder(thread, resBigint4, resBigint3);
     EXPECT_TRUE(BigInt::Equal(remRes3.GetTaggedValue(), expBigint2.GetTaggedValue()));
+}
+
+/**
+ * @tc.name: ToInt64
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSBigintTest, ToInt64)
+{
+    CString resBigintStr1 = std::to_string(LLONG_MAX).c_str();
+    CString resBigintStr2 = std::to_string(LLONG_MIN).c_str();
+    CString resBigintStr3 = std::to_string(INT_MAX).c_str();
+    CString resBigintStr4 = std::to_string(INT_MIN).c_str();
+    CString resBigintStr5 = "0";
+
+    JSHandle<BigInt> resBigint1 = BigIntHelper::SetBigInt(thread, resBigintStr1);
+    JSHandle<BigInt> resBigint2 = BigIntHelper::SetBigInt(thread, resBigintStr2);
+    JSHandle<BigInt> resBigint3 = BigIntHelper::SetBigInt(thread, resBigintStr3);
+    JSHandle<BigInt> resBigint4 = BigIntHelper::SetBigInt(thread, resBigintStr4);
+    JSHandle<BigInt> resBigint5 = BigIntHelper::SetBigInt(thread, resBigintStr5);
+
+    EXPECT_TRUE(resBigint1->ToInt64() == LLONG_MAX);
+    EXPECT_TRUE(resBigint2->ToInt64() == LLONG_MIN);
+    EXPECT_TRUE(resBigint3->ToInt64() == INT_MAX);
+    EXPECT_TRUE(resBigint4->ToInt64() == INT_MIN);
+    EXPECT_TRUE(resBigint5->ToInt64() == 0);
+}
+
+/**
+ * @tc.name: ToUint64
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSBigintTest, ToUint64)
+{
+    CString resBigintStr1 = std::to_string(ULLONG_MAX).c_str();
+    CString resBigintStr2 = std::to_string(UINT_MAX).c_str();
+    CString resBigintStr3 = "0";
+
+    JSHandle<BigInt> resBigint1 = BigIntHelper::SetBigInt(thread, resBigintStr1);
+    JSHandle<BigInt> resBigint2 = BigIntHelper::SetBigInt(thread, resBigintStr2);
+    JSHandle<BigInt> resBigint3 = BigIntHelper::SetBigInt(thread, resBigintStr3);
+
+    EXPECT_TRUE(resBigint1->ToUint64() == ULLONG_MAX);
+    EXPECT_TRUE(resBigint2->ToUint64() == UINT_MAX);
+    EXPECT_TRUE(resBigint3->ToUint64() == 0);
+}
+
+/**
+ * @tc.name: Int64ToBigInt
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSBigintTest, Int64ToBigInt)
+{
+    // JSHandle<BigInt> BigInt::Int64ToBigInt(JSThread *thread, const int64_t &number)
+    JSHandle<BigInt> resBigint1 = BigInt::Int64ToBigInt(thread, LLONG_MAX);
+    JSHandle<BigInt> resBigint2 = BigInt::Int64ToBigInt(thread, LLONG_MIN);
+    JSHandle<BigInt> resBigint3 = BigInt::Int64ToBigInt(thread, INT_MAX);
+    JSHandle<BigInt> resBigint4 = BigInt::Int64ToBigInt(thread, INT_MIN);
+    JSHandle<BigInt> resBigint5 = BigInt::Int64ToBigInt(thread, 0);
+
+    EXPECT_TRUE(resBigint1->ToInt64() == LLONG_MAX);
+    EXPECT_TRUE(resBigint2->ToInt64() == LLONG_MIN);
+    EXPECT_TRUE(resBigint3->ToInt64() == INT_MAX);
+    EXPECT_TRUE(resBigint4->ToInt64() == INT_MIN);
+    EXPECT_TRUE(resBigint5->ToInt64() == 0);
+}
+
+/**
+ * @tc.name: Uint64ToBigInt
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSBigintTest, Uint64ToBigInt)
+{
+    JSHandle<BigInt> resBigint1 = BigInt::Uint64ToBigInt(thread, ULLONG_MAX);
+    JSHandle<BigInt> resBigint2 = BigInt::Uint64ToBigInt(thread, UINT_MAX);
+    JSHandle<BigInt> resBigint3 = BigInt::Uint64ToBigInt(thread, 0);
+
+    EXPECT_TRUE(resBigint1->ToUint64() == ULLONG_MAX);
+    EXPECT_TRUE(resBigint2->ToUint64() == UINT_MAX);
+    EXPECT_TRUE(resBigint3->ToUint64() == 0);
+}
+
+void GetWordsArray(bool *signBit, size_t wordCount, uint64_t *words, JSHandle<BigInt> bigintVal)
+{
+    uint32_t len = bigintVal->GetLength();
+    uint32_t count = 0;
+    uint32_t index = 0;
+    for (; index < wordCount - 1; ++index) {
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+        words[index] |= static_cast<uint64_t>(bigintVal->GetDigit(count++)) << 32; // 32 : int32_t bits
+    }
+    if (len % 2 == 0) { // 2 : len is odd or even
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+        words[index] |= static_cast<uint64_t>(bigintVal->GetDigit(count++)) << 32; // 32 : int32_t bits
+    } else {
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+    }
+    *signBit = bigintVal->GetSign();
+}
+
+/**
+ * @tc.name: CreateBigWords
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSBigintTest, CreateBigWords)
+{
+    size_t wordCount = 4;
+    uint64_t words[] = { 0xFFFFFFFFFFFFFFFF, 34ULL, 56ULL, 0xFFFFFFFFFFFFFFFF };
+    JSHandle<BigInt> bigintFalse = BigInt::CreateBigWords(thread, false, wordCount, words);
+    bool sign = true;
+    uint64_t wordsOut[] = { 0ULL, 0ULL, 0ULL, 0ULL };
+    GetWordsArray(&sign, wordCount, wordsOut, bigintFalse);
+    EXPECT_TRUE(sign == false);
+    for (size_t i = 0; i < wordCount; i++) {
+        EXPECT_TRUE(words[i] == wordsOut[i]);
+    }
+
+    JSHandle<BigInt> bigintTrue = BigInt::CreateBigWords(thread, true, wordCount, words);
+    GetWordsArray(&sign, wordCount, wordsOut, bigintTrue);
+    EXPECT_TRUE(sign == true);
+    for (size_t i = 0; i < wordCount; i++) {
+        EXPECT_TRUE(words[i] == wordsOut[i]);
+    }
+
+    size_t wordCount1 = 5;
+    uint64_t words1[] = { 12ULL, 34ULL, 56ULL, 78ULL, 90ULL };
+    JSHandle<BigInt> bigintFalse1 = BigInt::CreateBigWords(thread, false, wordCount1, words1);
+
+    bool sign1 = true;
+    uint64_t wordsOut1[] = { 0ULL, 0ULL, 0ULL, 0ULL, 0ULL };
+    GetWordsArray(&sign1, wordCount1, wordsOut1, bigintFalse1);
+    EXPECT_TRUE(sign1 == false);
+    for (size_t i = 0; i < wordCount1; i++) {
+        EXPECT_TRUE(words1[i] == wordsOut1[i]);
+    }
 }
 } // namespace panda::test

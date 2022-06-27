@@ -495,28 +495,28 @@ JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> n
     }
     // Take out bits 62-52 (11 bits in total) and subtract 1023
     uint64_t integerDigits = ((bits >> base::DOUBLE_SIGNIFICAND_SIZE) & 0x7FF) - base::DOUBLE_EXPONENT_BIAS;
-    uint32_t MayNeedLen = integerDigits / BigInt::DATEBITS + 1;
+    uint32_t mayNeedLen = integerDigits / DATEBITS + 1;
 
-    JSHandle<BigInt> bigint = CreateBigint(thread, MayNeedLen);
+    JSHandle<BigInt> bigint = CreateBigint(thread, mayNeedLen);
     bigint->SetSign(num < 0);
     uint64_t mantissa = (bits & base::DOUBLE_SIGNIFICAND_MASK) | base::DOUBLE_HIDDEN_BIT;
     int mantissaSize = base::DOUBLE_SIGNIFICAND_SIZE;
 
     int leftover = 0;
-    bool IsFirstInto = true;
-    for (int index = static_cast<int>(MayNeedLen - 1); index >= 0; --index) {
+    bool isFirstInto = true;
+    for (int index = static_cast<int>(mayNeedLen - 1); index >= 0; --index) {
         uint32_t doubleNum = 0;
-        if (IsFirstInto) {
-            IsFirstInto = false;
-            leftover = mantissaSize - static_cast<int>(integerDigits % BigInt::DATEBITS);
+        if (isFirstInto) {
+            isFirstInto = false;
+            leftover = mantissaSize - static_cast<int>(integerDigits % DATEBITS);
             doubleNum = static_cast<uint32_t>(mantissa >> leftover);
             mantissa = mantissa << (64 - leftover); // 64 : double bits size
-            BigInt::SetDigit(thread, bigint, index, doubleNum);
+            SetDigit(thread, bigint, index, doubleNum);
         } else {
-            leftover -= BigInt::DATEBITS;
-            doubleNum = static_cast<uint32_t>(mantissa >> BigInt::DATEBITS);
-            mantissa = mantissa << BigInt::DATEBITS;
-            BigInt::SetDigit(thread, bigint, index, doubleNum);
+            leftover -= DATEBITS;
+            doubleNum = static_cast<uint32_t>(mantissa >> DATEBITS);
+            mantissa = mantissa << DATEBITS;
+            SetDigit(thread, bigint, index, doubleNum);
         }
     }
     return BigIntHelper::RightTruncate(thread, bigint).GetTaggedValue();
@@ -539,7 +539,6 @@ JSHandle<BigInt> BigInt::Int32ToBigInt(JSThread *thread, const int &number)
 
 JSHandle<BigInt> BigInt::Int64ToBigInt(JSThread *thread, const int64_t &number)
 {
-    JSHandle<BigInt> bigint = CreateBigint(thread, 2); // 2 : one int64_t bits need two uint32_t bits
     uint64_t value = 0;
     bool sign = number < 0;
     if (sign) {
@@ -547,9 +546,7 @@ JSHandle<BigInt> BigInt::Int64ToBigInt(JSThread *thread, const int64_t &number)
     } else {
         value = number;
     }
-    uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
-    BigInt::SetDigit(thread, bigint, 0, *(addr));
-    BigInt::SetDigit(thread, bigint, 1, *(addr + 1));
+    JSHandle<BigInt> bigint = Uint64ToBigInt(thread, value);
     bigint->SetSign(sign);
     return BigIntHelper::RightTruncate(thread, bigint);
 }
@@ -557,25 +554,33 @@ JSHandle<BigInt> BigInt::Int64ToBigInt(JSThread *thread, const int64_t &number)
 JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number)
 {
     JSHandle<BigInt> bigint = CreateBigint(thread, 2); // 2 : one int64_t bits need two uint32_t bits
-    const uint32_t *addr = reinterpret_cast<const uint32_t *>(&number);
-    BigInt::SetDigit(thread, bigint, 0, *(addr));
-    BigInt::SetDigit(thread, bigint, 1, *(addr + 1));
+    uint32_t lowBits = static_cast<uint32_t>(number & 0xffffffff);
+    uint32_t highBits = static_cast<uint32_t>((number >> DATEBITS) & 0xffffffff);
+    BigInt::SetDigit(thread, bigint, 0, lowBits);
+    BigInt::SetDigit(thread, bigint, 1, highBits);
     return BigIntHelper::RightTruncate(thread, bigint);
+}
+
+uint64_t BigInt::ToUint64()
+{
+    uint32_t len = GetLength();
+    ASSERT(len <= 2); // The maximum length of the BigInt data is less or equal 2
+    uint32_t lowBits = GetDigit(0);
+    uint32_t highBits = 0;
+    if (len > 1) {
+        highBits = GetDigit(1);
+    }
+    uint64_t value = static_cast<uint64_t>(lowBits);
+    value |= static_cast<uint64_t>(highBits) << DATEBITS;
+    if (GetSign()) {
+        value = ~(value - 1);
+    }
+    return value;
 }
 
 int64_t BigInt::ToInt64()
 {
-    uint32_t len = GetLength();
-    ASSERT(len <= 2); // The maximum length of the BigInt data is less or equal 2
-    uint64_t value = 0;
-    uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
-    for (int32_t index = static_cast<int32_t>(len - 1); index >= 0; --index) {
-        *(addr + index) = GetDigit(index);
-    }
-    if (GetSign()) {
-        value = ~(value - 1);
-    }
-    return static_cast<int64_t>(value);
+    return static_cast<int64_t>(ToUint64());
 }
 
 void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless)
@@ -599,21 +604,20 @@ void BigInt::BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, ui
     if (Equal(bigUint64.GetTaggedValue(), bigint.GetTaggedValue())) {
         *lossless = true;
     }
-    uint32_t *addr = reinterpret_cast<uint32_t *>(cValue);
-    int len = static_cast<int>(bigUint64->GetLength());
-    for (int index = len - 1; index >= 0; --index) {
-        *(addr + index) = bigUint64->GetDigit(index);
-    }
+    *cValue = bigUint64->ToUint64();
 }
 
 JSHandle<BigInt> BigInt::CreateBigWords(JSThread *thread, bool sign, uint32_t size, const uint64_t *words)
 {
     ASSERT(words != nullptr);
-    uint32_t needLen = size * 2; // 2 : uint64_t size to uint32_t size
+    const uint32_t MULTIPLE = 2;
+    uint32_t needLen = size * MULTIPLE;
     JSHandle<BigInt> bigint = CreateBigint(thread, needLen);
-    const uint32_t *digits = reinterpret_cast<const uint32_t *>(words);
-    for (uint32_t index = 0; index < needLen; ++index) {
-        SetDigit(thread, bigint, index, *(digits + index));
+    for (uint32_t index = 0; index < size; ++index) {
+        uint32_t lowBits = static_cast<uint32_t>(words[index] & 0xffffffff);
+        uint32_t highBits = static_cast<uint32_t>((words[index] >> DATEBITS) & 0xffffffff);
+        SetDigit(thread, bigint, (MULTIPLE * index), lowBits);
+        SetDigit(thread, bigint, (MULTIPLE * index) + 1, highBits);
     }
     bigint->SetSign(sign);
     return BigIntHelper::RightTruncate(thread, bigint);
