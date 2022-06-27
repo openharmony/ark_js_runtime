@@ -82,6 +82,7 @@ public:
     static JSHandle<BigInt> Int64ToBigInt(JSThread *thread, const int64_t &number);
     static JSHandle<BigInt> Uint64ToBigInt(JSThread *thread, const uint64_t &number);
     int64_t ToInt64();
+    uint64_t ToUint64();
     static void BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless);
     static void BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless);
     static JSHandle<BigInt> CreateBigWords(JSThread *thread, bool sign, uint32_t size, const uint64_t* words);
