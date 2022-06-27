@@ -700,6 +700,8 @@ public:
                                void *nativePointer = nullptr,
                                NativePointerCallback callBack = nullptr,
                                void *data = nullptr);
+
+    static Local<ObjectRef> CreateObjectFromProperties(const EcmaVM *vm, const char* str[], const int64_t num[]);
 };
 
 using FunctionCallback = Local<JSValueRef>(*)(JsiRuntimeCallInfo*);
