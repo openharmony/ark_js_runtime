@@ -305,6 +305,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Object::IsFrozen),
     reinterpret_cast<uintptr_t>(Object::IsSealed),
     reinterpret_cast<uintptr_t>(Object::Keys),
+    reinterpret_cast<uintptr_t>(Object::Values),
     reinterpret_cast<uintptr_t>(Object::PreventExtensions),
     reinterpret_cast<uintptr_t>(Object::Seal),
     reinterpret_cast<uintptr_t>(Object::SetPrototypeOf),

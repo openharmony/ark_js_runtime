@@ -60,6 +60,8 @@ public:
     static JSTaggedValue IsSealed(EcmaRuntimeCallInfo *argv);
     // 19.1.2.14 Object.keys(O)
     static JSTaggedValue Keys(EcmaRuntimeCallInfo *argv);
+    // 20.1.2.22 Object.values(O)
+    static JSTaggedValue Values(EcmaRuntimeCallInfo *argv);
     // 19.1.2.15 Object.preventExtensions(O)
     static JSTaggedValue PreventExtensions(EcmaRuntimeCallInfo *argv);
     // 19.1.2.17 Object.seal(O)
