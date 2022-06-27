@@ -3597,7 +3597,7 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_6)
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
-    ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
+    ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(-base::NAN_VALUE)));
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
