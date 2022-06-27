@@ -37,8 +37,8 @@ bool JSAPILightWeightSet::Add(JSThread *thread, const JSHandle<JSAPILightWeightS
         obj->AdjustArray(thread, hashArray, index, size, true);
         obj->AdjustArray(thread, valueArray, index, size, true);
     }
-    int32_t capacity = static_cast<int32_t>(hashArray->GetLength());
-    if (size + 1 >= capacity) {
+    uint32_t capacity = hashArray->GetLength();
+    if (size + 1 >= static_cast<int32_t>(capacity)) {
         // need expanding
         uint32_t newCapacity = capacity << 1U;
         hashArray = thread->GetEcmaVM()->GetFactory()->CopyArray(hashArray, capacity, newCapacity);
@@ -120,7 +120,7 @@ int32_t JSAPILightWeightSet::BinarySearchHashes(uint32_t hash, int32_t size)
     int32_t high = size - 1;
     TaggedArray *hashArray = TaggedArray::Cast(GetHashes().GetTaggedObject());
     while (low <= high) {
-        uint32_t mid = (low + high) >> 1U;
+        uint32_t mid = static_cast<uint32_t>(low + high) >> 1U;
         uint32_t midVal = (uint32_t)(hashArray->Get(mid).GetNumber());
         if (midVal < hash) {
             low = mid + 1;
