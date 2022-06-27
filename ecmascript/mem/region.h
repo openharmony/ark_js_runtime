@@ -399,7 +399,7 @@ public:
 
     size_t AliveObject() const
     {
-        return aliveObject_;
+        return aliveObject_.load(std::memory_order_relaxed);
     }
 
     bool MostObjectAlive() const
