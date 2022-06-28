@@ -1105,10 +1105,14 @@ bool RegExpParser::ParseClassRanges(RangeSet *result)
                 result->Insert(s2);
                 continue;
             }
-
-            if (c1 > c2) {
-                ParseError("invalid class range");
-                return false;
+            if (c1 < INT8_MAX) {
+                if (c1 > c2) {
+                    ParseError("invalid class range");
+                    return false;
+                }
+            } else {
+                result->Insert(s1);
+                continue;
             }
             if (IsIgnoreCase()) {
                 c1 = static_cast<uint32_t>(Canonicalize(c1, IsUtf16()));
