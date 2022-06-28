@@ -20,6 +20,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
 #include "js_object.h"
+#include "securec.h"
 
 namespace panda::ecmascript {
 enum class Operate : uint32_t { AND = 0, OR, XOR };
@@ -44,7 +45,6 @@ public:
     static bool SameValue(const JSTaggedValue &x, const JSTaggedValue &y);
     static bool SameValueZero(const JSTaggedValue &x, const JSTaggedValue &y);
 
-    static void InitializationZero(JSThread *thread, JSHandle<BigInt> bigint);
     static JSHandle<BigInt> BitwiseOp(JSThread *thread, Operate op, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> BitwiseAND(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> BitwiseXOR(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
@@ -63,7 +63,7 @@ public:
     static JSHandle<BigInt> Remainder(JSThread *thread, JSHandle<BigInt> n, JSHandle<BigInt> d);
     static JSHandle<BigInt> BigintAddOne(JSThread *thread, JSHandle<BigInt> x);
     static JSHandle<BigInt> BigintSubOne(JSThread *thread, JSHandle<BigInt> x);
-    static JSHandle<BigInt> Copy(JSThread *thread, JSHandle<BigInt> x);
+    static JSHandle<BigInt> Copy(JSThread *thread, JSHandle<BigInt> x, uint32_t len);
 
     static JSHandle<BigInt> Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> Subtract(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
@@ -91,27 +91,52 @@ public:
     static JSTaggedValue AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedNumber BigIntToNumber(JSHandle<BigInt> bigint);
     static ComparisonResult CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number);
+    static inline size_t ComputeSize(uint32_t length)
+    {
+        return DATA_OFFSET + sizeof(uint32_t) * length;
+    }
+
+    inline uint32_t *GetData() const
+    {
+        return reinterpret_cast<uint32_t *>(ToUintPtr(this) + DATA_OFFSET);
+    }
+
+    inline void InitializationZero()
+    {
+        uint32_t size = GetLength() * sizeof(uint32_t);
+        if (memset_s(GetData(), size, 0, size) != EOK) {
+            LOG_ECMA(FATAL) << "memset failed";
+            UNREACHABLE();
+        }
+    }
 
     inline bool IsZero()
     {
         return GetLength() == 1 && !GetDigit(0);
     }
 
-    uint32_t GetDigit(uint32_t index) const;
-    static void SetDigit(JSThread* thread, JSHandle<BigInt> bigint, uint32_t index, uint32_t digit);
+    inline uint32_t GetDigit(uint32_t index) const
+    {
+        ASSERT(index < GetLength());
+        return Barriers::GetDynValue<uint32_t>(GetData(), sizeof(uint32_t) * index);
+    }
 
-    uint32_t GetLength() const;
+    inline void SetDigit(uint32_t index, uint32_t digit)
+    {
+        ASSERT(index < GetLength());
+        Barriers::SetDynPrimitive<uint32_t>(GetData(), sizeof(uint32_t) * index, digit);
+    }
 
-    static constexpr size_t DATA_OFFSET = TaggedObjectSize();
-    ACCESSORS(Data, DATA_OFFSET, BIT_FIELD_OFFSET);
+    static constexpr size_t LENGTH_OFFSET = TaggedObjectSize();
+    ACCESSORS_PRIMITIVE_FIELD(Length, uint32_t, LENGTH_OFFSET, BIT_FIELD_OFFSET)
     ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
+    static constexpr size_t DATA_OFFSET = SIZE;
 
     // define BitField
     static constexpr size_t SIGN_BITS = 1;
     FIRST_BIT_FIELD(BitField, Sign, bool, SIGN_BITS)
 
-    DECL_VISIT_OBJECT(DATA_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 
 private:
@@ -136,5 +161,6 @@ public:
     static uint32_t AddHelper(uint32_t x, uint32_t y, uint32_t &bigintCarry);
     static uint32_t SubHelper(uint32_t x, uint32_t y, uint32_t &bigintCarry);
 };
+static_assert((BigInt::DATA_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_BIGINT_H

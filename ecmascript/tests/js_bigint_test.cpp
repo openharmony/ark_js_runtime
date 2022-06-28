@@ -149,7 +149,7 @@ HWTEST_F_L0(JSBigintTest, InitializationZero)
     }
     EXPECT_NE(countZero, size);
 
-    BigInt::InitializationZero(thread, maxSafeIntPlusOne);
+    maxSafeIntPlusOne->InitializationZero();
     for (uint32_t i = 0; i < size; i++) {
         uint32_t digit = maxSafeIntPlusOne->GetDigit(i);
         EXPECT_EQ(digit, 0U);

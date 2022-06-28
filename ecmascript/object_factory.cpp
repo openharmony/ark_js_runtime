@@ -2322,15 +2322,18 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
     return array;
 }
 
-JSHandle<BigInt> ObjectFactory::NewBigInt()
+JSHandle<BigInt> ObjectFactory::NewBigInt(uint32_t length)
 {
     NewObjectHook();
-    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
-        JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject()));
-    JSHandle<BigInt> obj(thread_, BigInt::Cast(header));
-    obj->SetData(thread_, JSTaggedValue::Undefined());
-    obj->SetSign(false);
-    return obj;
+    ASSERT(length > 0);
+    size_t size = BigInt::ComputeSize(length);
+    auto header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject()), size);
+    JSHandle<BigInt> bigint(thread_, header);
+    bigint->SetLength(length);
+    bigint->SetSign(false);
+    bigint->InitializationZero();
+    return bigint;
 }
 
 // static
