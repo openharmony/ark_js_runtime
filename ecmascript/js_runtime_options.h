@@ -468,9 +468,8 @@ private:
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
     PandArg<std::string> stubFile_ {"stub-file",
-        STUB_FILE_GEN_DIR R"(stub.m)",
-        R"(Path of file includes common stubs module compiled by stub compiler. Default: )"
-            STUB_FILE_GEN_DIR R"(stub.m)"};
+        R"(stub.m)",
+        R"(Path of file includes common stubs module compiled by stub compiler. Default: "stub.m")"};
     PandArg<bool> enableForceGc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
     PandArg<bool> forceFullGc_ {"force-full-gc",
         true,
