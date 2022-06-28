@@ -31,9 +31,10 @@
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_iterator.h"
 #include "ecmascript/js_promise.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/jspandafile/scope_info_extractor.h"
+#include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript {
 static constexpr size_t FIXED_NUM_ARGS = 3;
@@ -1718,6 +1719,38 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t
 
     JSTaggedValue object = JSFunction::Construct(&info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return object;
+}
+
+JSTaggedValue RuntimeStubs::RuntimeAotNewObjWithIHClass(JSThread *thread, uintptr_t argv, uint32_t argc)
+{
+    CVector<JSTaggedType> hclassTable = thread->GetEcmaVM()->GetTSLoader()->GetStaticHClassTable();
+
+    uint32_t ihcIndex = GetArg(argv, argc, argc - 1).GetInt();  // last element
+    JSHandle<JSHClass> ihc(thread, JSTaggedValue(hclassTable[ihcIndex]));
+
+    JSTaggedType *args = reinterpret_cast<JSTaggedType *>(argv);
+    JSHandle<JSFunction> ctor = GetHArg<JSFunction>(argv, argc, 0);
+    JSHandle<JSTaggedValue> newTgt = GetHArg<JSTaggedValue>(argv, argc, 1);
+    JSHandle<JSTaggedValue> thisObj = thread->GlobalConstants()->GetHandledUndefined();
+
+    JSHandle<JSTaggedValue> ctorPrototype = JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(ctor),
+        thread->GlobalConstants()->GetHandledPrototypeString()).GetValue();
+    ihc->SetProto(thread, ctorPrototype);
+
+    ctor->SetProtoOrDynClass(thread, ihc);
+
+    const size_t numCtorAndNewTgt = 2;
+    const size_t numCtorNewTgtAndIHCIndex = 3;
+    EcmaRuntimeCallInfo info = ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(ctor),
+        thisObj, newTgt, argc - numCtorNewTgtAndIHCIndex);
+    for (size_t i = 0; i < argc - numCtorNewTgtAndIHCIndex; ++i) {
+        info.SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
+    }
+
+    JSTaggedValue object = JSFunction::Construct(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
     return object;
 }
 }  // namespace panda::ecmascript

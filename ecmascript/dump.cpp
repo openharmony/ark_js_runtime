@@ -453,12 +453,13 @@ static void DumpHClass(const JSHClass *jshclass, std::ostream &os, bool withDeta
     }
 
     os << " - Flags : " << std::setw(DUMP_TYPE_OFFSET);
-    os << "Ctor :" << jshclass->IsConstructor();
-    os << "| Callable :" << jshclass->IsCallable();
-    os << "| Extensible :" << jshclass->IsExtensible();
+    os << "IsCtor :" << std::boolalpha << jshclass->IsConstructor();
+    os << "| IsCallable :" << std::boolalpha << jshclass->IsCallable();
+    os << "| IsExtensible :" << std::boolalpha << jshclass->IsExtensible();
     os << "| ElementRepresentation :" << static_cast<int>(jshclass->GetElementRepresentation());
     os << "| NumberOfProps :" << std::dec << jshclass->NumberOfProps();
     os << "| InlinedProperties :" << std::dec << jshclass->GetInlinedProperties();
+    os << "| IsTSType :" << std::boolalpha << jshclass->IsTSType();
     os << "\n";
 }
 

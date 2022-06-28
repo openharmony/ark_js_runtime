@@ -41,15 +41,15 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    uint32_t length = propType->GetLength();
-    if (length > PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES) {
+    uint32_t numOfProps = propType->NumberOfElements();
+    if (numOfProps > PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES) {
         LOG(ERROR, RUNTIME) << "TSobject type has too many keys and cannot create hclass";
         UNREACHABLE();
     }
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    JSHandle<LayoutInfo> layout = factory->CreateLayoutInfo(length);
-    for (uint32_t index = 0; index < length; ++index) {
+    JSHandle<LayoutInfo> layout = factory->CreateLayoutInfo(numOfProps);
+    for (uint32_t index = 0; index < numOfProps; ++index) {
         JSTaggedValue tsPropKey = propType->GetKey(index);
         key.Update(tsPropKey);
         ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
@@ -59,9 +59,10 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
         attributes.SetOffset(index);
         layout->AddKey(thread, index, key.GetTaggedValue(), attributes);
     }
-    JSHandle<JSHClass> hclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, length);
+    JSHandle<JSHClass> hclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, numOfProps);
     hclass->SetLayout(thread, layout);
-    hclass->SetNumberOfProps(length);
+    hclass->SetNumberOfProps(numOfProps);
+    hclass->SetTSType(true);
 
     return *hclass;
 }

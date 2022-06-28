@@ -223,7 +223,7 @@ HWTEST_F_L0(JSHClassTest, SetPropertyOfObjHClass_001)
     JSHandle<JSObject> childObj = factory->NewJSObject(childDynclass);
 
     std::vector<JSTaggedValue> keyVector;
-    JSObject::GetAllKeys(thread, childObj, keyVector);
+    JSObject::GetAllKeys(childObj, keyVector);
     EXPECT_EQ(keyVector.size(), 3U);
     EXPECT_TRUE(JSObject::HasProperty(thread, childObj, keyHandle0));
     EXPECT_TRUE(JSObject::HasProperty(thread, childObj, keyHandle2));
@@ -279,7 +279,7 @@ HWTEST_F_L0(JSHClassTest, AddProperty)
     }
     EXPECT_TRUE(objDynclass == objClass);
     std::vector<JSTaggedValue> keyVector;
-    JSObject::GetAllKeys(thread, Obj, keyVector);
+    JSObject::GetAllKeys(Obj, keyVector);
     EXPECT_EQ(keyVector.size(), 3U);
     EXPECT_TRUE(JSObject::HasProperty(thread, Obj, keyHandle0));
     EXPECT_TRUE(JSObject::HasProperty(thread, Obj, keyHandle1));

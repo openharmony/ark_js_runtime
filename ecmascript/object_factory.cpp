@@ -1326,7 +1326,8 @@ void ObjectFactory::InitializeExtraProperties(const JSHandle<JSHClass> &dynclass
 {
     ASSERT(inobjPropCount * JSTaggedValue::TaggedTypeSize() < dynclass->GetObjectSize());
     auto paddr = reinterpret_cast<uintptr_t>(obj) + dynclass->GetObjectSize();
-    JSTaggedType initVal = JSTaggedValue::Undefined().GetRawData();
+    JSTaggedType initVal = dynclass->IsTSType() ? JSTaggedValue::VALUE_HOLE
+                                                : JSTaggedValue::VALUE_UNDEFINED;
     for (int i = 0; i < inobjPropCount; ++i) {
         paddr -= JSTaggedValue::TaggedTypeSize();
         *reinterpret_cast<JSTaggedType *>(paddr) = initVal;
@@ -2202,7 +2203,7 @@ JSHandle<JSCjsRequire> ObjectFactory::NewCjsRequire()
     JSHandle<JSTaggedValue> requireObj(env->GetCjsRequireFunction());
     JSHandle<JSCjsRequire> cjsRequire =
         JSHandle<JSCjsRequire>(NewJSObjectByConstructor(JSHandle<JSFunction>(requireObj), requireObj));
-    
+
     return cjsRequire;
 }
 
