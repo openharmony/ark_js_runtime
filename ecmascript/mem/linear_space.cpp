@@ -239,4 +239,7 @@ size_t SemiSpace::GetAllocatedSizeSinceGC(uintptr_t top) const
 
 SnapshotSpace::SnapshotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : LinearSpace(heap, MemSpaceType::SNAPSHOT_SPACE, initialCapacity, maximumCapacity) {}
+
+ReadOnlySpace::ReadOnlySpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
+    : LinearSpace(heap, MemSpaceType::READ_ONLY_SPACE, initialCapacity, maximumCapacity) {}
 }  // namespace panda::ecmascript

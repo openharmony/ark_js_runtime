@@ -31,7 +31,7 @@ public:
     NO_MOVE_SEMANTIC(FullGC);
 
     void RunPhases() override;
-
+    void RunPhasesForAppSpawn();
 protected:
     void Initialize() override;
     void Mark() override;

@@ -189,6 +189,28 @@ TaggedObject *Heap::AllocateOldOrHugeObject(JSHClass *hclass, size_t size)
     return object;
 }
 
+TaggedObject *Heap::AllocateReadOnlyOrHugeObject(JSHClass *hclass)
+{
+    size_t size = hclass->GetObjectSize();
+    return AllocateReadOnlyOrHugeObject(hclass, size);
+}
+
+TaggedObject *Heap::AllocateReadOnlyOrHugeObject(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
+        return AllocateHugeObject(hclass, size);
+    }
+    auto object = reinterpret_cast<TaggedObject *>(readOnlySpace_->Allocate(size));
+    if (UNLIKELY(object == 0)) {
+        ThrowOutOfMemoryError(size, "AllocateReadOnlyOrHugeObject");
+        UNREACHABLE();
+    }
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
+    return object;
+}
+
 TaggedObject *Heap::AllocateNonMovableOrHugeObject(JSHClass *hclass)
 {
     size_t size = hclass->GetObjectSize();

@@ -60,7 +60,7 @@ public:
     void Destroy();
     void Prepare();
     void Resume(TriggerGCType gcType);
-
+    void CompactHeapBeforeFork();
     // fixme: Rename NewSpace to YoungSpace.
     // This is the active young generation space that the new objects are allocated in
     // or copied into (from the other semi space) during semi space GC.
@@ -102,6 +102,11 @@ public:
     SnapshotSpace *GetSnapshotSpace() const
     {
         return snapshotSpace_;
+    }
+
+    ReadOnlySpace *GetReadOnlySpace() const
+    {
+        return readOnlySpace_;
     }
 
     SparseSpace *GetSpaceWithType(MemSpaceType type) const
@@ -194,6 +199,8 @@ public:
     // Young
     inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass);
     inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateReadOnlyOrHugeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateReadOnlyOrHugeObject(JSHClass *hclass, size_t size);
     inline TaggedObject *AllocateYoungOrHugeObject(size_t size);
     inline uintptr_t AllocateYoungSync(size_t size);
     inline TaggedObject *TryAllocateYoungGeneration(JSHClass *hclass, size_t size);
@@ -386,6 +393,10 @@ public:
         return isVerifying_;
     }
 #endif
+    static bool ShouldMoveToRoSpace(JSTaggedValue value)
+    {
+        return value.IsString() && !Region::ObjectAddressToRange(value.GetTaggedObject())->InHugeObjectSpace();
+    }
 
 private:
     void ThrowOutOfMemoryError(size_t size, std::string functionName);
@@ -441,7 +452,7 @@ private:
     // Old generation spaces where some long living objects are allocated or promoted.
     OldSpace *oldSpace_ {nullptr};
     OldSpace *compressSpace_ {nullptr};
-
+    ReadOnlySpace *readOnlySpace_ {nullptr};
     // Spaces used for special kinds of objects.
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};

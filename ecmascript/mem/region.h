@@ -39,6 +39,7 @@ enum RegionSpaceFlag {
     IN_OLD_SPACE = 0x0B,
     IN_NON_MOVABLE_SPACE = 0x0C,
     IN_MACHINE_CODE_SPACE = 0x0D,
+    IN_READ_ONLY_SPACE = 0x0E,
 
     VALID_SPACE_MASK = 0xFF,
 };
@@ -74,6 +75,8 @@ static inline std::string ToSpaceTypeName(uint8_t space)
             return "non movable space";
         case RegionSpaceFlag::IN_MACHINE_CODE_SPACE:
             return "machine code space";
+        case RegionSpaceFlag::IN_READ_ONLY_SPACE:
+            return "read only space";
         default:
             return "invalid space";
     }
@@ -263,6 +266,11 @@ public:
         return flags_.spaceFlag_ == RegionSpaceFlag::IN_SNAPSHOT_SPACE;
     }
 
+    bool InReadOnlySpace() const
+    {
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_READ_ONLY_SPACE;
+    }
+
     bool InHeapSpace() const
     {
         uint8_t space = flags_.spaceFlag_;
@@ -271,7 +279,8 @@ public:
                 space == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE ||
                 space == RegionSpaceFlag::IN_MACHINE_CODE_SPACE ||
                 space == RegionSpaceFlag::IN_NON_MOVABLE_SPACE ||
-                space == RegionSpaceFlag::IN_SNAPSHOT_SPACE);
+                space == RegionSpaceFlag::IN_SNAPSHOT_SPACE ||
+                space == RegionSpaceFlag::IN_READ_ONLY_SPACE);
     }
 
     bool InCollectSet() const
@@ -341,6 +350,29 @@ public:
         // NOLINT(hicpp-signed-bitwise)
 #ifndef PANDA_TARGET_WINDOWS
         int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_EXEC | PROT_READ | PROT_WRITE);
+#else
+        int res = 0;
+#endif
+        return res;
+    }
+
+    int SetReadOnlyAndMarked()
+    {
+        markGCBitset_->SetAllBits(bitsetSize_);
+        // NOLINT(hicpp-signed-bitwise)
+#ifndef PANDA_TARGET_WINDOWS
+        int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_READ);
+#else
+        int res = 0;
+#endif
+        return res;
+    }
+
+    int ClearReadOnly()
+    {
+        // NOLINT(hicpp-signed-bitwise)
+#ifndef PANDA_TARGET_WINDOWS
+        int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_READ | PROT_WRITE);
 #else
         int res = 0;
 #endif
