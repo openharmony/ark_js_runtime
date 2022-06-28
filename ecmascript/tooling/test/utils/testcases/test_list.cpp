@@ -22,6 +22,7 @@
 #include "js_breakpoint_arrow_test.h"
 #include "js_breakpoint_async_test.h"
 #include "js_exception_test.h"
+#include "js_range_error_test.h"
 #include "js_single_step_test.h"
 
 namespace panda::ecmascript::tooling::test {
@@ -35,6 +36,7 @@ static void RegisterTests()
     TestUtil::RegisterTest("JsBreakpointTest", GetJsBreakpointTest());
     TestUtil::RegisterTest("JsBreakpointAsyncTest", GetJsBreakpointAsyncTest());
     TestUtil::RegisterTest("JsBreakpointArrowTest", GetJsBreakpointArrowTest());
+    TestUtil::RegisterTest("JsRangeErrorTest", GetJsRangeErrorTest());
 }
 
 std::vector<const char *> GetTestList()
