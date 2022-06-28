@@ -312,7 +312,7 @@ public:
     JSHandle<ProtoChangeMarker> NewProtoChangeMarker();
 
     JSHandle<ProtoChangeDetails> NewProtoChangeDetails();
-    JSHandle<BigInt> NewBigInt();
+    JSHandle<BigInt> NewBigInt(uint32_t length);
     // use for copy properties keys's array to another array
     JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, uint32_t length,
                                       JSTaggedValue initVal = JSTaggedValue::Hole());

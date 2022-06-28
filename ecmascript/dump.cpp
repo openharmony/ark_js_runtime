@@ -1310,11 +1310,9 @@ void JSPrimitiveRef::Dump(std::ostream &os) const
 
 void BigInt::Dump(std::ostream &os) const
 {
-    os << " - Data : ";
-    GetData().DumpTaggedValue(os);
-    os << "\n";
-    os << " - value : " << ToStdString(DECIMAL) << "\n";
+    os << " - length : " << GetLength() << "\n";
     os << " - Sign : " << GetSign() << "\n";
+    os << " - value : " << ToStdString(DECIMAL) << "\n";
 }
 
 void JSDate::Dump(std::ostream &os) const
@@ -3866,7 +3864,7 @@ void JSPrimitiveRef::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValu
 
 void BigInt::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("Data"), GetData()));
+    vec.push_back(std::make_pair(CString("Length"), JSTaggedValue(GetLength())));
     vec.push_back(std::make_pair(CString("Sign"), JSTaggedValue(GetSign())));
 }
 
