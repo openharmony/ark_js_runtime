@@ -93,6 +93,9 @@ RegionSpaceFlag Space::GetRegionFlag() const
         case MemSpaceType::SNAPSHOT_SPACE:
             flags = RegionSpaceFlag::IN_SNAPSHOT_SPACE;
             break;
+        case MemSpaceType::READ_ONLY_SPACE:
+            flags = RegionSpaceFlag::IN_READ_ONLY_SPACE;
+            break;
         default:
             UNREACHABLE();
             break;

@@ -335,7 +335,9 @@ JSHandle<JSHClass> JSHClass::TransProtoWithoutLayout(const JSThread *thread, con
 void JSHClass::SetPrototype(const JSThread *thread, JSTaggedValue proto)
 {
     if (proto.IsECMAObject()) {
-        JSObject::Cast(proto.GetTaggedObject())->GetJSHClass()->SetIsPrototype(true);
+        auto hclass = proto.GetTaggedObject()->GetClass();
+        ASSERT(!Region::ObjectAddressToRange(reinterpret_cast<TaggedObject*>(hclass))->InReadOnlySpace());
+        hclass->SetIsPrototype(true);
     }
     SetProto(thread, proto);
 }

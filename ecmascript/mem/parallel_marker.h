@@ -135,6 +135,10 @@ private:
 class CompressGCMarker : public MovableMarker {
 public:
     explicit CompressGCMarker(Heap *heap) : MovableMarker(heap) {}
+    void SetAppSpawn(bool flag)
+    {
+        isAppSpawn_ = flag;
+    }
 
 protected:
     void ProcessMarkStack(uint32_t threadId) override;
@@ -142,7 +146,12 @@ protected:
 
     inline SlotStatus EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
                                      ObjectSlot slot) override;
+    inline uintptr_t AllocateReadOnlySpace(size_t size);
     inline void RecordWeakReference(uint32_t threadId, JSTaggedType *ref) override;
+
+private:
+    bool isAppSpawn_ {false};
+    os::memory::Mutex mutex_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_MARKER_H

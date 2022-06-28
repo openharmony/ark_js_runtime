@@ -81,72 +81,75 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
 
     SetConstant(ConstantIndex::HCLASS_CLASS_INDEX, JSTaggedValue(dynClassClass));
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_NONE_FIELD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, FreeObject::NEXT_OFFSET, JSType::FREE_OBJECT_WITH_NONE_FIELD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, FreeObject::NEXT_OFFSET, JSType::FREE_OBJECT_WITH_NONE_FIELD));
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_ONE_FIELD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE_OFFSET, JSType::FREE_OBJECT_WITH_ONE_FIELD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, FreeObject::SIZE_OFFSET, JSType::FREE_OBJECT_WITH_ONE_FIELD));
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_TWO_FIELD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE, JSType::FREE_OBJECT_WITH_TWO_FIELD));
-    SetConstant(ConstantIndex::STRING_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::STRING));
-    SetConstant(ConstantIndex::ARRAY_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, FreeObject::SIZE, JSType::FREE_OBJECT_WITH_TWO_FIELD));
+    SetConstant(ConstantIndex::STRING_CLASS_INDEX, factory->NewEcmaReadOnlyDynClass(dynClassClass, 0, JSType::STRING));
+    SetConstant(ConstantIndex::ARRAY_CLASS_INDEX,
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     InitGlobalConstantSpecial(thread);
     SetConstant(ConstantIndex::DICTIONARY_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY));
     SetConstant(ConstantIndex::BIGINT_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, BigInt::SIZE, JSType::BIGINT));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, BigInt::SIZE, JSType::BIGINT));
     SetConstant(ConstantIndex::JS_NATIVE_POINTER_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER));
-    SetConstant(ConstantIndex::ENV_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER));
+    SetConstant(ConstantIndex::ENV_CLASS_INDEX,
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     SetConstant(ConstantIndex::SYMBOL_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSSymbol::SIZE, JSType::SYMBOL));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, JSSymbol::SIZE, JSType::SYMBOL));
     SetConstant(ConstantIndex::ACCESSOR_DATA_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::ACCESSOR_DATA));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, AccessorData::SIZE, JSType::ACCESSOR_DATA));
     SetConstant(ConstantIndex::INTERNAL_ACCESSOR_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR));
     SetConstant(ConstantIndex::JS_PROXY_ORDINARY_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY));
     SetConstant(ConstantIndex::COMPLETION_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, CompletionRecord::SIZE, JSType::COMPLETION_RECORD));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, CompletionRecord::SIZE, JSType::COMPLETION_RECORD));
     SetConstant(ConstantIndex::GENERATOR_CONTEST_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, GeneratorContext::SIZE, JSType::JS_GENERATOR_CONTEXT));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, GeneratorContext::SIZE, JSType::JS_GENERATOR_CONTEXT));
     SetConstant(ConstantIndex::CAPABILITY_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseCapability::SIZE, JSType::PROMISE_CAPABILITY));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PromiseCapability::SIZE, JSType::PROMISE_CAPABILITY));
     SetConstant(ConstantIndex::REACTIONS_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseReaction::SIZE, JSType::PROMISE_REACTIONS));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PromiseReaction::SIZE, JSType::PROMISE_REACTIONS));
     SetConstant(ConstantIndex::PROMISE_ITERATOR_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseIteratorRecord::SIZE, JSType::PROMISE_ITERATOR_RECORD));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PromiseIteratorRecord::SIZE,
+                                                 JSType::PROMISE_ITERATOR_RECORD));
     SetConstant(ConstantIndex::PROMISE_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseRecord::SIZE, JSType::PROMISE_RECORD));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PromiseRecord::SIZE, JSType::PROMISE_RECORD));
     SetConstant(ConstantIndex::PROMISE_RESOLVING_FUNCTIONS_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ResolvingFunctionsRecord::SIZE,
-                                         JSType::RESOLVING_FUNCTIONS_RECORD));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, ResolvingFunctionsRecord::SIZE,
+                                                 JSType::RESOLVING_FUNCTIONS_RECORD));
     SetConstant(ConstantIndex::MICRO_JOB_QUEUE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, job::MicroJobQueue::SIZE, JSType::MICRO_JOB_QUEUE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, job::MicroJobQueue::SIZE, JSType::MICRO_JOB_QUEUE));
     SetConstant(ConstantIndex::PENDING_JOB_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, job::PendingJob::SIZE, JSType::PENDING_JOB));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, job::PendingJob::SIZE, JSType::PENDING_JOB));
     SetConstant(ConstantIndex::PROTO_CHANGE_MARKER_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ProtoChangeMarker::SIZE, JSType::PROTO_CHANGE_MARKER));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, ProtoChangeMarker::SIZE, JSType::PROTO_CHANGE_MARKER));
     SetConstant(ConstantIndex::PROTO_CHANGE_DETAILS_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ProtoChangeDetails::SIZE, JSType::PROTOTYPE_INFO));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, ProtoChangeDetails::SIZE, JSType::PROTOTYPE_INFO));
     SetConstant(ConstantIndex::PROTOTYPE_HANDLER_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PrototypeHandler::SIZE, JSType::PROTOTYPE_HANDLER));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PrototypeHandler::SIZE, JSType::PROTOTYPE_HANDLER));
     SetConstant(ConstantIndex::TRANSITION_HANDLER_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TransitionHandler::SIZE, JSType::TRANSITION_HANDLER));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TransitionHandler::SIZE, JSType::TRANSITION_HANDLER));
     SetConstant(ConstantIndex::PROPERTY_BOX_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX));
     SetConstant(ConstantIndex::PROGRAM_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM));
     SetConstant(
         ConstantIndex::IMPORT_ENTRY_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ImportEntry::SIZE, JSType::IMPORTENTRY_RECORD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, ImportEntry::SIZE, JSType::IMPORTENTRY_RECORD));
     SetConstant(
         ConstantIndex::EXPORT_ENTRY_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ExportEntry::SIZE, JSType::EXPORTENTRY_RECORD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, ExportEntry::SIZE, JSType::EXPORTENTRY_RECORD));
     SetConstant(
         ConstantIndex::SOURCE_TEXT_MODULE_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, SourceTextModule::SIZE, JSType::SOURCE_TEXT_MODULE_RECORD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, SourceTextModule::SIZE, JSType::SOURCE_TEXT_MODULE_RECORD));
     SetConstant(
         ConstantIndex::RESOLVED_BINDING_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ResolvedBinding::SIZE, JSType::RESOLVEDBINDING_RECORD));
+        factory->NewEcmaReadOnlyDynClass(dynClassClass, ResolvedBinding::SIZE, JSType::RESOLVEDBINDING_RECORD));
 
     JSHClass *jsProxyCallableClass = *factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY);
 
@@ -162,25 +165,27 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::JS_REALM_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSRealm::SIZE, JSType::JS_REALM));
     SetConstant(ConstantIndex::MACHINE_CODE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::MACHINE_CODE_OBJECT));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, 0, JSType::MACHINE_CODE_OBJECT));
     SetConstant(ConstantIndex::CLASS_INFO_EXTRACTOR_HCLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ClassInfoExtractor::SIZE, JSType::CLASS_INFO_EXTRACTOR));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, ClassInfoExtractor::SIZE,
+                                                 JSType::CLASS_INFO_EXTRACTOR));
     SetConstant(ConstantIndex::TS_OBJECT_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSObjectType::SIZE, JSType::TS_OBJECT_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSObjectType::SIZE, JSType::TS_OBJECT_TYPE));
     SetConstant(ConstantIndex::TS_CLASS_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_CLASS_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_CLASS_TYPE));
     SetConstant(ConstantIndex::TS_UNION_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSUnionType::SIZE, JSType::TS_UNION_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSUnionType::SIZE, JSType::TS_UNION_TYPE));
     SetConstant(ConstantIndex::TS_INTERFACE_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSInterfaceType::SIZE, JSType::TS_INTERFACE_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSInterfaceType::SIZE, JSType::TS_INTERFACE_TYPE));
     SetConstant(ConstantIndex::TS_CLASS_INSTANCE_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSClassInstanceType::SIZE, JSType::TS_CLASS_INSTANCE_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSClassInstanceType::SIZE,
+                                                 JSType::TS_CLASS_INSTANCE_TYPE));
     SetConstant(ConstantIndex::TS_IMPORT_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSImportType::SIZE, JSType::TS_IMPORT_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSImportType::SIZE, JSType::TS_IMPORT_TYPE));
     SetConstant(ConstantIndex::TS_FUNCTION_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSFunctionType::SIZE, JSType::TS_FUNCTION_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSFunctionType::SIZE, JSType::TS_FUNCTION_TYPE));
     SetConstant(ConstantIndex::TS_ARRAY_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSArrayType::SIZE, JSType::TS_ARRAY_TYPE));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, TSArrayType::SIZE, JSType::TS_ARRAY_TYPE));
     SetConstant(ConstantIndex::JS_REGEXP_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSRegExpIterator::SIZE, JSType::JS_REG_EXP_ITERATOR));
     SetConstant(ConstantIndex::JS_SET_ITERATOR_CLASS_INDEX,
@@ -219,7 +224,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR));
     SetConstant(ConstantIndex::CELL_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, CellRecord::SIZE, JSType::CELL_RECORD));
+                factory->NewEcmaReadOnlyDynClass(dynClassClass, CellRecord::SIZE, JSType::CELL_RECORD));
     SetConstant(ConstantIndex::OBJECT_DYN_CLASS_INDEX, factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT));
 }
 

@@ -192,6 +192,7 @@ bool EcmaVM::Initialize()
     if (options_.GetEnableAsmInterpreter() && options_.WasAOTOutputFileSet()) {
         LoadAOTFiles();
     }
+    heap_->GetReadOnlySpace()->SetReadOnly();
     InitializeFinish();
     return true;
 }

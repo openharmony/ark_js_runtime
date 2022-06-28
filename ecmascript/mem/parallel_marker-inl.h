@@ -253,14 +253,34 @@ inline SlotStatus CompressGCMarker::MarkObject(uint32_t threadId, TaggedObject *
     return EvacuateObject(threadId, object, markWord, slot);
 }
 
+inline uintptr_t CompressGCMarker::AllocateReadOnlySpace(size_t size)
+{
+    os::memory::LockHolder lock(mutex_);
+    uintptr_t forwardAddress = heap_->GetReadOnlySpace()->Allocate(size);
+    if (UNLIKELY(forwardAddress == 0)) {
+        LOG_ECMA_MEM(FATAL) << "Evacuate Read only Object: alloc failed: "
+                            << " size: " << size;
+        UNREACHABLE();
+    }
+    return forwardAddress;
+}
+
 inline SlotStatus CompressGCMarker::EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
     ObjectSlot slot)
 {
     JSHClass *klass = markWord.GetJSHClass();
     size_t size = klass->SizeFromJSHClass(object);
     bool isPromoted = true;
-
-    uintptr_t forwardAddress = AllocateDstSpace(threadId, size, isPromoted);
+    uintptr_t forwardAddress = 0;
+    if (isAppSpawn_ && Heap::ShouldMoveToRoSpace(JSTaggedValue(object))) {
+        forwardAddress = AllocateReadOnlySpace(size);
+        if (JSTaggedValue(object).IsString()) {
+            // calculate and set hashcode for read-only ecmastring in advance
+            EcmaString::Cast(object)->GetHashcode();
+        }
+    } else {
+        forwardAddress = AllocateDstSpace(threadId, size, isPromoted);
+    }
     ASSERT(isPromoted);
     bool result = Barriers::AtomicSetDynPrimitive(object, 0, markWord.GetValue(),
                                                   MarkWord::FromForwardingAddress(forwardAddress));
