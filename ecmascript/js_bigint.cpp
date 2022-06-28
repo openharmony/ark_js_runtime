@@ -14,10 +14,9 @@
  */
 
 #include "ecmascript/js_bigint.h"
-#include "ecmascript/base/number_helper.h"
-#include "ecmascript/tagged_array-inl.h"
-#include "object_factory.h"
-#include "securec.h"
+#include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/js_tagged_number.h"
+
 namespace panda::ecmascript {
 class ObjectFactory;
 constexpr char dp[] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -95,7 +94,7 @@ JSHandle<BigInt> BigIntHelper::SetBigInt(JSThread *thread, const CString &numStr
             val <<= 1;
             val |= static_cast<uint32_t>(binaryStr[i] - '0');
         }
-        BigInt::SetDigit(thread, bigint, index, val);
+        bigint->SetDigit(index, val);
         index--;
     }
     if (flag == 1) {
@@ -108,7 +107,7 @@ JSHandle<BigInt> BigIntHelper::SetBigInt(JSThread *thread, const CString &numStr
             val <<= 1;
             val |= static_cast<uint32_t>(binaryStr[i] - '0');
         }
-        BigInt::SetDigit(thread, bigint, index, val);
+        bigint->SetDigit(index, val);
         index--;
     }
     return BigIntHelper::RightTruncate(thread, bigint);
@@ -132,16 +131,13 @@ JSHandle<BigInt> BigIntHelper::RightTruncate(JSThread *thread, JSHandle<BigInt> 
         }
         index--;
     }
-    JSHandle<TaggedArray> array(thread, x->GetData());
+
     if (index == -1) {
-        array->Trim(thread, 1);
+        return BigInt::Int32ToBigInt(thread, 0);
     } else {
-        array->Trim(thread, index + 1);
+        ASSERT(index >= 0);
+        return BigInt::Copy(thread, x, index + 1);
     }
-    if (x->IsZero()) {
-        x->SetSign(false);
-    }
-    return x;
 }
 
 CString BigIntHelper::GetBinary(const BigInt *bigint)
@@ -165,32 +161,11 @@ CString BigIntHelper::GetBinary(const BigInt *bigint)
     return res;
 }
 
-uint32_t BigInt::GetDigit(uint32_t index) const
+JSHandle<BigInt> BigInt::CreateBigint(JSThread *thread, uint32_t length)
 {
-    TaggedArray *TaggedArray = TaggedArray::Cast(GetData().GetTaggedObject());
-    JSTaggedValue digit = TaggedArray->Get(index);
-    return static_cast<uint32_t>(digit.GetInt());
-}
-
-void BigInt::SetDigit(JSThread* thread, JSHandle<BigInt> bigint, uint32_t index, uint32_t digit)
-{
-    TaggedArray *TaggedArray = TaggedArray::Cast(bigint->GetData().GetTaggedObject());
-    TaggedArray->Set(thread, index, JSTaggedValue(static_cast<int32_t>(digit)));
-}
-
-uint32_t BigInt::GetLength() const
-{
-    TaggedArray *TaggedArray = TaggedArray::Cast(GetData().GetTaggedObject());
-    return TaggedArray->GetLength();
-}
-
-JSHandle<BigInt> BigInt::CreateBigint(JSThread *thread, uint32_t size)
-{
-    ASSERT(size < MAXSIZE);
+    ASSERT(length < MAXSIZE);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<BigInt> bigint = factory->NewBigInt();
-    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(size);
-    bigint->SetData(thread, taggedArray.GetTaggedValue());
+    JSHandle<BigInt> bigint = factory->NewBigInt(length);
     return bigint;
 }
 
@@ -229,14 +204,6 @@ bool BigInt::SameValueZero(const JSTaggedValue &x, const JSTaggedValue &y)
     return Equal(x, y);
 }
 
-void BigInt::InitializationZero(JSThread *thread, JSHandle<BigInt> bigint)
-{
-    uint32_t len = bigint->GetLength();
-    for (uint32_t i = 0; i < len; ++i) {
-        SetDigit(thread, bigint, i, 0);
-    }
-}
-
 JSHandle<BigInt> BigInt::BitwiseOp(JSThread *thread, Operate op, JSHandle<BigInt> x, JSHandle<BigInt> y)
 {
     uint32_t maxLen = 0;
@@ -251,25 +218,24 @@ JSHandle<BigInt> BigInt::BitwiseOp(JSThread *thread, Operate op, JSHandle<BigInt
         minLen = xlen;
     }
     JSHandle<BigInt> bigint = BigInt::CreateBigint(thread, maxLen);
-    InitializationZero(thread, bigint);
     for (size_t i = 0; i < minLen; ++i) {
         if (op == Operate::OR) {
-            SetDigit(thread, bigint, i, x->GetDigit(i) | y->GetDigit(i));
+            bigint->SetDigit(i, x->GetDigit(i) | y->GetDigit(i));
         } else if (op == Operate::AND) {
-            SetDigit(thread, bigint, i, x->GetDigit(i) & y->GetDigit(i));
+            bigint->SetDigit(i, x->GetDigit(i) & y->GetDigit(i));
         } else {
             ASSERT(op == Operate::XOR);
-            SetDigit(thread, bigint, i, x->GetDigit(i) ^ y->GetDigit(i));
+            bigint->SetDigit(i, x->GetDigit(i) ^ y->GetDigit(i));
         }
     }
     if (op == Operate::OR || op == Operate::XOR) {
         if (xlen > ylen) {
             for (size_t i = ylen; i < xlen; ++i) {
-                SetDigit(thread, bigint, i, x->GetDigit(i));
+                bigint->SetDigit(i, x->GetDigit(i));
             }
         } else if (ylen > xlen) {
             for (size_t i = xlen; i < ylen; ++i) {
-                SetDigit(thread, bigint, i, y->GetDigit(i));
+                bigint->SetDigit(i, y->GetDigit(i));
             }
         }
     }
@@ -289,11 +255,11 @@ JSHandle<BigInt> OneIsNegativeAND(JSThread *thread, JSHandle<BigInt> x, JSHandle
     uint32_t i = 0;
     while (i < minLen) {
         uint32_t res = x->GetDigit(i) & ~(yVal->GetDigit(i));
-        BigInt::SetDigit(thread, newBigint, i, res);
+        newBigint->SetDigit(i, res);
         ++i;
     }
     while (i < xLength) {
-        BigInt::SetDigit(thread, newBigint, i, x->GetDigit(i));
+        newBigint->SetDigit(i, x->GetDigit(i));
         ++i;
     }
     return BigIntHelper::RightTruncate(thread, newBigint);
@@ -360,12 +326,12 @@ JSHandle<BigInt> BigInt::BitwiseSubOne(JSThread *thread, JSHandle<BigInt> bigint
     uint32_t carry = 1;
     for (uint32_t i = 0; i < bigintLen; i++) {
         uint32_t bigintCarry = 0;
-        BigInt::SetDigit(thread, newBigint, i, BigIntHelper::SubHelper(bigint->GetDigit(i), carry, bigintCarry));
+        newBigint->SetDigit(i, BigIntHelper::SubHelper(bigint->GetDigit(i), carry, bigintCarry));
         carry = bigintCarry;
     }
     ASSERT(!carry);
     for (uint32_t i = bigintLen; i < maxLen; i++) {
-        BigInt::SetDigit(thread, newBigint, i, carry);
+        newBigint->SetDigit(i, carry);
     }
     return BigIntHelper::RightTruncate(thread, newBigint);
 }
@@ -390,11 +356,11 @@ JSHandle<BigInt> BigInt::BitwiseAddOne(JSThread *thread, JSHandle<BigInt> bigint
     uint32_t carry = 1;
     for (uint32_t i = 0; i < bigintLength; i++) {
         uint32_t bigintCarry = 0;
-        BigInt::SetDigit(thread, newBigint, i, BigIntHelper::AddHelper(bigint->GetDigit(i), carry, bigintCarry));
+        newBigint->SetDigit(i, BigIntHelper::AddHelper(bigint->GetDigit(i), carry, bigintCarry));
         carry = bigintCarry;
     }
     if (needExpend) {
-        BigInt::SetDigit(thread, newBigint, bigintLength, carry);
+        newBigint->SetDigit(bigintLength, carry);
     } else {
         ASSERT(!carry);
     }
@@ -419,11 +385,11 @@ JSHandle<BigInt> OneIsNegativeOR(JSThread *thread, JSHandle<BigInt> x, JSHandle<
     uint32_t i = 0;
     while (i < minLen) {
         uint32_t res = ~(x->GetDigit(i)) & yVal->GetDigit(i);
-        BigInt::SetDigit(thread, newBigint, i, res);
+        newBigint->SetDigit(i, res);
         ++i;
     }
     while (i < yLength) {
-        BigInt::SetDigit(thread, newBigint, i, yVal->GetDigit(i));
+        newBigint->SetDigit(i, yVal->GetDigit(i));
         ++i;
     }
     JSHandle<BigInt> temp = BigIntHelper::RightTruncate(thread, newBigint);
@@ -511,12 +477,12 @@ JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> n
             leftover = mantissaSize - static_cast<int>(integerDigits % DATEBITS);
             doubleNum = static_cast<uint32_t>(mantissa >> leftover);
             mantissa = mantissa << (64 - leftover); // 64 : double bits size
-            SetDigit(thread, bigint, index, doubleNum);
+            bigint->SetDigit(index, doubleNum);
         } else {
             leftover -= DATEBITS;
             doubleNum = static_cast<uint32_t>(mantissa >> DATEBITS);
             mantissa = mantissa << DATEBITS;
-            SetDigit(thread, bigint, index, doubleNum);
+            bigint->SetDigit(index, doubleNum);
         }
     }
     return BigIntHelper::RightTruncate(thread, bigint).GetTaggedValue();
@@ -532,7 +498,7 @@ JSHandle<BigInt> BigInt::Int32ToBigInt(JSThread *thread, const int &number)
     } else {
         value = number;
     }
-    BigInt::SetDigit(thread, bigint, 0, value);
+    bigint->SetDigit(0, value);
     bigint->SetSign(sign);
     return bigint;
 }
@@ -556,8 +522,8 @@ JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number
     JSHandle<BigInt> bigint = CreateBigint(thread, 2); // 2 : one int64_t bits need two uint32_t bits
     uint32_t lowBits = static_cast<uint32_t>(number & 0xffffffff);
     uint32_t highBits = static_cast<uint32_t>((number >> DATEBITS) & 0xffffffff);
-    BigInt::SetDigit(thread, bigint, 0, lowBits);
-    BigInt::SetDigit(thread, bigint, 1, highBits);
+    bigint->SetDigit(0, lowBits);
+    bigint->SetDigit(1, highBits);
     return BigIntHelper::RightTruncate(thread, bigint);
 }
 
@@ -616,8 +582,8 @@ JSHandle<BigInt> BigInt::CreateBigWords(JSThread *thread, bool sign, uint32_t si
     for (uint32_t index = 0; index < size; ++index) {
         uint32_t lowBits = static_cast<uint32_t>(words[index] & 0xffffffff);
         uint32_t highBits = static_cast<uint32_t>((words[index] >> DATEBITS) & 0xffffffff);
-        SetDigit(thread, bigint, (MULTIPLE * index), lowBits);
-        SetDigit(thread, bigint, (MULTIPLE * index) + 1, highBits);
+        bigint->SetDigit(MULTIPLE * index, lowBits);
+        bigint->SetDigit(MULTIPLE * index + 1, highBits);
     }
     bigint->SetSign(sign);
     return BigIntHelper::RightTruncate(thread, bigint);
@@ -696,18 +662,18 @@ JSHandle<BigInt> BigInt::BigintAdd(JSThread *thread, JSHandle<BigInt> x, JSHandl
         uint32_t newBigintCarry = 0;
         uint32_t addPlus = BigIntHelper::AddHelper(x->GetDigit(i), y->GetDigit(i), newBigintCarry);
         addPlus = BigIntHelper::AddHelper(addPlus, bigintCarry, newBigintCarry);
-        SetDigit(thread, bigint, i, addPlus);
+        bigint->SetDigit(i, addPlus);
         bigintCarry = newBigintCarry;
         i++;
     }
     while (i < x->GetLength()) {
         uint32_t newBigintCarry = 0;
         uint32_t addPlus = BigIntHelper::AddHelper(x->GetDigit(i), bigintCarry, newBigintCarry);
-        SetDigit(thread, bigint, i, addPlus);
+        bigint->SetDigit(i, addPlus);
         bigintCarry = newBigintCarry;
         i++;
     }
-    SetDigit(thread, bigint, i, bigintCarry);
+    bigint->SetDigit(i, bigintCarry);
     bigint->SetSign(resultSign);
     return BigIntHelper::RightTruncate(thread, bigint);
 }
@@ -730,14 +696,14 @@ JSHandle<BigInt> BigInt::BigintSub(JSThread *thread, JSHandle<BigInt> x, JSHandl
         uint32_t newBigintCarry = 0;
         uint32_t minuSub = BigIntHelper::SubHelper(x->GetDigit(i), y->GetDigit(i), newBigintCarry);
         minuSub = BigIntHelper::SubHelper(minuSub, bigintCarry, newBigintCarry);
-        SetDigit(thread, bigint, i, minuSub);
+        bigint->SetDigit(i, minuSub);
         bigintCarry = newBigintCarry;
         i++;
     }
     while (i < x->GetLength()) {
         uint32_t newBigintCarry = 0;
         uint32_t minuSub = BigIntHelper::SubHelper(x->GetDigit(i), bigintCarry, newBigintCarry);
-        SetDigit(thread, bigint, i, minuSub);
+        bigint->SetDigit(i, minuSub);
         bigintCarry = newBigintCarry;
         i++;
     }
@@ -841,7 +807,7 @@ JSHandle<BigInt> BigInt::RightShiftHelper(JSThread *thread, JSHandle<BigInt> x, 
     }
     JSHandle<BigInt> bigint = BigIntHelper::SetBigInt(thread, finalBinay, BINARY);
     if (x->GetSign()) {
-        SetDigit(thread, bigint, 0, bigint->GetDigit(0) + 1);
+        bigint->SetDigit(0, bigint->GetDigit(0) + 1);
     }
     bigint->SetSign(x->GetSign());
     return BigIntHelper::RightTruncate(thread, bigint);
@@ -873,15 +839,13 @@ JSTaggedValue BigInt::UnsignedRightShift(JSThread *thread)
                                 JSTaggedValue::Exception());
 }
 
-JSHandle<BigInt> BigInt::Copy(JSThread *thread, JSHandle<BigInt> x)
+JSHandle<BigInt> BigInt::Copy(JSThread *thread, JSHandle<BigInt> x, uint32_t len)
 {
-    uint32_t len = x->GetLength();
-    JSHandle<BigInt> temp = CreateBigint(thread, len);
-    for (uint32_t i = 0; i < len; i++) {
-        SetDigit(thread, temp, i, x->GetDigit(i));
-    }
-    temp->SetSign(x->GetSign());
-    return temp;
+    ASSERT(x->GetLength() >= len);
+    JSHandle<BigInt> newBig = CreateBigint(thread, len);
+    std::copy(x->GetData(), x->GetData() + len, newBig->GetData());
+    newBig->SetSign(x->GetSign());
+    return newBig;
 }
 
 JSHandle<BigInt> BigInt::UnaryMinus(JSThread *thread, JSHandle<BigInt> x)
@@ -889,7 +853,7 @@ JSHandle<BigInt> BigInt::UnaryMinus(JSThread *thread, JSHandle<BigInt> x)
     if (x->IsZero()) {
         return x;
     }
-    JSHandle<BigInt> y = Copy(thread, x);
+    JSHandle<BigInt> y = Copy(thread, x, x->GetLength());
     y->SetSign(!y->GetSign());
     return y;
 }

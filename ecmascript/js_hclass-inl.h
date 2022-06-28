@@ -187,6 +187,10 @@ inline size_t JSHClass::SizeFromJSHClass(TaggedObject *header)
             size = reinterpret_cast<MachineCode *>(header)->GetMachineCodeObjectSize();
             size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
             break;
+        case JSType::BIGINT:
+            size = BigInt::ComputeSize(reinterpret_cast<BigInt *>(header)->GetLength());
+            size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+            break;
         default:
             ASSERT(GetObjectSize() != 0);
             size = GetObjectSize();
