@@ -938,6 +938,14 @@ void ObjectRef::SetNativePointerFieldCount(int32_t count)
     object->SetNativePointerFieldCount(count);
 }
 
+Local<ObjectRef> ObjectRef::CreateObjectFromProperties(const EcmaVM *vm, const char* str[], const int64_t num[])
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSObject> obj = JSObject::CreateObjectFromProperties(thread, str, num);
+    RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), JSValueRef::Exception(vm));
+    return JSNApiHelper::ToLocal<ObjectRef>(JSHandle<JSTaggedValue>(obj));
+}
+
 int32_t ObjectRef::GetNativePointerFieldCount()
 {
     JSHandle<JSObject> object(JSNApiHelper::ToJSHandle(this));

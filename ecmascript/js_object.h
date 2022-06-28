@@ -558,6 +558,9 @@ public:
                              const JSHandle<JSTaggedValue> &value);
     static JSHandle<JSObject> CreateObjectFromProperties(const JSThread *thread,
                                                          const JSHandle<TaggedArray> &properties);
+    static JSHandle<JSObject> CreateObjectFromProperties(const JSThread *thread,
+                                                         const char* str[],
+                                                         const int64_t num[]);
     static void GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,
                            const JSHandle<TaggedArray> &keyArray);
     static void GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,

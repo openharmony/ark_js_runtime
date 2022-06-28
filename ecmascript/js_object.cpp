@@ -1836,6 +1836,52 @@ JSHandle<JSObject> JSObject::CreateObjectFromProperties(const JSThread *thread, 
     }
 }
 
+JSHandle<JSObject> JSObject::CreateObjectFromProperties(const JSThread *thread, const char* str[], const int64_t num[])
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewEmptyJSObject();
+    JSHClass::TransitionToDictionary(thread, obj);
+
+    int int32Len = num[0]; // 0 : num[0] - int32_t's numbers
+    int int64Len = num[1]; // 1 : num[1] - int64_t's numbers
+    int strLen = num[2];  // 2 : num[2] - string's numbers
+    int length = int32Len + int64Len + strLen;
+
+    JSMutableHandle<NameDictionary> dict(
+        thread, NameDictionary::Create(thread, NameDictionary::ComputeHashTableSize(length)));
+    JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue::Undefined());
+    PropertyAttributes attr = PropertyAttributes::Default();
+    for (int j = 0; j < int32Len; j++)
+    {
+        JSHandle<JSTaggedValue> key = JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(str[j]));
+        keyHandle.Update(key.GetTaggedValue());
+        valueHandle.Update(JSTaggedValue(num[j + 3])); // 3 : properties store start at num[3]
+        JSHandle<NameDictionary> newDict = NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
+        dict.Update(newDict);
+    }
+    for (int j = int32Len; j < int32Len + int64Len; j++)
+    {
+        JSHandle<JSTaggedValue> key = JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(str[j]));
+        keyHandle.Update(key.GetTaggedValue());
+        valueHandle.Update(JSTaggedValue(num[j + 3])); // 3 : properties store start at num[3]
+        JSHandle<NameDictionary> newDict = NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
+        dict.Update(newDict);
+    }
+    int tmpSize = int32Len + int64Len;
+    for (int j = tmpSize; j < tmpSize + strLen; j++)
+    {
+        JSHandle<JSTaggedValue> key = JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(str[j]));
+        JSHandle<JSTaggedValue> value = JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(str[j + strLen]));
+        keyHandle.Update(key.GetTaggedValue());
+        valueHandle.Update(value.GetTaggedValue());
+        JSHandle<NameDictionary> newDict = NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
+        dict.Update(newDict);
+    }
+    obj->SetProperties(thread, dict);
+    return obj;
+}
+
 void JSObject::AddAccessor(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key,
                            const JSHandle<AccessorData> &value, PropertyAttributes attr)
 {
