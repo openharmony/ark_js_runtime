@@ -369,7 +369,7 @@ namespace panda::ecmascript {
     V(Atomics, Xor)                           \
     V(Atomics, Sub)                           \
     V(Atomics, Exchange)                      \
-    V(Atomics, CompareEchange)                \
+    V(Atomics, CompareExchange)               \
     V(Atomics, Store)                         \
     V(Atomics, Load)                          \
     V(Atomics, IsLockFree)                    \
@@ -611,6 +611,7 @@ namespace panda::ecmascript {
     V(LightWeightMap, ForEach)                \
     V(LightWeightMap, ToString)               \
     V(LightWeightMap, GetValueAt)             \
+    V(LightWeightMap, Length)                 \
     V(LightWeightSet, Constructor)            \
     V(LightWeightSet, Add)                    \
     V(LightWeightSet, AddAll)                 \
@@ -728,7 +729,7 @@ namespace panda::ecmascript {
     V(Vector, SubVector)                      \
     V(Vector, ToString)                       \
     V(Vector, GetSize)                        \
-    V(Vector, forEach)                        \
+    V(Vector, ForEach)                        \
     V(Vector, ReplaceAllElements)             \
     V(Vector, Has)                            \
     V(Vector, Sort)                           \
