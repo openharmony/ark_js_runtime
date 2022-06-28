@@ -467,7 +467,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerSetObjectWithProto(gate, glue);
             break;
         case LDBIGINT_PREF_ID32:
-            LowerLdBigInt(gate, glue, jsFunc);
+            LowerLdBigInt(gate, glue);
             break;
         case LDMODULEVAR_PREF_ID32_IMM8:
             LowerLdModuleVar(gate, glue);
@@ -1414,13 +1414,14 @@ void SlowPathLowering::LowerSetObjectWithProto(GateRef gate, GateRef glue)
     ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerLdBigInt(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef numberBigInt = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef numberBigInt = LowerCallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef result = LowerCallRuntime(glue, RTSTUB_ID(LdBigInt), {numberBigInt}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
