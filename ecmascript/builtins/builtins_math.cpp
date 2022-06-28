@@ -698,8 +698,12 @@ JSTaggedValue BuiltinsMath::Sqrt(EcmaRuntimeCallInfo *argv)
     JSTaggedNumber numberValue = JSTaggedValue::ToNumber(thread, msg);
     double value = numberValue.GetNumber();
     double result = base::NAN_VALUE;
-    // If value is NaN or -NaN, or value < 0, the result is NaN
-    if (!std::isnan(std::abs(value)) && value >= 0) {
+    // If value is negative, include -NaN and -Infinity but not -0.0, the result is NaN
+    if (std::signbit(value) && value != 0) {
+        return GetTaggedDouble(result);
+    }
+    // If value is NaN, the result is NaN
+    if (!std::isnan(value)) {
         result = std::sqrt(value);
     }
     return GetTaggedDouble(result);
