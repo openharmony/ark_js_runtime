@@ -263,6 +263,7 @@ public:
     using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 21
     using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 22
     using GlobalConstOrBuiltinsObjectBit = ClassPrototypeBit::NextFlag;                    // 23
+    using IsTSTypeBit = GlobalConstOrBuiltinsObjectBit::NextFlag;                          // 24
 
     static constexpr int DEFAULT_CAPACITY_OF_IN_OBJECTS = 4;
     static constexpr int MAX_CAPACITY_OF_OUT_OBJECTS =
@@ -388,6 +389,11 @@ public:
     inline void SetIsDictionaryMode(bool flag) const
     {
         IsDictionaryBit::Set<uint32_t>(flag, GetBitFieldAddr());
+    }
+
+    inline void SetTSType(bool flag) const
+    {
+        IsTSTypeBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline bool IsJSObject() const
@@ -982,6 +988,12 @@ public:
     {
         uint32_t bits = GetBitField();
         return IsDictionaryBit::Decode(bits);
+    }
+
+    inline bool IsTSType() const
+    {
+        uint32_t bits = GetBitField();
+        return IsTSTypeBit::Decode(bits);
     }
 
     inline bool IsGeneratorFunction() const

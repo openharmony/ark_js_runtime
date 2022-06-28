@@ -362,6 +362,11 @@ void TSLoader::Iterate(const RootVisitor &v)
     for (uint64_t i = 0; i < length; i++) {
         v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&(constantStringTable_.data()[i]))));
     }
+
+    uint64_t hclassTableLength = staticHClassTable_.size();
+    for (uint64_t i = 0; i < hclassTableLength; i++) {
+        v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&(staticHClassTable_.data()[i]))));
+    }
 }
 
 GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
@@ -485,6 +490,25 @@ size_t TSLoader::GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t 
 bool TSLoader::GetTypeInferenceLog() const
 {
     return vm_->GetJSOptions().GetLogTypeInfer();
+}
+
+void TSLoader::GenerateStaticHClass(JSHandle<TSTypeTable> tsTypeTable)
+{
+    JSThread *thread = vm_->GetJSThread();
+
+    JSMutableHandle<TSObjectType> instanceType(thread, JSTaggedValue::Undefined());
+    for (int index = 1; index <= tsTypeTable->GetNumberOfTypes(); ++index) {
+        JSTaggedValue type = tsTypeTable->Get(index);
+        if (!type.IsTSClassType()) {
+            continue;
+        }
+
+        TSClassType *classType = TSClassType::Cast(type.GetTaggedObject());
+        instanceType.Update(classType->GetInstanceType());
+        GlobalTSTypeRef gt = classType->GetGTRef();
+        JSTaggedValue ihc = JSTaggedValue(instanceType->GetOrCreateHClass(thread));
+        AddStaticHClassInCompilePhase(gt, ihc);
+    }
 }
 
 void TSModuleTable::Initialize(JSThread *thread, JSHandle<TSModuleTable> mTable)

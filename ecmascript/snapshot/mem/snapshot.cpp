@@ -85,8 +85,9 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
     ObjectSlot end(startAddr + size * sizeof(JSTaggedType));
     processor.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
 
+    size_t rootObjSize = objectQueue.size();
     processor.ProcessObjectQueue(&objectQueue, &data);
-    WriteToFile(writer, nullptr, size, processor);
+    WriteToFile(writer, nullptr, rootObjSize, processor);
 }
 
 void Snapshot::SerializeBuiltins(const CString &fileName)
@@ -159,7 +160,7 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
 
     if (type == SnapshotType::TS_LOADER) {
         auto stringVector = processor.GetStringVector();
-        for (uint32_t i = 0; i < hdr.rootObjectSize; ++i) {
+        for (uint32_t i = 0; i < stringVector.size(); ++i) {
             JSTaggedValue result(reinterpret_cast<EcmaString *>(stringVector[i]));
             vm_->GetTSLoader()->AddConstString(result);
         }

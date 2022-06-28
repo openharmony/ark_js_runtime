@@ -302,6 +302,11 @@ template("host_aot_test_action") {
         " --snapshot-output-file=" + rebase_path(_test_snapshot_path_) +
         " --asm-interpreter=true"
 
+    if (defined(invoker.is_enable_enableArkTools) &&
+        invoker.is_enable_enableArkTools) {
+      _aot_run_options_ += " --enable-ark-tools=true"
+    }
+
     args = [
       "--script-file",
       rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_js_vm",

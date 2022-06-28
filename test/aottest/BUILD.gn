@@ -16,6 +16,7 @@ group("ark_aot_test") {
   deps = [
     "add:addAotAction",
     "and:andAotAction",
+    "aot_compatibility_test:aot_compatibility_test",
     "ashr:ashrAotAction",
     "createarraywithbuffer:createarraywithbufferAotAction",
     "createemptyarray:createemptyarrayAotAction",
