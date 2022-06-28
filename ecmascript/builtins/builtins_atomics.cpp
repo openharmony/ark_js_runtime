@@ -157,7 +157,7 @@ JSTaggedValue BuiltinsAtomics::Wait(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
     JSThread *thread = argv->GetThread();
-    BUILTINS_API_TRACE(thread, Atomic, Wait);
+    BUILTINS_API_TRACE(thread, Atomics, Wait);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     JSHandle<JSTaggedValue> array = GetCallArg(argv, 0);
@@ -233,7 +233,7 @@ JSTaggedValue BuiltinsAtomics::Notify(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
     JSThread *thread = argv->GetThread();
-    BUILTINS_API_TRACE(thread, Atomic, Notify);
+    BUILTINS_API_TRACE(thread, Atomics, Notify);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     JSHandle<JSTaggedValue> array = GetCallArg(argv, 0);
