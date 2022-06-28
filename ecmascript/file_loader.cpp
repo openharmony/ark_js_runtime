@@ -26,6 +26,9 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 
+extern const uint8_t _binary_stub_m_start[];
+extern const uint32_t _binary_stub_m_length;
+
 namespace panda::ecmascript {
 void StubModulePackInfo::Save(const std::string &filename)
 {
@@ -56,49 +59,44 @@ void StubModulePackInfo::Save(const std::string &filename)
     moduleFile.close();
 }
 
-bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
+bool StubModulePackInfo::Load(EcmaVM *vm)
 {
     //  now MachineCode is non movable, code and stackmap sperately is saved to MachineCode
     // by calling NewMachineCodeObject.
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
-    if (!VerifyFilePath(filename)) {
-        COMPILER_LOG(ERROR) << "Can not load stub file from path [ "  << filename << " ], "
-            << "please execute ark_stub_compiler with options --stub-file.";
+    if (_binary_stub_m_length <= 1) {
+        LOG_ECMA(FATAL) << "stub.m length <= 1, is default and invalid.";
         return false;
     }
-    std::ifstream moduleFile(filename.c_str(), std::ofstream::binary);
-    if (!moduleFile.good()) {
-        moduleFile.close();
-        return false;
-    }
-    moduleFile.read(reinterpret_cast<char *>(&entryNum_), sizeof(entryNum_));
+    BinaryBufferParser binBufparser((uint8_t *)_binary_stub_m_start, _binary_stub_m_length);
+    binBufparser.ParseBuffer(&entryNum_, sizeof(entryNum_));
     entries_.resize(entryNum_);
-    moduleFile.read(reinterpret_cast<char *>(entries_.data()), sizeof(FuncEntryDes) * entryNum_);
-    moduleFile.read(reinterpret_cast<char *>(&moduleNum_), sizeof(moduleNum_));
+    binBufparser.ParseBuffer(entries_.data(), sizeof(FuncEntryDes) * entryNum_);
+    binBufparser.ParseBuffer(&moduleNum_, sizeof(moduleNum_));
     des_.resize(moduleNum_);
     uint32_t totalCodeSize = 0;
-    moduleFile.read(reinterpret_cast<char *>(&totalCodeSize), sizeof(totalCodeSize_));
+    binBufparser.ParseBuffer(&totalCodeSize, sizeof(totalCodeSize_));
     auto factory = vm->GetFactory();
     auto codeHandle = factory->NewMachineCodeObject(totalCodeSize, nullptr);
     SetCode(codeHandle);
     uint32_t curUnitOffset = 0;
     for (size_t i = 0; i < moduleNum_; i++) {
-        moduleFile.read(reinterpret_cast<char *>(&(des_[i].hostCodeSectionAddr_)),
+        binBufparser.ParseBuffer(&(des_[i].hostCodeSectionAddr_),
             sizeof(des_[i].hostCodeSectionAddr_));
-        moduleFile.read(reinterpret_cast<char *>(&(des_[i].codeSize_)),
+        binBufparser.ParseBuffer(&(des_[i].codeSize_),
             sizeof(des_[i].codeSize_));
         uint32_t codeSize = des_[i].GetCodeSize();
         // startAddr of current code unit on device side
         uintptr_t startAddr = codeHandle->GetDataOffsetAddress() + static_cast<uintptr_t>(curUnitOffset);
-        moduleFile.read(reinterpret_cast<char *>(startAddr), codeSize);
+        binBufparser.ParseBuffer(reinterpret_cast<void *>(startAddr), codeSize);
         curUnitOffset += codeSize;
         des_[i].SetDeviceCodeSecAddr(startAddr);
-        moduleFile.read(reinterpret_cast<char *>(&(des_[i].stackMapSize_)),
+        binBufparser.ParseBuffer(&(des_[i].stackMapSize_),
             sizeof(des_[i].stackMapSize_));
         uint32_t stackmapSize = des_[i].GetStackMapSize();
         std::unique_ptr<uint8_t[]> stackmapPtr(std::make_unique<uint8_t[]>(stackmapSize));
-        moduleFile.read(reinterpret_cast<char *>(stackmapPtr.get()), stackmapSize);
+        binBufparser.ParseBuffer(stackmapPtr.get(), stackmapSize);
         if (stackmapSize != 0) {
             vm->GetFileLoader()->GetStackMapParser()->CalculateStackMap(std::move(stackmapPtr),
                 des_[i].GetHostCodeSecAddr(), startAddr);
@@ -119,7 +117,6 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         auto des = des_[entries_[i].moduleIndex_];
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();
     }
-    moduleFile.close();
     COMPILER_LOG(INFO) << "Load stub file success";
     return true;
 }
@@ -247,9 +244,9 @@ bool ModulePackInfo::VerifyFilePath([[maybe_unused]] const std::string &filePath
 #endif
 }
 
-void FileLoader::LoadStubFile(const std::string &fileName)
+void FileLoader::LoadStubFile()
 {
-    if (!stubPackInfo_.Load(vm_, fileName)) {
+    if (!stubPackInfo_.Load(vm_)) {
         return;
     }
     auto stubs = stubPackInfo_.GetStubs();
@@ -386,5 +383,18 @@ FileLoader::FileLoader(EcmaVM *vm) : vm_(vm), factory_(vm->GetFactory())
 kungfu::LLVMStackMapParser* FileLoader::GetStackMapParser()
 {
     return stackMapParser_;
+}
+
+void BinaryBufferParser::ParseBuffer(void *dst, uint32_t count)
+{
+    if (count > 0 && count + offset_ <= length_) {
+        if (memcpy_s(dst, count, buffer_ + offset_, count) != EOK) {
+            LOG_ECMA(FATAL) << "memcpy_s failed";
+            return;
+        };
+        offset_ = offset_ + count;
+    } else {
+        LOG_ECMA(FATAL) << "parse buffer error, length is 0 or overflow";
+    }
 }
 }
