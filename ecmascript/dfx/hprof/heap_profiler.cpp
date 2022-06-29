@@ -36,6 +36,7 @@ bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progr
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(vm_);
     ASSERT(heapClean);
+    LOG(INFO, RUNTIME) << "HeapProfiler DumpSnapshot start";
     size_t heapSize = vm_->GetHeap()->GetHeapObjectSize();
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     int32_t heapCount = vm_->GetHeap()->GetHeapObjectCount();
