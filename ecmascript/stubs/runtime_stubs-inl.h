@@ -1726,7 +1726,7 @@ JSTaggedValue RuntimeStubs::RuntimeAotNewObjWithIHClass(JSThread *thread, uintpt
 {
     CVector<JSTaggedType> hclassTable = thread->GetEcmaVM()->GetTSLoader()->GetStaticHClassTable();
 
-    uint32_t ihcIndex = GetArg(argv, argc, argc - 1).GetInt();  // last element
+    int32_t ihcIndex = GetArg(argv, argc, argc - 1).GetInt();  // last element
     JSHandle<JSHClass> ihc(thread, JSTaggedValue(hclassTable[ihcIndex]));
 
     JSTaggedType *args = reinterpret_cast<JSTaggedType *>(argv);
