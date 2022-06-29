@@ -133,8 +133,6 @@ private:
     // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
     // environment must be initialized
-    GateRef GetCurrentEnv(GateRef jsFunc);
-    // environment must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
     // environment must be initialized
     GateRef GetHomeObjectFromJSFunction(GateRef jsFunc);
@@ -147,7 +145,7 @@ private:
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
     void LowerLoadStr(GateRef gate, GateRef glue);
-    void LowerLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLexicalEnv(GateRef gate, GateRef glue);
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
     void LowerGetIterator(GateRef gate, GateRef glue);
@@ -226,9 +224,9 @@ private:
     void LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
     void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerPopLexicalEnv(GateRef gate, GateRef glue);
     void LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerTryStGlobalByName(GateRef gate, GateRef glue);
@@ -249,8 +247,8 @@ private:
     void LowerStObjByValue(GateRef gate, GateRef glue);
     void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
     void LowerStArraySpread(GateRef gate, GateRef glue);
-    void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
-    void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdLexVarDyn(GateRef gate, GateRef glue);
+    void LowerStLexVarDyn(GateRef gate, GateRef glue);
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerLdHomeObject(GateRef gate, GateRef jsFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);

@@ -24,7 +24,9 @@ namespace panda::ecmascript::aarch64 {
 using Label = panda::ecmascript::Label;
 class AssemblerStubs {
 public:
-    static const int FRAME_SLOT_SIZE = 8;
+    static constexpr int FRAME_SLOT_SIZE = 8;
+    static constexpr int DOUBLE_SLOT_SIZE = 16;
+    enum BuiltinsLeaveFrameArgId : unsigned {CODE_ADDRESS = 0, ENV, ARGC, ARGV};
     static inline int64_t GetStackArgOffSetToFp(unsigned argId)
     {
         //   +--------------------------+
@@ -32,10 +34,12 @@ public:
         //   +--------------------------+ ---
         //   |       argc               |   ^
         //   |--------------------------|   arguments
+        //   |       env                |   |
+        //   |--------------------------|   |
         //   |       codeAddress        |   |
         //   |--------------------------|   |
         //   |       returnAddr         |   |
-        //   |--------------------------| Fixed OptimizedLeaveFrame
+        //   |--------------------------| Fixed OptimizedBuiltinLeaveFrame
         //   |       callsiteFp         |   |
         //   |--------------------------|   |
         //   |       frameType          |   v

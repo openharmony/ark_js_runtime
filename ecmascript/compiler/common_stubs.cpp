@@ -488,8 +488,9 @@ void JsProxyCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
             GateRef arrHandle = CallRuntime(glue, RTSTUB_ID(CreateArrayFromList), argc, argv);
             GateRef thisArg = Load(VariableType::JS_POINTER(), argv, IntPtr(2*sizeof(JSTaggedValue)));
             GateRef numArgs = Int32(6);
+            GateRef lexEnv = Load(VariableType::JS_POINTER(), method, IntPtr(JSFunction::LEXICAL_ENV_OFFSET));
             result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                {glue,  numArgs, method, Undefined(), handler, target, thisArg, arrHandle});
+                {glue, lexEnv, numArgs, method, Undefined(), handler, target, thisArg, arrHandle});
             Jump(&exit);
         }
     }

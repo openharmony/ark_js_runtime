@@ -23,6 +23,11 @@
 namespace panda::ecmascript::x64 {
 class AssemblerStubsX64 {
 public:
+    static constexpr int FRAME_SLOT_SIZE = 8;
+    static constexpr int DOUBLE_SLOT_SIZE = 16;
+    static constexpr int TRIPLE_SLOT_SIZE = 24;
+    static constexpr int QUADRUPLE_SLOT_SIZE = 32;
+    static constexpr int QUINTUPLE_SLOT_SIZE = 40;
     static void CallRuntime(ExtendedAssembler *assembler);
 
     static void JSFunctionEntry(ExtendedAssembler *assembler);
