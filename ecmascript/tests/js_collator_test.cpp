@@ -89,13 +89,15 @@ HWTEST_F_L0(JSCollatorTest, GetIcuCollatorAndCompare)
     EXPECT_EQ(result.GetInt(), 0);  // equivalent
     result = JSCollator::CompareStrings(icuCollator1, string1, string3);
     EXPECT_EQ(result.GetInt(), -1); // less than
-    // test Collator is default locale
-    icuCollator = icu::Collator::createInstance(status);
+    // test Collator is zh-Hans-CN locale
+    icu::Locale zhLocale("zh", "Hans", "CN");
+    icuCollator = icu::Collator::createInstance(zhLocale, status);
+    icuCollator->setStrength(icu::Collator::PRIMARY);
     JSCollator::SetIcuCollator(thread, collator, icuCollator, JSCollator::FreeIcuCollator);
     icu::Collator *icuCollator2 = collator->GetIcuCollator();
     EXPECT_TRUE(icuCollator2 == icuCollator);
     result = JSCollator::CompareStrings(icuCollator2, string1, string2);
-    EXPECT_EQ(result.GetInt(), -1);  // less than
+    EXPECT_EQ(result.GetInt(), 0);  // equivalent
 }
 
 /**
