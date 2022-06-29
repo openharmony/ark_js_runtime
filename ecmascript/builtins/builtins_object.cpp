@@ -537,6 +537,32 @@ JSTaggedValue BuiltinsObject::Keys(EcmaRuntimeCallInfo *argv)
     return result.GetTaggedValue();
 }
 
+// 20.1.2.22 Object.values(O)
+JSTaggedValue BuiltinsObject::Values(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Object, Values);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // 1. Let obj be ToObject(O).
+    JSHandle<JSTaggedValue> msg = GetCallArg(argv, 0);
+    JSHandle<JSObject> obj = JSTaggedValue::ToObject(thread, msg);
+
+    // 2. ReturnIfAbrupt(obj).
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // 3. Let nameList be ? EnumerableOwnPropertyNames(obj, value).
+    JSHandle<TaggedArray> nameList = JSObject::EnumerableOwnPropertyNames(thread, obj, PropertyKind::VALUE);
+
+    // 4. ReturnIfAbrupt(nameList).
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // 5. Return CreateArrayFromList(nameList).
+    JSHandle<JSArray> result = JSArray::CreateArrayFromList(thread, nameList);
+    return result.GetTaggedValue();
+}
+
 // 19.1.2.15 Object.preventExtensions(O)
 JSTaggedValue BuiltinsObject::PreventExtensions(EcmaRuntimeCallInfo *argv)
 {

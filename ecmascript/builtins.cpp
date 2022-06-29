@@ -492,6 +492,8 @@ void Builtins::InitializeObject(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, objFunc, "isSealed", Object::IsSealed, FunctionLength::ONE);
     // 19.1.2.14 Object.keys(O)
     SetFunction(env, objFunc, "keys", Object::Keys, FunctionLength::ONE);
+    // 20.1.2.22 Object.values(O)
+    SetFunction(env, objFunc, "values", Object::Values, FunctionLength::ONE);
     // 19.1.2.15 Object.preventExtensions(O)
     SetFunction(env, objFunc, "preventExtensions", Object::PreventExtensions, FunctionLength::ONE);
     // 19.1.2.17 Object.seal(O)

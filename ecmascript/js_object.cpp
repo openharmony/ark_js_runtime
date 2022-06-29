@@ -1401,7 +1401,8 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnPropertyNames(JSThread *thread, con
         key.Update(ownKeys->Get(thread, i));
         if (key->IsString()) {
             PropertyDescriptor desc(thread);
-            bool status = GetOwnProperty(thread, obj, JSHandle<JSTaggedValue>(key), desc);
+            bool status = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>(obj),
+                                                        key, desc);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
             if (status && desc.IsEnumerable()) {
                 if (kind == PropertyKind::KEY) {
@@ -1424,6 +1425,9 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnPropertyNames(JSThread *thread, con
                 }
             }
         }
+    }
+    if (UNLIKELY(index < length)) {
+        properties->Trim(thread, index);
     }
     // 5. Return properties.
     return properties;
