@@ -148,29 +148,53 @@ void LLVMStackMapParser::CalcCallSite()
     uint64_t recordNum = 0;
     Pc2CallSiteInfo pc2CallSiteInfo;
     Pc2ConstInfo pc2ConstInfo;
+    Pc2DeoptBundle deoptbundles;
     auto calStkMapRecordFunc =
-        [this, &recordNum, &pc2CallSiteInfo, &pc2ConstInfo](uintptr_t address, uint32_t recordId) {
+        [this, &recordNum, &pc2CallSiteInfo, &pc2ConstInfo, &deoptbundles](uintptr_t address, uint32_t recordId) {
         struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + recordId].head;
+        int lastDeoptIndex = -1;
         for (int j = 0; j < recordHead.NumLocations; j++) {
             struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + recordId].Locations[j];
             uint32_t instructionOffset = recordHead.InstructionOffset;
             uintptr_t callsite = address + instructionOffset;
             uint64_t  patchPointID = recordHead.PatchPointID;
+            if (j == LocationTy::CONSTANT_DEOPT_CNT_INDEX) {
+                ASSERT(loc.location == LocationTy::Kind::CONSTANT);
+                lastDeoptIndex = loc.OffsetOrSmallConstant + LocationTy::CONSTANT_DEOPT_CNT_INDEX;
+            }
             if (loc.location == LocationTy::Kind::INDIRECT) {
                 COMPILER_OPTIONAL_LOG(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
                     << loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
                     instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
                     callsite;
                 DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
+                ASSERT(loc.DwarfRegNum == GCStackMapRegisters::SP || loc.DwarfRegNum == GCStackMapRegisters::FP);
                 auto it = pc2CallSiteInfo.find(callsite);
-                if (pc2CallSiteInfo.find(callsite) == pc2CallSiteInfo.end()) {
-                    pc2CallSiteInfo.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
-                } else {
-                    it->second.emplace_back(info);
+                if (j > lastDeoptIndex) {
+                    if (pc2CallSiteInfo.find(callsite) == pc2CallSiteInfo.end()) {
+                        pc2CallSiteInfo.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
+                    } else {
+                        it->second.emplace_back(info);
+                    }
+                } else if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX) {
+                    deoptbundles[callsite].push_back(info);
                 }
             } else if (loc.location == LocationTy::Kind::CONSTANT) {
-                if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX) {
+                if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX && j <= lastDeoptIndex) {
                     pc2ConstInfo[callsite].push_back(loc.OffsetOrSmallConstant);
+                    deoptbundles[callsite].push_back(loc.OffsetOrSmallConstant);
+                }
+            } else if (loc.location == LocationTy::Kind::DIRECT) {
+                if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX && j <= lastDeoptIndex) {
+                    ASSERT(loc.DwarfRegNum == GCStackMapRegisters::SP || loc.DwarfRegNum == GCStackMapRegisters::FP);
+                    DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
+                    deoptbundles[callsite].push_back(info);
+                }
+            } else {
+                if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX && j <= lastDeoptIndex) {
+                    LargeInt v = static_cast<LargeInt>(llvmStackMap_.
+                        Constants[loc.OffsetOrSmallConstant].LargeConstant);
+                    deoptbundles[callsite].push_back(v);
                 }
             }
         }
@@ -185,6 +209,7 @@ void LLVMStackMapParser::CalcCallSite()
     }
     pc2CallSiteInfoVec_.emplace_back(pc2CallSiteInfo);
     pc2ConstInfoVec_.emplace_back(pc2ConstInfo);
+    pc2DeoptBundleVec_.emplace_back(deoptbundles);
 }
 
 bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr)

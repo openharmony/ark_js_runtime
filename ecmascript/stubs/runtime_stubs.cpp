@@ -18,6 +18,7 @@
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/deoptimizer.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/frames.h"
@@ -40,6 +41,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "libpandabase/utils/string_helpers.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript {
@@ -1687,6 +1689,23 @@ bool RuntimeStubs::StringsAreEquals(EcmaString *str1, EcmaString *str2)
 bool RuntimeStubs::BigIntEquals(JSTaggedType left, JSTaggedType right)
 {
     return BigInt::Equal(JSTaggedValue(left), JSTaggedValue(right));
+}
+
+DEF_RUNTIME_STUBS(DeoptHandler)
+{
+    RUNTIME_STUBS_HEADER(DeoptHandler);
+    // 1 get pc acc & vregs
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    Deoptimizer deopt(current, thread);
+    kungfu::DeoptBundleVec deoptBundle = deopt.CollectDeoptBundleVec();
+    ASSERT(!deoptBundle.empty());
+    ASSERT(deoptBundle.size() % 2 == 0); // 2: is deoptBundle
+
+    deopt.CollectVregs(deoptBundle);
+    deopt.ConstructASMInterpretFrame();
+
+    // 3 construct asm-interpret frame
+    return JSTaggedValue::Hole().GetRawData();
 }
 
 void RuntimeStubs::Initialize(JSThread *thread)

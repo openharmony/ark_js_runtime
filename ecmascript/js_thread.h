@@ -187,6 +187,16 @@ public:
         return vm_;
     }
 
+    JSTaggedValue GetDeoptContext() const
+    {
+        return deoptContext_;
+    }
+
+    void SetDeoptContext(JSTaggedValue context)
+    {
+        deoptContext_ = context;
+    }
+
     static JSThread *Create(EcmaVM *vm);
 
     int GetNestedLevel() const
@@ -635,6 +645,7 @@ private:
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
     std::atomic<ThreadId> id_;
     EcmaVM *vm_ {nullptr};
+    JSTaggedValue deoptContext_ {JSTaggedValue::Hole()};
 
     // MM: handles, global-handles, and aot-stubs.
     int nestedLevel_ = 0;
