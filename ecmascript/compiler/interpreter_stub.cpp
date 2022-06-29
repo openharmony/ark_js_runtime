@@ -4421,7 +4421,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         varSp = GetCurrentFrame(glue);
         varAcc = exception;
         // clear exception
-        Store(VariableType::INT64(), glue, glue, IntPtr(0), Hole());
+        Store(VariableType::INT64(), glue, glue, exceptionOffset, Hole());
         GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
