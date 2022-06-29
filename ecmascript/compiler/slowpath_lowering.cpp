@@ -108,6 +108,8 @@ void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
         } else if (acc.GetOpCode(*useIt) != OpCode::VALUE_SELECTOR && useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);
         // replace data flow with data output in label successExit(incluing JSgates and phigates)
+        } else if ((acc.GetOpCode(*useIt) == OpCode::CHECK_POINT) && useIt.GetIndex() == 0) {
+            acc.ReplaceIn(useIt, successControl[1]);
         } else {
             acc.ReplaceIn(useIt, outir);
         }
@@ -133,6 +135,42 @@ void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
 void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow)
 {
     GateRef stateInGate = acc_.GetState(hirGate);
+    // copy depend-wire of hirGate to callGate
+    GateRef dependInGate = acc_.GetDep(hirGate);
+    acc_.SetDep(callGate, dependInGate);
+
+    GateRef ifBranch;
+    if (!noThrow) {
+        // exception value
+        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TaggedNPointer());
+        // compare with trampolines result
+        GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
+        ifBranch = builder_.Branch(stateInGate, equal);
+    } else {
+        ifBranch = builder_.Branch(stateInGate, builder_.Boolean(false));
+    }
+
+    auto uses = acc_.Uses(hirGate);
+    for (auto it = uses.begin(); it != uses.end(); it++) {
+        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            acc_.SetOpCode(*it, OpCode::IF_FALSE);
+            acc_.ReplaceIn(it, ifBranch);
+        } else {
+            if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+                acc_.SetOpCode(*it, OpCode::IF_TRUE);
+                acc_.ReplaceIn(it, ifBranch);
+            } else {
+                acc_.ReplaceIn(it, callGate);
+            }
+        }
+    }
+
+    // delete old gate
+    circuit_->DeleteGate(hirGate);
+}
+
+void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, GateRef stateInGate, bool noThrow)
+{
     // copy depend-wire of hirGate to callGate
     GateRef dependInGate = acc_.GetDep(hirGate);
     acc_.SetDep(callGate, dependInGate);
@@ -640,14 +678,53 @@ GateRef SlowPathLowering::LowerCallRuntime(GateRef glue, int index, const std::v
     }
 }
 
+void SlowPathLowering::DeoptCall(GateRef gate, GateRef glue, GateRef stateIn)
+{
+    GateRef checkPoint = acc_.GetDep(gate);
+    GateRef frameState = acc_.GetValueIn(checkPoint, 0);
+    size_t numValueIn = acc_.GetBitField(frameState);
+    size_t accIndex = numValueIn - 2; // 2: acc valueIn index
+    size_t pcIndex = numValueIn - 1;
+    std::vector<GateRef> vec;
+    for (size_t i = 0; i < accIndex; i++) {
+        GateRef vreg = acc_.GetValueIn(frameState, i);
+        if (acc_.GetBitField(vreg) != JSTaggedValue::VALUE_HOLE) {
+            vec.emplace_back(builder_.Int32(i));
+            vec.emplace_back(vreg);
+        }
+    }
+    GateRef acc = acc_.GetValueIn(frameState, accIndex);
+    GateRef pc = acc_.GetValueIn(frameState, pcIndex);
+    vec.emplace_back(builder_.Int32(-2)); // -2: acc index in deopt
+    vec.emplace_back(acc);
+    vec.emplace_back(builder_.Int32(-1)); // -1: pc index in deopt
+    vec.emplace_back(pc);
+    const int id = RTSTUB_ID(DeoptHandler);
+    GateRef newGate = LowerCallRuntime(glue, id, vec);
+    builder_.Return(stateIn, acc_.GetDep(checkPoint), newGate);
+}
+
 void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
     const int id = RTSTUB_ID(Add2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     auto args =  {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)};
-    GateRef newGate = LowerCallRuntime(glue, id, args);
-    ReplaceHirToCall(gate, newGate);
+    if (enableDeopt_) {
+        GateRef deoptFlag = builder_.TaggedTypeNGC(builder_.Int64(10000)); // 10000 : flag trigger deopt
+        GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), deoptFlag, acc_.GetValueIn(gate, 0));
+        GateRef stateInGate = acc_.GetState(gate);
+        GateRef ifBranch = builder_.Branch(stateInGate, equal);
+        GateRef ifTrue = builder_.IfTrue(ifBranch);
+        GateRef ifFalse = builder_.IfFalse(ifBranch);
+
+        GateRef newGate = LowerCallRuntime(glue, id, args);
+        DeoptCall(gate, glue, ifTrue);
+        ReplaceHirToCall(gate, newGate, ifFalse);
+    } else {
+        GateRef newGate = LowerCallRuntime(glue, id, args);
+        ReplaceHirToCall(gate, newGate);
+    }
 }
 
 void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
@@ -1027,6 +1104,10 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
         { loadException, holeCst, glue }, VariableType::INT64().GetGateType());
     auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
+        if (acc_.GetOpCode(*it) == OpCode::FRAME_STATE) {
+            acc_.ReplaceIn(it, loadException);
+            continue;
+        }
         if (acc_.GetDep(*it) == hirGate && acc_.IsDependIn(it)) {
             acc_.ReplaceIn(it, clearException);
         } else {

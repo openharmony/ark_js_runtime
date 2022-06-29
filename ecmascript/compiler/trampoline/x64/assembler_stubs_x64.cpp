@@ -1131,7 +1131,7 @@ void AssemblerStubsX64::CallBCStub(ExtendedAssembler *assembler, Register newSpR
                                      // %r12 - pc
         __ Movq(Operand(callTargetRegister, JSFunction::CONSTANT_POOL_OFFSET), rbx);       // rbx - constantpool
         __ Movq(Operand(callTargetRegister, JSFunction::PROFILE_TYPE_INFO_OFFSET), r14);   // r14 - profileTypeInfo
-        __ Movq(JSTaggedValue::Hole().GetRawData(), rsi);                                  // rsi - acc
+        __ Movq(Operand(rsi, GeneratorContext::GENERATOR_ACC_OFFSET), rsi);
         __ Movzwq(Operand(methodRegister, JSMethod::GetHotnessCounterOffset(false)), rdi); // rdi - hotnessCounter
 
         // call the first bytecode handler
@@ -2109,6 +2109,5 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     PopOptimizedFrame(assembler);
     __ Ret();
 }
-
 #undef __
 }  // namespace panda::ecmascript::x64

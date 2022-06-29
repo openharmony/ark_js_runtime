@@ -226,7 +226,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(NewAotObjDynRange)                  \
     V(GetTypeArrayPropertyByIndex)        \
     V(SetTypeArrayPropertyByIndex)        \
-    V(AotNewObjWithIHClass)
+    V(AotNewObjWithIHClass)               \
+    V(DeoptHandler)
 
 #define RUNTIME_STUB_LIST(V)                     \
     RUNTIME_ASM_STUB_LIST(V)                     \

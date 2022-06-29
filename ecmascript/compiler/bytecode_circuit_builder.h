@@ -386,13 +386,14 @@ enum CommonArgIdx : uint8_t {
 class BytecodeCircuitBuilder {
 public:
     explicit BytecodeCircuitBuilder(const BytecodeTranslationInfo &translationInfo, size_t index,
-                                    TSLoader *tsLoader, bool enableLog)
+                                    TSLoader *tsLoader, bool enableLog, bool enableDeopt)
         : tsLoader_(tsLoader), file_(translationInfo.jsPandaFile), pf_(translationInfo.jsPandaFile->GetPandaFile()),
           method_(translationInfo.methodPcInfos[index].method),
           pcArray_(translationInfo.methodPcInfos[index].pcArray),
           constantPool_(translationInfo.constantPool),
-          enableLog_(enableLog)
+          enableLog_(enableLog), enableDeopt_(enableDeopt)
     {
+        numVregs_ = method_->GetNumVregsWithCallField();
     }
     ~BytecodeCircuitBuilder() = default;
     NO_COPY_SEMANTIC(BytecodeCircuitBuilder);
@@ -497,6 +498,9 @@ private:
     {
         return numArgs + CommonArgIdx::NUM_OF_ARGS;
     }
+    GateRef InitializeFrameState(const uint8_t *pc);
+    void StoreVregInfo(size_t vregId, GateRef defVreg, std::vector<GateRef> &gateList);
+    void StoreAccInfo(GateRef defAcc, std::vector<GateRef> &gateList);
 
     kungfu::Circuit circuit_;
     std::map<kungfu::GateRef, std::pair<size_t, const uint8_t *>> jsgateToBytecode_;
@@ -511,7 +515,10 @@ private:
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
     bool enableLog_ {false};
+    bool enableDeopt_ {false};
     std::map<uint8_t *, int32_t> pcToBCOffset_;
+    std::map<uint8_t *, int32_t> pcToBCIndex_;
+    uint32_t numVregs_ {0};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H

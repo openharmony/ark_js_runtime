@@ -197,7 +197,8 @@ void LLVMIRBuilder::InitializeHandlers()
         OpCode::NOP, OpCode::CIRCUIT_ROOT, OpCode::DEPEND_ENTRY,
         OpCode::FRAMESTATE_ENTRY, OpCode::RETURN_LIST, OpCode::THROW_LIST,
         OpCode::CONSTANT_LIST, OpCode::ARG_LIST, OpCode::THROW,
-        OpCode::DEPEND_SELECTOR, OpCode::DEPEND_RELAY, OpCode::DEPEND_AND
+        OpCode::DEPEND_SELECTOR, OpCode::DEPEND_RELAY, OpCode::DEPEND_AND,
+        OpCode::CHECK_POINT, OpCode::FRAME_STATE
     };
 }
 
@@ -546,13 +547,27 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     params.push_back(glue); // glue
     int index = static_cast<int>(circuit_->GetBitField(inList[static_cast<int>(CallInputs::TARGET)]));
     params.push_back(LLVMConstInt(LLVMInt64Type(), index, 0)); // target
-    params.push_back(LLVMConstInt(LLVMInt64Type(),
-        inList.size() - static_cast<size_t>(CallInputs::FIRST_PARAMETER), 0)); // argc
-    for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {
-        GateRef gateTmp = inList[paraIdx];
-        params.push_back(gate2LValue_[gateTmp]);
+
+    LLVMValueRef runtimeCall = nullptr;
+    if (index == RTSTUB_ID(DeoptHandler)) {
+        params.emplace_back(LLVMConstInt(LLVMInt64Type(), 0, 0));
+        LLVMTypeRef funcType = llvmModule_->GetFuncType(signature);
+        std::vector<LLVMValueRef> values;
+        for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {
+            GateRef gateTmp = inList[paraIdx];
+            values.emplace_back(gate2LValue_[gateTmp]);
+        }
+        runtimeCall = LLVMBuildCall3(
+            builder_, funcType, callee, params.data(), params.size(), "", values.data(), values.size());
+    } else {
+        params.push_back(LLVMConstInt(LLVMInt64Type(),
+            inList.size() - static_cast<size_t>(CallInputs::FIRST_PARAMETER), 0)); // argc
+        for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {
+            GateRef gateTmp = inList[paraIdx];
+            params.push_back(gate2LValue_[gateTmp]);
+        }
+        runtimeCall = LLVMBuildCall(builder_, callee, params.data(), inList.size(), "");
     }
-    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params.data(), inList.size(), "");
     if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
         LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
     }
