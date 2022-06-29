@@ -1583,6 +1583,7 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, stringFuncPrototype, "padStart", BuiltinsString::PadStart, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "padEnd", BuiltinsString::PadEnd, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "replace", BuiltinsString::Replace, FunctionLength::TWO);
+    SetFunction(env, stringFuncPrototype, "replaceAll", BuiltinsString::ReplaceAll, FunctionLength::TWO);
     SetFunction(env, stringFuncPrototype, "search", BuiltinsString::Search, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "slice", BuiltinsString::Slice, FunctionLength::TWO);
     SetFunction(env, stringFuncPrototype, "split", BuiltinsString::Split, FunctionLength::TWO);

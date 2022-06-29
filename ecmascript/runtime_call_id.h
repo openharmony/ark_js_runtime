@@ -505,6 +505,7 @@ namespace panda::ecmascript {
     V(String, PadEnd)                         \
     V(String, Repeat)                         \
     V(String, Replace)                        \
+    V(String, ReplaceAll)                     \
     V(String, Search)                         \
     V(String, Slice)                          \
     V(String, Split)                          \

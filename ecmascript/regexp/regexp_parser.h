@@ -28,6 +28,7 @@
 #include "unicode/utf16.h"
 #include "unicode/utf8.h"
 #include "unicode/utypes.h"
+#include "unicode/udata.h"
 
 namespace panda::ecmascript {
 class RegExpParser {
@@ -51,6 +52,7 @@ public:
     static constexpr uint32_t UNICODE_HEX_VALUE = 4;
     static constexpr uint32_t UNICODE_HEX_ADVANCE = 2;
     static constexpr uint32_t CAPTURE_CONUT_ADVANCE = 3;
+    static constexpr uint32_t UTF8_CHAR_LEN_MAX = 6;
 
     explicit RegExpParser(Chunk *chunk)
         : base_(nullptr),
@@ -105,7 +107,21 @@ public:
     bool ParseUnlimitedLengthHexNumber(uint32_t maxValue, uint32_t *value);
     bool ParseUnicodeEscape(uint32_t *value);
     bool ParserIntervalQuantifier(int *pmin, int *pmax);
+    bool HasNamedCaptures();
+    int ParseEscape(const uint8_t **pp, int isUtf16);
+    int RecountCaptures();
+    int IsIdentFirst(uint32_t c);
 
+    inline std::vector<CString> GetGroupNames() const
+    {
+        return newGroupNames_;
+    }
+
+    inline size_t GetGroupNamesSize() const
+    {
+        return groupNames_.size_ ;
+    }
+    
     inline bool IsError() const
     {
         return isError_;
@@ -227,8 +243,11 @@ private:
     int stackCount_;
     bool isError_;
     char errorMsg_[TMP_BUF_SIZE] = {0};  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    int hasNamedCaptures_ = -1;
+    int totalCaptureCount_ = -1;
     DynChunk buffer_;
     DynChunk groupNames_;
+    std::vector<CString> newGroupNames_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_REGEXP_PARSER_H

@@ -40,6 +40,7 @@ static constexpr uint8_t UTF8_1B_MAX = 0x7f;
 static constexpr uint16_t UTF8_2B_MAX = 0x7ff;
 static constexpr uint8_t UTF8_2B_FIRST = 0xc0;
 static constexpr uint8_t UTF8_2B_SECOND = 0x80;
+static constexpr uint8_t UTF8_2B_THIRD = 0x3f;
 
 static constexpr uint8_t UTF8_3B_FIRST = 0xe0;
 static constexpr uint8_t UTF8_3B_SECOND = 0x80;

@@ -39,7 +39,15 @@ static constexpr uint16_t SPACE_OR_LINE_TERMINAL[] = {
     0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
     0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF,
 };
-
+static constexpr int UICODE_FROM_UTF8[] = {
+    0x80, 0xc0, 0xdf, 0xe0, 0xef, 0xf0, 0xf7, 0xf8, 0xfb, 0xfc, 0xfd,
+};
+static constexpr int UTF8_MIN_CODE[] = {
+    0x80, 0x800, 0x10000, 0x00200000, 0x04000000,
+};
+static constexpr char UTF8_FIRST_CODE[] = {
+    0x1f, 0xf, 0x7, 0x3, 0x1,
+};
 class StringHelper {
 public:
     static std::string ToStdString(EcmaString *string);
@@ -175,7 +183,51 @@ public:
 
     static EcmaString *Repeat(JSThread *thread, const std::u16string &thisStr, int32_t repeatLen, bool canBeCompress);
 
-    static EcmaString *Trim(JSThread *thread, const std::u16string &thisStr);
+    static int UnicodeFromUtf8(const uint8_t *p, int maxLen, const uint8_t **pp)
+    {
+        int c = *p++;
+        if (c < UICODE_FROM_UTF8[0]) {
+            *pp = p;
+            return c;
+        }
+        int l = 0;
+        if (c >=  UICODE_FROM_UTF8[1] && c <= UICODE_FROM_UTF8[2]) { // 1 - 2: 0000 0080 - 0000 07FF
+            l = 1; // 1: 0000 0080 - 0000 07FF Unicode
+        } else if (c >= UICODE_FROM_UTF8[3] && c <= UICODE_FROM_UTF8[4]) { // 3 - 4: 0000 0800 - 0000 FFFF
+            l = 2; // 2: 0000 0800 - 0000 FFFF Unicode
+        } else if (c >= UICODE_FROM_UTF8[5] && c <= UICODE_FROM_UTF8[6]) { // 5 - 6: 0001 0000 - 0010 FFFF
+            l = 3; // 3: 0001 0000 - 0010 FFFF Unicode
+        } else if (c >= UICODE_FROM_UTF8[7] && c <= UICODE_FROM_UTF8[8]) { // 7 - 8: 0020 0000 - 03FF FFFF
+            l = 4; // 4: 0020 0000 - 03FF FFFF Unicode
+        } else if (c == UICODE_FROM_UTF8[9] || c == UICODE_FROM_UTF8[10]) { // 9 - 10: 0400 0000 - 7FFF FFFF
+            l = 5; // 5: 0400 0000 - 7FFF FFFF Unicode
+        } else {
+            return -1;
+        }
+        /* check that we have enough characters */
+        if (l > (maxLen - 1))
+            return -1;
+
+        return FromUtf8(c, l, p, pp);
+    }
+
+    static int FromUtf8(int c, int l, const uint8_t *p, const uint8_t **pp)
+    {
+        int b;
+        c &= UTF8_FIRST_CODE[l - 1];
+        for (int i = 0; i < l; i++) {
+            b = *p++;
+            if (b < utf_helper::UTF8_2B_SECOND || b >= utf_helper::UTF8_2B_FIRST) {
+                return -1;
+            }
+            c = (c << 6) | (b & utf_helper::UTF8_2B_THIRD); // 6: Maximum Unicode range
+        }
+        if (c < UTF8_MIN_CODE[l - 1]) {
+            return -1;
+        }
+        *pp = p;
+        return c;
+    }
 
     static inline std::u16string Append(const std::u16string &str1, const std::u16string &str2)
     {
