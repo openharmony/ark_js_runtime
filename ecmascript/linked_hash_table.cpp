@@ -89,42 +89,6 @@ JSHandle<Derived> LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSTh
 }
 
 template<typename Derived, typename HashObject>
-void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derived *newTable)
-{
-    ASSERT_PRINT(newTable != nullptr && newTable->Capacity() > NumberOfElements(), "can not rehash to new table");
-    // Rehash elements to new table
-    int numberOfAllElements = NumberOfElements() + NumberOfDeletedElements();
-    int desEntry = 0;
-    int currentDeletedElements = 0;
-    SetNextTable(thread, JSTaggedValue(newTable));
-    for (int i = 0; i < numberOfAllElements; i++) {
-        int fromIndex = static_cast<int>(EntryToIndex(i));
-        JSTaggedValue key = GetElement(fromIndex);
-        if (key.IsHole()) {
-            // store num_of_deleted_element before entry i; it will be used when iterator update.
-            currentDeletedElements++;
-            SetDeletedNum(thread, i, JSTaggedValue(currentDeletedElements));
-            continue;
-        }
-
-        if (key.IsWeak()) {
-            // If the key is a weak reference, we use the weak referent to calculate the new index in the new table.
-            key.RemoveWeakTag();
-        }
-
-        int bucket = static_cast<int>(newTable->HashToBucket(LinkedHash::Hash(key)));
-        newTable->InsertNewEntry(thread, bucket, desEntry);
-        int desIndex = static_cast<int>(newTable->EntryToIndex(desEntry));
-        for (int j = 0; j < HashObject::ENTRY_SIZE; j++) {
-            newTable->SetElement(thread, desIndex + j, GetElement(fromIndex + j));
-        }
-        desEntry++;
-    }
-    newTable->SetNumberOfElements(thread, NumberOfElements());
-    newTable->SetNumberOfDeletedElements(thread, 0);
-}
-
-template<typename Derived, typename HashObject>
 JSHandle<Derived> LinkedHashTable<Derived, HashObject>::GrowCapacity(const JSThread *thread,
     const JSHandle<Derived> &table, int numberOfAddedElements)
 {
