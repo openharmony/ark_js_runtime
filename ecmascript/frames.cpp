@@ -231,6 +231,17 @@ ARK_INLINE JSTaggedType* OptimizedJSFunctionFrame::GetArgv(const FrameIterator &
     return GetArgv(preFrameSp);
 }
 
+ARK_INLINE uintptr_t* OptimizedJSFunctionFrame::GetPreFrameSp(const FrameIterator &it)
+{
+    OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(it.GetSp());
+
+    const JSThread *thread = it.GetThread();
+    ASSERT(thread != nullptr);
+    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(it.GetOptimizedReturnAddr());
+    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it.GetSp(), delta);
+    return preFrameSp;
+}
+
 ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
     const RootVisitor &v0,
     const RootRangeVisitor &v1,
@@ -239,10 +250,9 @@ ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
 {
     OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(it.GetSp());
 
-    const JSThread *thread = it.GetThread();
+    [[maybe_unused]] const JSThread *thread = it.GetThread();
     ASSERT(thread != nullptr);
-    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(it.GetOptimizedReturnAddr());
-    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it.GetSp(), delta);
+    uintptr_t *preFrameSp = frame->GetPreFrameSp(it);
 
     auto argc = *(reinterpret_cast<uint64_t *>(preFrameSp));
     JSTaggedType *argv = frame->GetArgv(reinterpret_cast<uintptr_t *>(preFrameSp));
@@ -264,6 +274,16 @@ ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
     for (const auto &slot : slotAddrs) {
         v0(Root::ROOT_FRAME, ObjectSlot(slot));
     }
+}
+
+ARK_INLINE std::optional<kungfu::DeoptBundleVec> OptimizedJSFunctionFrame::GetDeoptBundleInfo(
+    const FrameIterator &it) const
+{
+    auto parser = it.GetStackMapParser();
+    ASSERT(parser != nullptr);
+    auto ret = parser->GetDeoptBundleInfo(
+        it.GetOptimizedReturnAddr());
+    return ret;
 }
 
 ARK_INLINE void AsmInterpretedFrame::GCIterate(const FrameIterator &it,

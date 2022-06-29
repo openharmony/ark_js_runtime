@@ -26,6 +26,7 @@
 #include "verifier.h"
 
 namespace panda::ecmascript::kungfu {
+class EcmaVM;
 class PassData {
 public:
     explicit PassData(Circuit* circuit) : circuit_(circuit) {}
@@ -91,9 +92,10 @@ public:
 
 class SlowPathLoweringPass {
 public:
-    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)
+    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg,
+             bool enableDeopt)
     {
-        SlowPathLowering lowering(builder, data->GetCircuit(), cmpCfg, enableLog);
+        SlowPathLowering lowering(builder, data->GetCircuit(), cmpCfg, enableLog, enableDeopt);
         lowering.CallRuntimeLowering();
         return true;
     }

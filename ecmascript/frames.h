@@ -232,7 +232,7 @@
 // get foo's Frame by bar's Frame prev field
 
 #include "ecmascript/base/aligned_struct.h"
-
+#include "ecmascript/llvm_stackmap_type.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/visitor.h"
 namespace panda::ecmascript {
@@ -392,9 +392,11 @@ public:
     {
         return returnAddr;
     }
+    uintptr_t* GetPreFrameSp(const FrameIterator &it);
     void GCIterate(
         const FrameIterator &it, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    std::optional<kungfu::DeoptBundleVec> GetDeoptBundleInfo(const FrameIterator &it) const;
     // dynamic callee saveregisters for x86-64
     [[maybe_unused]] alignas(EAS) FrameType type {0};
     alignas(EAS) JSTaggedType *prevFp {nullptr};
@@ -977,6 +979,10 @@ public:
     JSTaggedType *GetSp()
     {
         return current_;
+    }
+    const kungfu::LLVMStackMapParser* GetStackMapParser() const
+    {
+        return stackmapParser_;
     }
     void Advance();
     uintptr_t GetPrevFrameCallSiteSp(uintptr_t curPc = 0) const;

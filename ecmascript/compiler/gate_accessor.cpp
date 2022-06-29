@@ -125,6 +125,12 @@ void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
     curGatePtr->ModifyIn(useIt.GetIndex(), replaceGatePtr);
     useIt.SetChanged();
 }
+void GateAccessor::ReplaceIn(GateRef gate, size_t idx, GateRef replaceGate)
+{
+    Gate *curGatePtr = circuit_->LoadGatePtr(gate);
+    Gate *replaceGatePtr = circuit_->LoadGatePtr(replaceGate);
+    curGatePtr->ModifyIn(idx, replaceGatePtr);
+}
 
 GateType GateAccessor::GetGateType(GateRef gate) const
 {

@@ -23,20 +23,9 @@
 #include <vector>
 #include "ecmascript/common.h"
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/llvm_stackmap_type.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
-
 namespace panda::ecmascript::kungfu {
-using OffsetType = int32_t;
-using DwarfRegType = uint16_t;
-using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
-using CallSiteInfo = std::vector<DwarfRegAndOffsetType>;
-using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
-using Pc2CallSiteInfo = std::unordered_map<uintptr_t, CallSiteInfo>;
-using FpDelta = std::pair<int, uint32_t>;
-using Func2FpDelta = std::unordered_map<uintptr_t, FpDelta>; // value: fpDelta & funcSize
-using ConstInfo = std::vector<OffsetType>;
-using Pc2ConstInfo = std::unordered_map<uintptr_t, ConstInfo>;
-
 struct Header {
     uint8_t  stackmapversion; // Stack Map Version (current version is 3)
     uint8_t  Reserved0; // Reserved (expected to be 0)
@@ -94,6 +83,7 @@ struct  LocationTy {
         CONSTANTNDEX = 5,
     };
     static constexpr int CONSTANT_FIRST_ELEMENT_INDEX = 3;
+    static constexpr int CONSTANT_DEOPT_CNT_INDEX = 2;
     Kind location;
     uint8_t Reserved_0;
     uint16_t LocationSize;
@@ -225,6 +215,18 @@ public:
         return {};
     }
 
+    std::optional<DeoptBundleVec> GetDeoptBundleInfo(uintptr_t callsite) const
+    {
+        // next optimization can be performed via sorted/map to accelerate the search
+        for (auto &pc2DeoptBundle : pc2DeoptBundleVec_) {
+            auto it = pc2DeoptBundle.find(callsite);
+            if (it != pc2DeoptBundle.end()) {
+                return pc2DeoptBundle.at(callsite);
+            }
+        }
+        return std::nullopt;
+    }
+
     explicit LLVMStackMapParser(bool enableLog = false)
     {
         pc2CallSiteInfoVec_.clear();
@@ -233,6 +235,7 @@ public:
         funAddr_.clear();
         fun2FpDelta_.clear();
         pc2ConstInfoVec_.clear();
+        pc2DeoptBundleVec_.clear();
     }
     ~LLVMStackMapParser()
     {
@@ -241,6 +244,7 @@ public:
         funAddr_.clear();
         fun2FpDelta_.clear();
         pc2ConstInfoVec_.clear();
+        pc2DeoptBundleVec_.clear();
     }
 private:
     void CalcCallSite();
@@ -262,6 +266,7 @@ private:
     std::set<uintptr_t> funAddr_;
     std::vector<Func2FpDelta> fun2FpDelta_;
     std::vector<Pc2ConstInfo> pc2ConstInfoVec_;
+    std::vector<Pc2DeoptBundle> pc2DeoptBundleVec_;
 };
 } // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_LLVM_STACKMAP_PARSER_H

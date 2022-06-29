@@ -39,6 +39,7 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
     TSLoader *tsLoader = vm_->GetTSLoader();
 
     bool enableLog = log_->IsAlwaysEnabled();
+    bool enableDeopt = vm_->GetJSOptions().GetEnableDeopt();
 
     for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
         const JSMethod *method = translationInfo.methodPcInfos[i].method;
@@ -52,13 +53,13 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
                                << methodName << "] log:" << "\033[0m";
         }
 
-        BytecodeCircuitBuilder builder(translationInfo, i, tsLoader, enableLog);
+        BytecodeCircuitBuilder builder(translationInfo, i, tsLoader, enableLog, enableDeopt);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data, enableLog);
         pipeline.RunPass<TypeInferPass>(&builder, tsLoader);
         pipeline.RunPass<TypeLoweringPass>(&builder, &cmpCfg, tsLoader);
-        pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
+        pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg, enableDeopt);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
         pipeline.RunPass<LLVMIRGenPass>(aotModule, method);

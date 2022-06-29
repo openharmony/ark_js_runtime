@@ -126,6 +126,9 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     if (!glueData_.exception_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&glueData_.exception_)));
     }
+    if (!deoptContext_.IsHole()) {
+        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&deoptContext_)));
+    }
     // visit global Constant
     glueData_.globalConst_.VisitRangeSlot(v1);
     // visit stack roots

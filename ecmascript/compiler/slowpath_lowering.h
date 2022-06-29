@@ -110,9 +110,10 @@ namespace panda::ecmascript::kungfu {
 class SlowPathLowering {
 public:
     SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg,
-                     bool enableLog)
+                     bool enableLog,  bool enableDeopt)
         : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg),
-          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog) {}
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog),
+          enableDeopt_(enableDeopt) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
@@ -128,6 +129,7 @@ private:
                        const std::vector<GateRef> &exceptionControl,
                        bool noThrow = false);
     void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
+    void ReplaceHirToCall(GateRef hirGate, GateRef callGate, GateRef stateInGate, bool noThrow = false);
     void ReplaceHirToThrowCall(GateRef hirGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // environment must be initialized
@@ -264,6 +266,7 @@ private:
     void LowerCopyRestArgs(GateRef gate, GateRef glue);
     GateRef LowerCallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     int32_t ComputeCallArgc(GateRef gate, EcmaOpcode op);
+    void DeoptCall(GateRef gate, GateRef glue, GateRef stateIn);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
@@ -271,6 +274,7 @@ private:
     CircuitBuilder builder_;
     GateRef dependEntry_;
     bool enableLog_ {false};
+    bool enableDeopt_ {false};
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H

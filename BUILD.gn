@@ -358,6 +358,7 @@ ecma_source = [
   "ecmascript/containers/containers_treemap.cpp",
   "ecmascript/containers/containers_treeset.cpp",
   "ecmascript/containers/containers_vector.cpp",
+  "ecmascript/deoptimizer.cpp",
   "ecmascript/dfx/vmstat/caller_stat.cpp",
   "ecmascript/dfx/vmstat/runtime_stat.cpp",
   "ecmascript/dfx/vm_thread_control.cpp",
