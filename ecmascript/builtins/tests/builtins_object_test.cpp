@@ -650,6 +650,22 @@ HWTEST_F_L0(BuiltinsObjectTest, Keys)
     ASSERT_TRUE(result.IsECMAObject());
 }
 
+// Object.values(obj)
+HWTEST_F_L0(BuiltinsObjectTest, Values)
+{
+    JSHandle<JSTaggedValue> obj(thread, CreateBuiltinJSObject(thread, "x"));
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, obj.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsObject::Values(ecmaRuntimeCallInfo.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(result.IsECMAObject());
+}
+
 // Object.preventExtensions(obj)
 HWTEST_F_L0(BuiltinsObjectTest, PreventExtensions)
 {

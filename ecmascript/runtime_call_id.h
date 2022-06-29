@@ -411,6 +411,7 @@ namespace panda::ecmascript {
     V(Object, GetPrototypeOf)                 \
     V(Object, Is)                             \
     V(Object, Keys)                           \
+    V(Object, Values)                         \
     V(Object, PreventExtensions)              \
     V(Object, Seal)                           \
     V(Object, SetPrototypeOf)                 \
