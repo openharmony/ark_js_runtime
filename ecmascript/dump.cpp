@@ -1932,13 +1932,16 @@ void JSRegExp::Dump(std::ostream &os) const
 {
     os << "\n";
     os << " - ByteCodeBuffer: ";
-    GetByteCodeBuffer().Dump(os);
+    GetByteCodeBuffer().D();
     os << "\n";
     os << " - OriginalSource: ";
-    GetOriginalSource().Dump(os);
+    GetOriginalSource().D();
     os << "\n";
     os << " - OriginalFlags: ";
-    GetOriginalFlags().Dump(os);
+    GetOriginalFlags().D();
+    os << "\n";
+    os << " - GroupName: ";
+    GetGroupName().D();
     os << "\n";
     os << " - Length: " << GetLength();
     os << "\n";
@@ -4086,7 +4089,7 @@ void JSRegExp::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &v
 {
     vec.push_back(std::make_pair(CString("originalSource"), GetOriginalSource()));
     vec.push_back(std::make_pair(CString("originalFlags"), GetOriginalFlags()));
-
+    vec.push_back(std::make_pair(CString("groupName"), GetGroupName()));
     JSObject::DumpForSnapshot(vec);
 }
 

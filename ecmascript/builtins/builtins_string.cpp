@@ -662,8 +662,8 @@ JSTaggedValue BuiltinsString::MatchAll(EcmaRuntimeCallInfo *argv)
         // b. If isRegExp is true, then
         if (isJSRegExp) {
             // i. Let flags be ? Get(searchValue, "flags").
-            JSHandle<JSTaggedValue> flagsKey(factory->NewFromASCII("flags"));
-            JSHandle<JSTaggedValue> flags = JSObject::GetProperty(thread, regexp, flagsKey).GetValue();
+            JSHandle<JSTaggedValue> flagsString(globalConst->GetHandledFlagsString());
+            JSHandle<JSTaggedValue> flags = JSObject::GetProperty(thread, regexp, flagsString).GetValue();
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             // ii. Perform ? RequireObjectCoercible(flags).
             JSTaggedValue::RequireObjectCoercible(thread, flags);
@@ -992,13 +992,13 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
     if (pos == -1) {
         return thisString.GetTaggedValue();
     }
-
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     JSMutableHandle<JSTaggedValue> replHandle(thread, factory->GetEmptyString().GetTaggedValue());
     // If functionalReplace is true, then
     if (replaceTag->IsCallable()) {
         // Let replValue be Call(replaceValue, undefined,«matched, pos, and string»).
         const size_t argsLength = 3; // 3: «matched, pos, and string»
-        JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+       
         EcmaRuntimeCallInfo info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, replaceTag, undefined, undefined, argsLength);
         info.SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
@@ -1006,17 +1006,19 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
         replHandle.Update(replStrDeocodeValue);
     } else {
         // Let captures be an empty List.
-        JSHandle<TaggedArray> capturesList = factory->NewTaggedArray(0);
+        JSHandle<TaggedArray> capturesList = factory->EmptyArray();
         ASSERT_PRINT(replaceTag->IsString(), "replace must be string");
         JSHandle<EcmaString> replacement(thread, replaceTag->GetTaggedObject());
         // Let replStr be GetSubstitution(matched, string, pos, captures, replaceValue)
-        replHandle.Update(GetSubstitution(thread, searchString, thisString, pos, capturesList, replacement));
+        replHandle.Update(GetSubstitution(thread, searchString, thisString, pos, capturesList, undefined, replacement));
     }
     JSHandle<EcmaString> realReplaceStr = JSTaggedValue::ToString(thread, replHandle);
     // Let tailPos be pos + the number of code units in matched.
     int32_t tailPos = pos + static_cast<int32_t>(searchString->GetLength());
-    // Let newString be the String formed by concatenating the first pos code units of string, replStr, and the trailing
-    // substring of string starting at index tailPos. If pos is 0, the first element of the concatenation will be the
+    // Let newString be the String formed by concatenating the first pos code units of string,
+    // replStr, and the trailing
+    // substring of string starting at index tailPos. If pos is 0,
+    // the first element of the concatenation will be the
     // empty String.
     // Return newString.
     JSHandle<EcmaString> prefixString(thread, EcmaString::FastSubString(thisString, 0, pos, ecmaVm));
@@ -1057,9 +1059,169 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
                            factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.size()).GetTaggedValue();
 }
 
+JSTaggedValue BuiltinsString::ReplaceAll(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, String, ReplaceAll);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> thisTag = JSTaggedValue::RequireObjectCoercible(thread, BuiltinsString::GetThis(argv));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    auto ecmaVm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSTaggedValue> searchTag = BuiltinsString::GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> replaceTag = BuiltinsString::GetCallArg(argv, 1);
+
+    ObjectFactory *factory = ecmaVm->GetFactory();
+
+    if (!searchTag->IsUndefined() && !searchTag->IsNull()) {
+        // a. Let isRegExp be ? IsRegExp(searchValue).
+        bool isJSRegExp = JSObject::IsRegExp(thread, searchTag);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        // b. If isRegExp is true, then
+        if (isJSRegExp) {
+            // i. Let flags be ? Get(searchValue, "flags").
+            JSHandle<JSTaggedValue> flagsString(globalConst->GetHandledFlagsString());
+            JSHandle<JSTaggedValue> flags = JSObject::GetProperty(thread, searchTag, flagsString).GetValue();
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            // ii. Perform ? RequireObjectCoercible(flags).
+            JSTaggedValue::RequireObjectCoercible(thread, flags);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            // iii. If ? ToString(flags) does not contain "g", throw a TypeError exception.
+            JSHandle<EcmaString> flagString = JSTaggedValue::ToString(thread, flags);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            JSHandle<EcmaString> gString(globalConst->GetHandledGString());
+            int32_t pos = flagString->IndexOf(*gString);
+            if (pos == -1) {
+                THROW_TYPE_ERROR_AND_RETURN(thread,
+                                            "string.prototype.replaceAll called with a non-global RegExp argument",
+                                            JSTaggedValue::Exception());
+            }
+        }
+        // c. Let replacer be ? GetMethod(searchValue, @@replace).
+        JSHandle<JSTaggedValue> replaceKey = env->GetReplaceSymbol();
+        JSHandle<JSTaggedValue> replaceMethod = JSObject::GetMethod(thread, searchTag, replaceKey);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        // d. If replacer is not undefined, then
+        if (!replaceMethod->IsUndefined()) {
+            // i. Return ? Call(replacer, searchValue, «O, replaceValue»).
+            const size_t argsLength = 2;
+            JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, replaceMethod, searchTag, undefined, argsLength);
+            info.SetCallArg(thisTag.GetTaggedValue(), replaceTag.GetTaggedValue());
+            return JSFunction::Call(&info);
+        }
+    }
+
+    // 3. Let string be ? ToString(O).
+    JSHandle<EcmaString> thisString = JSTaggedValue::ToString(thread, thisTag);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 4. Let searchString be ? ToString(searchValue).
+    JSHandle<EcmaString> searchString = JSTaggedValue::ToString(thread, searchTag);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 5. Let functionalReplace be IsCallable(replaceValue).
+    // 6. If functionalReplace is false, then
+    if (!replaceTag->IsCallable()) {
+        // a. Set replaceValue to ? ToString(replaceValue).
+        replaceTag = JSHandle<JSTaggedValue>(JSTaggedValue::ToString(thread, replaceTag));
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    }
+    
+    // 7. Let searchLength be the length of searchString.
+    // 8. Let advanceBy be max(1, searchLength).
+    int32_t searchLength = searchString->GetLength();
+    int32_t advanceBy =  std::max(1, searchLength);
+    // 9. Let matchPositions be a new empty List.
+    std::u16string stringBuilder;
+    std::u16string stringPrefixString;
+    std::u16string stringRealReplaceStr;
+    std::u16string stringSuffixString;
+    // 10. Let position be ! StringIndexOf(string, searchString, 0).
+    int32_t pos = thisString->IndexOf(*searchString);
+    int32_t endOfLastMatch = 0;
+    bool canBeCompress = true;
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    JSMutableHandle<JSTaggedValue> replHandle(thread, factory->GetEmptyString().GetTaggedValue());
+    while (pos != -1) {
+        // If functionalReplace is true, then
+        if (replaceTag->IsCallable()) {
+            // Let replValue be Call(replaceValue, undefined,«matched, pos, and string»).
+            const size_t argsLength = 3; // 3: «matched, pos, and string»
+            
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, replaceTag, undefined, undefined, argsLength);
+            info.SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
+            JSTaggedValue replStrDeocodeValue = JSFunction::Call(&info);
+            replHandle.Update(replStrDeocodeValue);
+        } else {
+            // Let captures be an empty List.
+            JSHandle<TaggedArray> capturesList = factory->NewTaggedArray(0);
+            ASSERT_PRINT(replaceTag->IsString(), "replace must be string");
+            JSHandle<EcmaString> replacement(thread, replaceTag->GetTaggedObject());
+            // Let replStr be GetSubstitution(matched, string, pos, captures, replaceValue)
+            replHandle.Update(GetSubstitution(thread, searchString, thisString, pos,
+                                              capturesList, undefined, replacement));
+        }
+        JSHandle<EcmaString> realReplaceStr = JSTaggedValue::ToString(thread, replHandle);
+        // Let tailPos be pos + the number of code units in matched.
+        // Let newString be the String formed by concatenating the first pos code units of string,
+        // replStr, and the trailing substring of string starting at index tailPos.
+        // If pos is 0, the first element of the concatenation will be the
+        // empty String.
+        // Return newString.
+        JSHandle<EcmaString> prefixString(thread,
+                                          EcmaString::FastSubString(thisString, endOfLastMatch,
+                                                                    pos - endOfLastMatch, ecmaVm));
+        if (prefixString->IsUtf16()) {
+            const uint16_t *data = prefixString->GetDataUtf16();
+            stringPrefixString = base::StringHelper::Utf16ToU16String(data, prefixString->GetLength());
+            canBeCompress = false;
+        } else {
+            const uint8_t *data = prefixString->GetDataUtf8();
+            stringPrefixString = base::StringHelper::Utf8ToU16String(data, prefixString->GetLength());
+        }
+        if (realReplaceStr->IsUtf16()) {
+            const uint16_t *data = realReplaceStr->GetDataUtf16();
+            stringRealReplaceStr = base::StringHelper::Utf16ToU16String(data, realReplaceStr->GetLength());
+            canBeCompress = false;
+        } else {
+            const uint8_t *data = realReplaceStr->GetDataUtf8();
+            stringRealReplaceStr = base::StringHelper::Utf8ToU16String(data, realReplaceStr->GetLength());
+        }
+        stringBuilder = stringBuilder + stringPrefixString + stringRealReplaceStr;
+        endOfLastMatch = pos + searchLength;
+        pos = thisString->IndexOf(*searchString, pos + advanceBy);
+    }
+    
+    if (endOfLastMatch < static_cast<int32_t>(thisString->GetLength())) {
+        JSHandle<EcmaString> suffixString(thread,
+                                          EcmaString::FastSubString(thisString, endOfLastMatch,
+                                                                    thisString->GetLength() - endOfLastMatch, ecmaVm));
+        if (suffixString->IsUtf16()) {
+            const uint16_t *data = suffixString->GetDataUtf16();
+            stringSuffixString = base::StringHelper::Utf16ToU16String(data, suffixString->GetLength());
+            canBeCompress = false;
+        } else {
+            const uint8_t *data = suffixString->GetDataUtf8();
+            stringSuffixString = base::StringHelper::Utf8ToU16String(data, suffixString->GetLength());
+        }
+        stringBuilder = stringBuilder + stringSuffixString;
+    }
+
+    auto *char16tData = const_cast<char16_t *>(stringBuilder.c_str());
+    auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
+    return canBeCompress ?
+        factory->NewFromUtf16LiteralCompress(uint16tData, stringBuilder.length()).GetTaggedValue() :
+        factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.length()).GetTaggedValue();
+}
+
 JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<EcmaString> &matched,
                                               const JSHandle<EcmaString> &srcString, int position,
                                               const JSHandle<TaggedArray> &captureList,
+                                              const JSHandle<JSTaggedValue> &namedCaptures,
                                               const JSHandle<EcmaString> &replacement)
 {
     BUILTINS_API_TRACE(thread, String, GetSubstitution);
@@ -1073,7 +1235,6 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
     if (nextDollarIndex < 0) {
         return replacement.GetTaggedValue();
     }
-
     std::u16string stringBuilder;
     bool canBeCompress = true;
     if (nextDollarIndex > 0) {
@@ -1099,6 +1260,7 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
         }
         int continueFromIndex = -1;
         uint16_t peek = replacement->At(peekIndex);
+        int32_t p = 0;
         switch (peek) {
             case '$':  // $$
                 stringBuilder += '$';
@@ -1191,6 +1353,42 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
                     }
                 }
                 continueFromIndex = peekIndex + advance;
+                break;
+            }
+            case '<': {
+                if (namedCaptures->IsUndefined()) {
+                    stringBuilder += '$';
+                    continueFromIndex = peekIndex;
+                    break;
+                }
+                JSHandle<EcmaString> greaterSymString = factory->NewFromASCII(">");
+                int pos = replacement->IndexOf(*greaterSymString, peekIndex);
+                if (pos == -1) {
+                    stringBuilder += '$';
+                    continueFromIndex = peekIndex;
+                    break;
+                }
+                JSHandle<EcmaString> groupName(thread,
+                                               EcmaString::FastSubString(replacement,
+                                                                         peekIndex + 1, pos - peekIndex - 1, ecmaVm));
+                JSHandle<JSTaggedValue> names(groupName);
+                JSHandle<JSTaggedValue> capture = JSObject::GetProperty(thread, namedCaptures, names).GetValue();
+                if (capture->IsUndefined()) {
+                    continueFromIndex = pos + 1;
+                    p = pos;
+                    break;
+                }
+                JSHandle<EcmaString> captureName(capture);
+                if (captureName->IsUtf16()) {
+                    const uint16_t *data = captureName->GetDataUtf16();
+                    stringBuilder += base::StringHelper::Utf16ToU16String(data, captureName->GetLength());
+                    canBeCompress = false;
+                } else {
+                    const uint8_t *data = captureName->GetDataUtf8();
+                    stringBuilder += base::StringHelper::Utf8ToU16String(data, captureName->GetLength());
+                }
+                continueFromIndex = pos + 1;
+                p = pos;
                 break;
             }
             default:
