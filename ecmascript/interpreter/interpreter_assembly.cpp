@@ -188,7 +188,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
 using InterpreterEntry = JSTaggedType (*)(uintptr_t glue, ECMAObject *callTarget,
-    JSMethod *method, uint64_t callField, uint32_t argc, uintptr_t argv);
+    JSMethod *method, uint64_t callField, size_t argc, uintptr_t argv);
 using GeneratorReEnterInterpEntry = JSTaggedType (*)(uintptr_t glue, JSTaggedType context);
 
 void InterpreterAssembly::InitStackFrame(JSThread *thread)
