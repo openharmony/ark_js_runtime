@@ -35,8 +35,8 @@ void FooAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(6);
     GateRef bcOffset = Int32Argument(1);
     (void)calltarget;
-    GateRef barIndex = IntBuildTaggedWithNoGC(Int32(CommonStubCSigns::BarAOT));
-    GateRef numArgs = IntBuildTaggedWithNoGC(Int32(2));
+    GateRef barIndex = IntToTaggedNGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntToTaggedNGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, barfunc, newtarget, thisObj, a, b, bcOffset});
     Return(result);
@@ -68,8 +68,8 @@ void Foo1AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(6);
     GateRef bcOffset = Int32Argument(1);
     (void)calltarget;
-    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::Bar1AOT));
-    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(3));
+    GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::Bar1AOT));
+    GateRef numArgs = IntToTaggedTypeNGC(Int32(3));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, barfunc, newtarget, thisObj, a, b, bcOffset});
     Return(result);
@@ -108,8 +108,8 @@ void Foo2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef bcOffset = Int32Argument(1);
     (void)calltarget;
     GateRef actualArgC = Int32Add(argc, Int32(1));
-    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
-    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntToTaggedTypeNGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, actualArgC, barfunc, newtarget, thisObj,
                                     a, b, Undefined(), bcOffset});
@@ -145,11 +145,11 @@ void FooBoundAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef thisObj = TaggedArgument(4);
     GateRef a = TaggedArgument(5);
     GateRef b = TaggedArgument(6);
-    GateRef bindArguments = IntBuildTaggedTypeWithNoGC(Int32(37));
+    GateRef bindArguments = IntToTaggedTypeNGC(Int32(37));
     GateRef bcOffset = Int32Argument(1);
     (void)calltarget;
-    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
-    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntToTaggedTypeNGC(Int32(2));
+    GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::BarAOT));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef bindfunc = CallRuntime(glue, RTSTUB_ID(GetBindFunc), {barfunc});
     GateRef newjsfunc = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, Int32(5), bindfunc, newtarget, barfunc,
@@ -171,8 +171,8 @@ void FooProxyAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(6);
     GateRef bcOffset = Int32Argument(1);
 
-    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
-    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntToTaggedTypeNGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
 
     GateRef proxyfunc = CallRuntime(glue, RTSTUB_ID(DefineProxyFunc), {barfunc});
@@ -193,8 +193,8 @@ void FooProxy2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(6);
     GateRef bcOffset = Int32Argument(1);
 
-    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::Bar2AOT));
-    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::Bar2AOT));
+    GateRef numArgs = IntToTaggedTypeNGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef proxyHandler = CallRuntime(glue, RTSTUB_ID(DefineProxyHandler), {barfunc});
 
