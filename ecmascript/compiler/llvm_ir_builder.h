@@ -305,6 +305,7 @@ private:
     bool NeedBCOffset(OpCode op);
     void ComputeArgCountAndBCOffset(size_t &actualNumArgs, LLVMValueRef &bcOffset, const std::vector<GateRef> &inList,
                                     OpCode op);
+    void SaveLexicalEnvOnFrame(LLVMValueRef value);
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *scheduledGates_ {nullptr};
     const Circuit *circuit_ {nullptr};

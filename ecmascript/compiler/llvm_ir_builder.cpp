@@ -1072,10 +1072,27 @@ void LLVMIRBuilder::VisitParameter(GateRef gate)
     ASSERT(LLVMTypeOf(value) == ConvertLLVMTypeFromGate(gate));
     gate2LValue_[gate] = value;
     // NOTE: caller put args, otherwise crash
-    if (value == nullptr) {
-        COMPILER_OPTIONAL_LOG(FATAL) << "generate LLVM IR for para: " << argth << "fail";
-        return;
+    ASSERT(value != nullptr);
+
+    // add env slot for optimized jsfunction frame
+    auto frameType = circuit_->GetFrameType();
+    if (frameType == panda::ecmascript::FrameType::OPTIMIZED_JS_FUNCTION_FRAME) {
+        if (argth == CommonArgIdx::LEXENV) {
+            SaveLexicalEnvOnFrame(value);
+        }
     }
+}
+
+void LLVMIRBuilder::SaveLexicalEnvOnFrame(LLVMValueRef value)
+{
+    LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
+    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
+    LLVMValueRef frameEnvSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
+        static_cast<int>(ReservedSlots::OPTIMIZED_JS_FUNCTION_RESERVED_SLOT) * slotSize_, false), "");
+    LLVMValueRef envAddr = LLVMBuildIntToPtr(builder_, frameEnvSlotAddr,
+        LLVMPointerType(slotType_, 0), "env.Addr");
+    LLVMValueRef envValue = LLVMBuildPtrToInt(builder_, value, slotType_, "cast_to_i64");
+    LLVMBuildStore(builder_, envValue, envAddr);
 }
 
 void LLVMIRBuilder::HandleBranch(GateRef gate)
@@ -1942,6 +1959,8 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
     VariableType glueParamType(MachineType::I64, GateType::NJSValue());
     paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
+    VariableType lexEnv(MachineType::I64, GateType::TaggedValue());
+    paramTys.push_back(ConvertLLVMTypeFromVariableType(lexEnv));
     VariableType actualArgc(MachineType::I32, GateType::NJSValue());
     paramTys.push_back(ConvertLLVMTypeFromVariableType(actualArgc));
     for (uint32_t i = CommonArgIdx::FUNC; i < CommonArgIdx::NUM_OF_ARGS; i++) {

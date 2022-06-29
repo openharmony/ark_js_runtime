@@ -1270,12 +1270,13 @@ HWTEST_F_L0(StubTest, JSCallTest2)
     auto glue = thread->GetGlueAddr();
     int x = 1;
     int y = 2;
-    JSTaggedType argV[5] = {
+    JSTaggedType argV[6] = {
         foo1target.GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
     };
 
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
@@ -1291,12 +1292,13 @@ HWTEST_F_L0(StubTest, JSCallNativeTest)
     auto glue = thread->GetGlueAddr();
     int x = 1;
     int y = 2;
-    JSTaggedType argV[5] = {
+    JSTaggedType argV[6] = {
         footarget.GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
     };
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
     auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
@@ -1311,12 +1313,13 @@ HWTEST_F_L0(StubTest, JSCallBoundTest)
     auto glue = thread->GetGlueAddr();
     int x = 1;
     int y = 2;
-    JSTaggedType argV[5] = {
+    JSTaggedType argV[6] = {
         footarget.GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
     };
 
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
@@ -1333,19 +1336,20 @@ HWTEST_F_L0(StubTest, JSCallTest3)
     auto glue = thread->GetGlueAddr();
     int x = 1;
     int y = 2;
-    JSTaggedType argV[6] = {
+    JSTaggedType argV[7] = {
         foo2target.GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
     };
     JSThread::GlueData::GetCOStubEntriesOffset(false);
     JSThread::GlueData::GetCOStubEntriesOffset(true);
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
     auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooProxyEntry);
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 6, 6, argV, fooProxyEntry);
     EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
 }
 

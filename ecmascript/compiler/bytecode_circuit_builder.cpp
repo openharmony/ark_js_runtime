@@ -1843,13 +1843,18 @@ void BytecodeCircuitBuilder::BuildCircuitArgs()
     const size_t numArgs = method_->GetNumArgs();
     const size_t actualNumArgs = GetActualNumArgs(numArgs);
     actualArgs_.resize(actualNumArgs);
+    auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
 
     auto glueGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, 0,
-                                     {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                     GateType::NJSValue());
+                                     {argRoot}, GateType::NJSValue());
     actualArgs_.at(0) = glueGate;
     commonArgs_.at(0) = glueGate;
-    auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
+
+    auto envGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, CommonArgIdx::LEXENV,
+                                    {argRoot}, GateType::TaggedValue());
+    actualArgs_.at(CommonArgIdx::LEXENV) = envGate;
+    commonArgs_.at(CommonArgIdx::LEXENV) = envGate;
+
     auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
                                        {argRoot}, GateType::NJSValue());
     actualArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
@@ -1863,8 +1868,7 @@ void BytecodeCircuitBuilder::BuildCircuitArgs()
 
     for (size_t argIdx = CommonArgIdx::NUM_OF_ARGS; argIdx < actualNumArgs; argIdx++) {
         actualArgs_.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
-                                                  {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                                  GateType::TaggedValue());
+                                                  {argRoot}, GateType::TaggedValue());
     }
 }
 

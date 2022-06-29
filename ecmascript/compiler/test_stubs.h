@@ -39,8 +39,8 @@ namespace panda::ecmascript::kungfu {
 
 class FooAOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit FooAOTStub(Circuit *circuit) : Stub("FooAOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit FooAOTStub(Circuit *circuit) : Stub("FooAOT", 8, circuit)
     {
     }
     ~FooAOTStub() = default;
@@ -51,8 +51,8 @@ public:
 
 class BarAOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit BarAOTStub(Circuit *circuit) : Stub("BarAOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit BarAOTStub(Circuit *circuit) : Stub("BarAOT", 8, circuit)
     {
     }
     ~BarAOTStub() = default;
@@ -63,8 +63,8 @@ public:
 
 class Foo1AOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit Foo1AOTStub(Circuit *circuit) : Stub("Foo1AOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit Foo1AOTStub(Circuit *circuit) : Stub("Foo1AOT", 8, circuit)
     {
     }
     ~Foo1AOTStub() = default;
@@ -75,8 +75,8 @@ public:
 
 class Foo2AOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit Foo2AOTStub(Circuit *circuit) : Stub("Foo2AOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit Foo2AOTStub(Circuit *circuit) : Stub("Foo2AOT", 8, circuit)
     {
     }
     ~Foo2AOTStub() = default;
@@ -87,8 +87,8 @@ public:
 
 class FooNativeAOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit FooNativeAOTStub(Circuit *circuit) : Stub("FooNativeAOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit FooNativeAOTStub(Circuit *circuit) : Stub("FooNativeAOT", 8, circuit)
     {
     }
     ~FooNativeAOTStub() = default;
@@ -99,8 +99,8 @@ public:
 
 class FooBoundAOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit FooBoundAOTStub(Circuit *circuit) : Stub("FooBoundAOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit FooBoundAOTStub(Circuit *circuit) : Stub("FooBoundAOT", 8, circuit)
     {
     }
     ~FooBoundAOTStub() = default;
@@ -111,8 +111,8 @@ public:
 
 class Bar1AOTStub : public Stub {
 public:
-    // 8 : 8 means argument counts
-    explicit Bar1AOTStub(Circuit *circuit) : Stub("Bar1AOT", 8, circuit)
+    // 9 : 9 means argument counts
+    explicit Bar1AOTStub(Circuit *circuit) : Stub("Bar1AOT", 9, circuit)
     {
     }
     ~Bar1AOTStub() = default;
@@ -123,8 +123,8 @@ public:
 
 class FooProxyAOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit FooProxyAOTStub(Circuit *circuit) : Stub("FooProxyAOT", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit FooProxyAOTStub(Circuit *circuit) : Stub("FooProxyAOT", 8, circuit)
     {
     }
     ~FooProxyAOTStub() = default;
@@ -135,8 +135,8 @@ public:
 
 class FooProxy2AOTStub : public Stub {
 public:
-    // 7 : 7 means argument counts
-    explicit FooProxy2AOTStub(Circuit *circuit) : Stub("FooProxy2AOTStub", 7, circuit)
+    // 8 : 8 means argument counts
+    explicit FooProxy2AOTStub(Circuit *circuit) : Stub("FooProxy2AOTStub", 8, circuit)
     {
     }
     ~FooProxy2AOTStub() = default;
@@ -147,8 +147,8 @@ public:
 
 class Bar2AOTStub : public Stub {
 public:
-    // 5 : 5 means argument counts
-    explicit Bar2AOTStub(Circuit *circuit) : Stub("Bar2AOT", 5, circuit)
+    // 6 : 6 means argument counts
+    explicit Bar2AOTStub(Circuit *circuit) : Stub("Bar2AOT", 6, circuit)
     {
     }
     ~Bar2AOTStub() = default;

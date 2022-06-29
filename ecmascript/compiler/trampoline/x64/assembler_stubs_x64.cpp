@@ -101,7 +101,7 @@ void AssemblerStubsX64::JSFunctionEntry(ExtendedAssembler *assembler)
     // 16 bytes align check
     __ Movl(expectedNumArgsReg, r14);
     __ Testb(1, r14);
-    __ Jne(&lAlign16Bytes);
+    __ Je(&lAlign16Bytes);
     __ Pushq(0); // push zero to align 16 bytes stack
 
     __ Bind(&lAlign16Bytes);
@@ -137,13 +137,15 @@ void AssemblerStubsX64::JSFunctionEntry(ExtendedAssembler *assembler)
         __ Jne(&lCopyLoop);
 
         __ Pushq(r14);
+        __ Movq(Operand(argvReg, r14, Scale::Times8, 0), actualNumArgsReg);
+        __ Push(actualNumArgsReg); // env
         __ Movq(glueReg, rax); // mov glue to rax
         __ Callq(codeAddrReg); // then call jsFunction
         __ Leaq(Operand(r14, Scale::Times8, 0), actualNumArgsReg); // Note: fixed for 3 extra arguments
         __ Addq(actualNumArgsReg, rsp);
-        __ Addq(8, rsp); // 8: skip r14
+        __ Addq(16, rsp); // 16: skip r14 and env
         __ Testb(1, r14); // stack 16bytes align check
-        __ Jne(&lPopFrame);
+        __ Je(&lPopFrame);
         __ Addq(8, rsp); // 8: align byte
     }
 
@@ -159,13 +161,14 @@ void AssemblerStubsX64::JSFunctionEntry(ExtendedAssembler *assembler)
     }
 }
 
-// uint64_t OptimizedCallOptimized(uintptr_t glue, uintptr_t codeAddr, uint32_t actualNumArgs,
-//                                 uint32_t expectedNumArgs, uintptr_t argv)
+// uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
+//                                uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv, uintptr_t lexEnv)
 // Input:  %rdi - glue
 //         %rsi - codeAddr
 //         %rdx - actualNumArgs
 //         %rcx - expectedNumArgs
 //         %r8  - argv
+//         %r9  - lexEnv
 
 //         sp[0 * 8]  -  argc
 //         sp[1 * 8]  -  argv[0]
@@ -185,6 +188,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     Register actualNumArgsReg = rdx;
     Register codeAddrReg = rsi;
     Register argvReg = r8;
+    Register envReg = r9;
 
     Label lAlign16Bytes1;
     Label lCopyExtraAument1;
@@ -194,6 +198,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
     __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
+    __ Pushq(envReg);
     // callee save
     __ Pushq(r14);
     __ Pushq(rbx);
@@ -230,11 +235,13 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Addq(-1, rax);
     __ Jne(&lCopyLoop1);
     __ Pushq(actualNumArgsReg); // actual argc
+    __ Pushq(envReg);
+
     __ Movq(glueReg, rax); // mov glue to rax
     __ Callq(codeAddrReg); // then call jsFunction
     __ Leaq(Operand(r14, Scale::Times8, 0), codeAddrReg);
     __ Addq(codeAddrReg, rsp);
-    __ Addq(8, rsp); // 8: skip actualNumArgsReg
+    __ Addq(DOUBLE_SLOT_SIZE, rsp); // skip actualNumArgsReg and envReg
     __ Testb(1, r14); // stack 16bytes align check
     __ Jne(&lPopFrame1);
     __ Addq(8, rsp); // 8: align byte
@@ -243,7 +250,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Addq(8, rsp); // 8: skip rax
     __ Popq(rbx);
     __ Popq(r14);
-    __ Addq(8, rsp); // 8: skip frame type
+    __ Addq(DOUBLE_SLOT_SIZE, rsp); // skip frame type, env reg
     __ Pop(rbp);
     __ Ret();
 }
@@ -294,7 +301,7 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
     __ Movq(rbp, Operand(glueReg, JSThread::GlueData::GetLeaveFrameOffset(false))); // save to thread->leaveFrame_
-    __ Pushq(static_cast<int32_t>(FrameType::LEAVE_FRAME));
+    __ Pushq(static_cast<int32_t>(FrameType::BUILTIN_CALL_LEAVE_FRAME));
 
     // callee save
     __ Pushq(r10);
@@ -314,12 +321,12 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Movq(threadReg, Operand(rsp, EcmaRuntimeCallInfo::GetThreadOffset()));   // thread_
     // get numArgs
     __ Movq(0, rax);
-    __ Movl(Operand(rdx, 8), rax); // 8: sp + 8 actualArgc
+    __ Movl(Operand(rdx, DOUBLE_SLOT_SIZE), rax); // sp + 16 actualArgc
     __ Subl(3, rax); // 3: size
     __ Movq(rax, Operand(rsp, EcmaRuntimeCallInfo::GetNumArgsOffset())); // actualArgc
     // get gpr data
     __ Movq(rdx, rbx);
-    __ Addq(16, rbx); // 16: argv[0]
+    __ Addq(TRIPLE_SLOT_SIZE, rbx); // argv[0]
     __ Movq(rbx, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset())); // argv0
 
     __ Movq(rsp, rdi);
@@ -372,7 +379,7 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
     {
         __ Movq(glueReg, rdi);
         glueReg = rdi;
-        __ Movq(Operand(rsp, 16), rax); // 16: get jsFunc
+        __ Movq(Operand(rsp, TRIPLE_SLOT_SIZE), rax); // get jsFunc
     }
     __ Bind(&lJSCallStart);
     Register jsFuncReg = rax;
@@ -436,14 +443,14 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
     Register argV = r9;
     {
         __ Mov(Operand(jsFuncReg, JSFunctionBase::METHOD_OFFSET), jsMethod); // get method
-        __ Movl(Operand(rsp, 8), argc); // 8: sp + 8 actual argc
+        __ Movl(Operand(rsp, DOUBLE_SLOT_SIZE), argc); // sp + 16 actual argc
         __ Mov(Operand(jsMethod, JSMethod::GetCallFieldOffset(false)), methodCallField); // get call field
         __ Btq(JSMethod::IsNativeBit::START_BIT, methodCallField); // is native
         __ Jb(&lCallNativeMethod);
         __ Btq(JSMethod::IsAotCodeBit::START_BIT, methodCallField); // is aot
         __ Jb(&lCallOptimziedMethod);
         __ Movq(rsp, argV);
-        __ Addq(16, argV); // 16: sp + 16 argv
+        __ Addq(TRIPLE_SLOT_SIZE, argV); // sp + 24 argv
         OptimizedCallAsmInterpreter(assembler);
     }
 
@@ -457,9 +464,11 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
         __ Addl(NUM_MANDATORY_JSFUNC_ARGS, methodCallField); // add mandatory argument
         __ Mov(Operand(jsFuncReg, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddrReg); // get codeAddress
         __ Movq(rsp, r8);
+        Register envReg = r9;
+        __ Movq(Operand(r8, DOUBLE_SLOT_SIZE), envReg); // get env
         argvReg = r8;
-        __ Addq(16, argvReg); // 16: sp + 8 argv
-        __ Cmpl(expectedNumArgsReg, argc); // expectedNumArgs <= actualNumArgs
+        __ Addq(TRIPLE_SLOT_SIZE, argvReg); // get argv
+        __ Cmpl(expectedNumArgsReg, rdx); // expectedNumArgs <= actualNumArgs
         __ Jg(&lDirectCallCodeEntry);
         __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
     }
@@ -489,8 +498,10 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
         __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
         __ Pushq(r10); // callee save
         __ Movq(rsp, rdx);
-        __ Addq(32, rdx); // 32: sp + 32 argv
+        __ Addq(QUINTUPLE_SLOT_SIZE, rdx); // sp + 40 argv
         __ Mov(Operand(rdx, 0), rax); // get origin argc
+        Register envReg = r9;
+        __ Mov(Operand(rdx, -FRAME_SLOT_SIZE), envReg); // get env
         __ Movq(rax, r10);
         // get bound target
         __ Mov(Operand(jsFuncReg, JSBoundFunction::BOUND_ARGUMENTS_OFFSET), rcx);
@@ -500,7 +511,7 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
 
         // 16 bytes align check
         __ Testb(1, r10);
-        __ Jne(&lAlign16Bytes2);
+        __ Je(&lAlign16Bytes2);
         __ PushAlignBytes(); // push zero to align 16 bytes stack
     }
 
@@ -544,17 +555,20 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
         __ Mov(Operand(jsFuncReg, JSBoundFunction::BOUND_TARGET_OFFSET), rax); // callTarget
         __ Pushq(rax);
         __ Pushq(r10); // push actual arguments
+        Register envReg = r9;
+        __ Pushq(envReg);
         __ Movq(rdi, rax);
         __ Callq(&jsCall); // call JSCall
         __ Leaq(Operand(r10, Scale::Times8, 8), rcx); // 8: offset
         __ Addq(rcx, rsp);
         __ Testb(1, r10);  // stack 16bytes align check
-        __ Jne(&lPopFrame2);
+        __ Je(&lPopFrame2);
         __ Addq(8, rsp); // 8: sp + 8
     }
 
     __ Bind(&lPopFrame2);
     {
+        __ Addq(FRAME_SLOT_SIZE, rsp); // skip r9
         __ Pop(r10);
         __ Addq(8, rsp); // 8: sp + 8
         __ Pop(rbp);
@@ -572,7 +586,8 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
     __ Ret();
 }
 
-// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...)
+// uint64_t JSCall(uintptr_t glue, JSTaggedType env, uint32_t argc, JSTaggedType calltarget, JSTaggedType new,
+//                 JSTaggedType this, ...)
 // webkit_jscc calling convention call js function()
 // Input: %rax - glue
 //        stack layout:
@@ -593,13 +608,17 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
 //        +--------------------------+ ---
 //        |       jsfunction         |   ^
 //        |--------------------------|  Fixed
-//        |       argc               | OptimizedFrame
+//        |       argc               | OptimizedJSFunctionFrame
+//        |--------------------------|   |
+//        |       lexEnv             |   |
 //        |--------------------------|   |
 //        |       returnAddr         |   |
 //        |--------------------------|   |
 //        |       callsiteFp         |   |
 //        |--------------------------|   |
-//        |       frameType          |   v
+//        |       frameType          |   |
+//        |--------------------------|   |
+//        |       lexEnv             |   v
 //        +--------------------------+ ---
 void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
 {
@@ -625,7 +644,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     {
         __ Movq(glueReg, rdi);
         glueReg = rdi;
-        __ Movq(Operand(rsp, 16), rax); // 16: sp + 16 get jsFunc
+        __ Movq(Operand(rsp, TRIPLE_SLOT_SIZE), rax); // sp + 24 get jsFunc
     }
     __ Bind(&lJSCallStart);
     Register jsFuncReg = rax;
@@ -689,14 +708,14 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     Register argV = r9;
     {
         __ Mov(Operand(jsFuncReg, JSFunctionBase::METHOD_OFFSET), jsMethod); // get method
-        __ Movl(Operand(rsp, 8), argc); // 8: sp + 8 actual argc
+        __ Movl(Operand(rsp, DOUBLE_SLOT_SIZE), argc); // sp + 16 actual argc
         __ Mov(Operand(jsMethod, JSMethod::GetCallFieldOffset(false)), methodCallField); // get call field
         __ Btq(JSMethod::IsNativeBit::START_BIT, methodCallField); // is native
         __ Jb(&lCallNativeMethod);
         __ Btq(JSMethod::IsAotCodeBit::START_BIT, methodCallField); // is aot
         __ Jb(&lCallOptimziedMethod);
         __ Movq(rsp, argV);
-        __ Addq(16, argV); // 16: sp + 16 argv
+        __ Addq(TRIPLE_SLOT_SIZE, argV); // sp + 24 argv
         OptimizedCallAsmInterpreter(assembler);
     }
 
@@ -710,8 +729,10 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Addl(NUM_MANDATORY_JSFUNC_ARGS, methodCallField); // add mandatory argumentr
         __ Mov(Operand(jsFuncReg, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddrReg); // get codeAddress
         __ Movq(rsp, r8);
+        Register envReg = r9;
+        __ Movq(Operand(r8, 16), envReg); // 16: get env
         Register argvReg = r8;
-        __ Addq(16, argvReg); // 16: sp + 16 argv
+        __ Addq(24, argvReg); // 24: sp + 24 argv
         __ Cmpl(expectedNumArgsReg, rdx); // expectedNumArgs <= actualNumArgs
         __ Jge(&lDirectCallCodeEntry);
         __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
@@ -742,8 +763,10 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
         __ Pushq(r10); // callee save
         __ Movq(rsp, rdx);
-        __ Addq(32, rdx); // 32: sp + 32 argv
+        __ Addq(QUINTUPLE_SLOT_SIZE, rdx); // sp + 40 argv
         __ Mov(Operand(rdx, 0), rax); // get origin argc
+        Register envReg = r9;
+        __ Mov(Operand(rdx, -FRAME_SLOT_SIZE), envReg); // get env
         __ Movq(rax, r10);
         // get bound target
         __ Mov(Operand(jsFuncReg, JSBoundFunction::BOUND_ARGUMENTS_OFFSET), rcx);
@@ -753,7 +776,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
 
         // 16 bytes align check
         __ Testb(1, r10);
-        __ Jne(&lAlign16Bytes2);
+        __ Je(&lAlign16Bytes2);
         __ PushAlignBytes(); // push zero to align 16 bytes stack
     }
 
@@ -797,17 +820,20 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Mov(Operand(jsFuncReg, JSBoundFunction::BOUND_TARGET_OFFSET), rax); // callTarget
         __ Pushq(rax);
         __ Pushq(r10); // push actual arguments
+        Register envReg = r9;
+        __ Pushq(envReg);
         __ Movq(rdi, rax);
         __ Callq(&jsCall); // call JSCall
         __ Leaq(Operand(r10, Scale::Times8, 8), rcx); // 8: disp
         __ Addq(rcx, rsp);
         __ Testb(1, r10);  // stack 16bytes align check
-        __ Jne(&lPopFrame2);
+        __ Je(&lPopFrame2);
         __ Addq(8, rsp); // 8: align byte
     }
 
     __ Bind(&lPopFrame2);
     {
+        __ Addq(8, rsp); // 8: sp + 8
         __ Pop(r10);
         __ Addq(8, rsp); // 8: sp + 8
         __ Pop(rbp);
@@ -816,7 +842,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     __ Bind(&lJSProxy);
     __ Movq(jsFuncReg, rdx); // calltarget
     __ Movq(rsp, rcx);
-    __ Addq(8, rcx); // 8: sp + 8 skip returnAddr
+    __ Addq(DOUBLE_SLOT_SIZE, rcx); // sp + 16 skip returnAddr
     __ Mov(Operand(rcx, 0), rsi); // get origin argc
     __ Addq(8, rcx); // 8: sp + 8 argv
     __ Movq(kungfu::CommonStubCSigns::JsProxyCallInternal, r9);

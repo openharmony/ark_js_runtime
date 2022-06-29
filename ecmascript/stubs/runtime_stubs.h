@@ -17,6 +17,7 @@
 #define ECMASCRIPT_RUNTIME_STUBS_H
 
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/frames.h"
 #include "ecmascript/stubs/test_runtime_stubs.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
@@ -226,7 +227,10 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(NewAotObjDynRange)                  \
     V(GetTypeArrayPropertyByIndex)        \
     V(SetTypeArrayPropertyByIndex)        \
-    V(AotNewObjWithIHClass)
+    V(AotNewObjWithIHClass)               \
+    V(PopAotLexicalEnv)                   \
+    V(LdAotLexVarDyn)                     \
+    V(StAotLexVarDyn)
 
 #define RUNTIME_STUB_LIST(V)                     \
     RUNTIME_ASM_STUB_LIST(V)                     \
@@ -467,20 +471,26 @@ private:
     static inline JSTaggedValue RuntimeThrowSyntaxError(JSThread *thread, const char *message);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
-    static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
+    static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs);
     static inline JSTaggedValue RuntimeGetAotUnmapedArgsWithRestArgs(JSThread *thread, uint32_t actualNumArgs);
     static inline JSTaggedValue RuntimeGetUnmapedJSArgumentObj(JSThread *thread,
                                                                const JSHandle<TaggedArray> &argumentsList);
     static inline JSTaggedValue RuntimeNewAotLexicalEnvDyn(JSThread *thread, uint16_t numVars,
                                                            JSHandle<JSTaggedValue> &currentLexEnv);
     static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
-                                                                   JSHandle<JSTaggedValue> &currentLexEnv);
-    static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t autualArgc, uint32_t restId);
+                                                                   JSHandle<JSTaggedValue> &currentLexEnv,
+                                                                   JSHandle<JSTaggedValue> &func);
+    static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t actualArgc, uint32_t restIndex);
     static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
                                                            const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc);
 
     static inline JSTaggedValue RuntimeAotNewObjWithIHClass(JSThread *thread, uintptr_t argv, uint32_t argc);
+    static inline JSTaggedValue RuntimeGetAotLexEnv(JSThread *thread);
+    static inline void RuntimeSetAotLexEnv(JSThread *thread, JSTaggedValue lexEnv);
+    static inline JSTaggedValue RuntimeGenerateAotScopeInfo(JSThread *thread, uint16_t scopeId, JSTaggedValue func);
+    static inline JSTaggedType *GetActualArgv(JSThread *thread);
+    static inline OptimizedJSFunctionFrame *GetOptimizedJSFunctionFrame(JSThread *thread);
 };
 }  // namespace panda::ecmascript
 #endif

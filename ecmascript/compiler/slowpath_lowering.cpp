@@ -205,12 +205,6 @@ GateRef SlowPathLowering::GetConstPool(GateRef jsFunc)
 }
 
 // labelmanager must be initialized
-GateRef SlowPathLowering::GetCurrentEnv(GateRef jsFunc)
-{
-    return builder_.Load(VariableType::JS_ANY(), jsFunc, builder_.IntPtr(JSFunction::LEXICAL_ENV_OFFSET));
-}
-
-// labelmanager must be initialized
 GateRef SlowPathLowering::GetObjectFromConstPool(GateRef jsFunc, GateRef index)
 {
     GateRef constPool = GetConstPool(jsFunc);
@@ -269,7 +263,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCallIRangeDyn(gate, glue);
             break;
         case LDLEXENVDYN_PREF:
-            LowerLexicalEnv(gate, glue, jsFunc);
+            LowerLexicalEnv(gate, glue);
             break;
         case GETUNMAPPEDARGS_PREF:
             LowerGetUnmappedArgs(gate, glue);
@@ -529,13 +523,13 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerDefineAsyncFunc(gate, glue, jsFunc);
             break;
         case NEWLEXENVDYN_PREF_IMM16:
-            LowerNewLexicalEnvDyn(gate, glue, jsFunc);
+            LowerNewLexicalEnvDyn(gate, glue);
             break;
         case NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16:
             LowerNewLexicalEnvWithNameDyn(gate, glue, jsFunc);
             break;
         case POPLEXENVDYN_PREF:
-            LowerPopLexicalEnv(gate, glue, jsFunc);
+            LowerPopLexicalEnv(gate, glue);
             break;
         case LDSUPERBYVALUE_PREF_V8_V8:
             LowerLdSuperByValue(gate, glue, jsFunc);
@@ -600,12 +594,12 @@ void SlowPathLowering::Lower(GateRef gate)
         case LDLEXVARDYN_PREF_IMM4_IMM4:
         case LDLEXVARDYN_PREF_IMM8_IMM8:
         case LDLEXVARDYN_PREF_IMM16_IMM16:
-            LowerLdLexVarDyn(gate, jsFunc);
+            LowerLdLexVarDyn(gate, glue);
             break;
         case STLEXVARDYN_PREF_IMM4_IMM4_V8:
         case STLEXVARDYN_PREF_IMM8_IMM8_V8:
         case STLEXVARDYN_PREF_IMM16_IMM16_V8:
-            LowerStLexVarDyn(gate, glue, jsFunc);
+            LowerStLexVarDyn(gate, glue);
             break;
         case CREATEOBJECTHAVINGMETHOD_PREF_IMM16:
             LowerCreateObjectHavingMethod(gate, glue, jsFunc);
@@ -703,10 +697,10 @@ void SlowPathLowering::LowerLoadStr(GateRef gate, GateRef glue)
     ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 {
     const int id = RTSTUB_ID(GetAotLexicalEnv);
-    GateRef newGate = LowerCallRuntime(glue, id, {jsFunc});
+    GateRef newGate = LowerCallRuntime(glue, id, {});
     ReplaceHirToCall(gate, newGate, true);
 }
 
@@ -810,8 +804,10 @@ void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG0DYN_PREF_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc, acc_.GetValueIn(gate, 0), newTarget, thisObj,
-                  acc_.GetValueIn(gate, 1)});
+    GateRef func = acc_.GetValueIn(gate, 0);
+    GateRef env = builder_.GetLexicalEnv(func);
+    GateRef bcOffset = acc_.GetValueIn(gate, 1);
+    LowerToJSCall(gate, glue, {glue, env, actualArgc, func, newTarget, thisObj, bcOffset});
 }
 
 void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
@@ -822,8 +818,10 @@ void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG1DYN_PREF_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc,
-        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
+    GateRef func = acc_.GetValueIn(gate, 0);
+    GateRef env = builder_.GetLexicalEnv(func);
+    GateRef bcOffset = acc_.GetValueIn(gate, 2); // 2: bytecode offset
+    LowerToJSCall(gate, glue, {glue, env, actualArgc, func, newTarget, thisObj, acc_.GetValueIn(gate, 1), bcOffset});
 }
 
 void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
@@ -834,9 +832,11 @@ void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc,
-        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2),
-        acc_.GetValueIn(gate, 3)});
+    GateRef func = acc_.GetValueIn(gate, 0);
+    GateRef env = builder_.GetLexicalEnv(func);
+    GateRef bcOffset = acc_.GetValueIn(gate, 3); // 3: bytecode offset
+    LowerToJSCall(gate, glue, {glue, env, actualArgc, func, newTarget, thisObj, acc_.GetValueIn(gate, 1),
+        acc_.GetValueIn(gate, 2), bcOffset});
 }
 
 void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
@@ -847,9 +847,11 @@ void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
     GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc,
-        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1),
-        acc_.GetValueIn(gate, 2), acc_.GetValueIn(gate, 3)});
+    GateRef func = acc_.GetValueIn(gate, 0);
+    GateRef env = builder_.GetLexicalEnv(func);
+    GateRef bcOffset = acc_.GetValueIn(gate, 4); // 4: bytecode offset
+    LowerToJSCall(gate, glue, {glue, env, actualArgc, func, newTarget, thisObj, acc_.GetValueIn(gate, 1),
+        acc_.GetValueIn(gate, 2), acc_.GetValueIn(gate, 3), bcOffset});
 }
 
 void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
@@ -862,13 +864,16 @@ void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef thisObj = acc_.GetValueIn(gate, 1);
     GateRef newTarget = builder_.Undefined();
+    GateRef env = builder_.GetLexicalEnv(callTarget);
     vec.emplace_back(glue);
+    vec.emplace_back(env);
     vec.emplace_back(actualArgc);
     vec.emplace_back(callTarget);
     vec.emplace_back(newTarget);
     vec.emplace_back(thisObj);
     // add common args
-    for (size_t i = fixedInputsNum; i < acc_.GetNumValueIn(gate); i++) {
+    size_t numIns = acc_.GetNumValueIn(gate);
+    for (size_t i = fixedInputsNum; i < numIns; i++) {
         vec.emplace_back(acc_.GetValueIn(gate, i));
     }
     LowerToJSCall(gate, glue, vec);
@@ -893,7 +898,9 @@ void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
+    GateRef env = builder_.GetLexicalEnv(callTarget);
     vec.emplace_back(glue);
+    vec.emplace_back(env);
     vec.emplace_back(actualArgc);
     vec.emplace_back(callTarget);
     vec.emplace_back(newTarget);
@@ -1877,13 +1884,13 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerNewLexicalEnvDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerNewLexicalEnvDyn(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef lexEnv = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {jsFunc}, true);
+    GateRef lexEnv = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {}, true);
     GateRef result = LowerCallRuntime(glue, RTSTUB_ID(NewAotLexicalEnvDyn),
         {builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 0)), lexEnv}, true);
     successControl.emplace_back(builder_.GetState());
@@ -1899,10 +1906,10 @@ void SlowPathLowering::LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue,
     std::vector<GateRef> failControl;
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef lexEnv = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {jsFunc}, true);
+    GateRef lexEnv = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {}, true);
     auto args = { builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 0)),
                   builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 1)),
-                  lexEnv};
+                  lexEnv, jsFunc};
     GateRef result = LowerCallRuntime(glue, RTSTUB_ID(NewAotLexicalEnvWithNameDyn), args, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
@@ -1911,14 +1918,11 @@ void SlowPathLowering::LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue,
     ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
-void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef result = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {jsFunc}, true);
-    GateRef index = builder_.Int32(LexicalEnv::PARENT_ENV_INDEX);
-    GateRef parentLexEnv = builder_.GetValueFromTaggedArray(VariableType::JS_ANY(), result, index);
-    builder_.SetLexicalEnvToFunction(glue, jsFunc, parentLexEnv);
+    LowerCallRuntime(glue, RTSTUB_ID(PopAotLexicalEnv), {}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
@@ -2496,13 +2500,14 @@ void SlowPathLowering::LowerStArraySpread(GateRef gate, GateRef glue)
     ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerLdLexVarDyn(GateRef gate, GateRef jsFunc)
+void SlowPathLowering::LowerLdLexVarDyn(GateRef gate, GateRef glue)
 {
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef level = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 0));
     GateRef slot = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 1));
-    DEFVAlUE(currentEnv, (&builder_), VariableType::JS_ANY(), GetCurrentEnv(jsFunc));
+    DEFVAlUE(currentEnv, (&builder_), VariableType::JS_ANY(),
+        LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {}, true));
     DEFVAlUE(i, (&builder_), VariableType::INT32(), builder_.Int32(0));
     std::vector<GateRef> successControl;
     std::vector<GateRef> exceptionControl;
@@ -2528,14 +2533,15 @@ void SlowPathLowering::LowerLdLexVarDyn(GateRef gate, GateRef jsFunc)
     ReplaceHirToSubCfg(gate, result, successControl, exceptionControl, true);
 }
 
-void SlowPathLowering::LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStLexVarDyn(GateRef gate, GateRef glue)
 {
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef level = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 0));
     GateRef slot = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 1));
     GateRef value = acc_.GetValueIn(gate, 2);
-    DEFVAlUE(currentEnv, (&builder_), VariableType::JS_ANY(), GetCurrentEnv(jsFunc));
+    DEFVAlUE(currentEnv, (&builder_), VariableType::JS_ANY(),
+             LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {}, true));
     DEFVAlUE(i, (&builder_), VariableType::INT32(), builder_.Int32(0));
     std::vector<GateRef> successControl;
     std::vector<GateRef> exceptionControl;
@@ -2986,59 +2992,20 @@ void SlowPathLowering::LowerGetUnmappedArgs(GateRef gate, GateRef glue)
 {
     GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
     GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
-    std::vector<GateRef> vec;
-    const size_t fixedArgs = 3;
-    GateRef argList = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    auto uses = acc_.ConstUses(argList);
-    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
-        vec.emplace_back(*useIt);
-    }
-    std::vector<GateRef> args({vec.rbegin() + CommonArgIdx::NUM_OF_ARGS, vec.rend()});
-    size_t argsNum = args.size() + fixedArgs;
-    args.insert(args.begin(), taggedArgc);
-    DEFVAlUE(unmappedObj, (&builder_), VariableType::JS_ANY(), builder_.Undefined());
-    Label normalArgs(&builder_);
-    Label restArgs(&builder_);
-    Label successExit(&builder_);
-    Label exceptionExit(&builder_);
-    GateRef result;
-    std::vector<GateRef> successControl;
-    std::vector<GateRef> failControl;
-    builder_.Branch(builder_.Int32GreaterThan(actualArgc, builder_.Int32(argsNum)), &restArgs, &normalArgs);
-    builder_.Bind(&restArgs);
-    {
-        unmappedObj = LowerCallRuntime(glue, RTSTUB_ID(GetAotUnmapedArgsWithRestArgs), {taggedArgc}, true);
-        builder_.Branch(builder_.IsSpecial(*unmappedObj, JSTaggedValue::VALUE_EXCEPTION),
-            &exceptionExit, &successExit);
-    }
-    builder_.Bind(&normalArgs);
-    {
-        unmappedObj = LowerCallRuntime(glue, RTSTUB_ID(GetAotUnmapedArgs), args, true);
-        builder_.Branch(builder_.IsSpecial(*unmappedObj, JSTaggedValue::VALUE_EXCEPTION),
-            &exceptionExit, &successExit);
-    }
-    builder_.Bind(&successExit);
-    {
-        result = *unmappedObj;
-        successControl.emplace_back(builder_.GetState());
-        successControl.emplace_back(builder_.GetDepend());
-    }
-    builder_.Bind(&exceptionExit);
-    {
-        failControl.emplace_back(builder_.GetState());
-        failControl.emplace_back(builder_.GetDepend());
-    }
-    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+    const int id = RTSTUB_ID(GetAotUnmapedArgs);
+    GateRef newGate = LowerCallRuntime(glue, id, {taggedArgc});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCopyRestArgs(GateRef gate, GateRef glue)
 {
     GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
-    GateRef restIdx = acc_.GetValueIn(gate, 0);
     GateRef taggedArgc = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(actualArgc));
-    GateRef taggedRestId = builder_.TaggedTypeNGC(restIdx);
-    int id = RTSTUB_ID(CopyAotRestArgs);
-    GateRef newGate = LowerCallRuntime(glue, id, {taggedArgc, taggedRestId});
+    GateRef restIdx = acc_.GetValueIn(gate, 0);
+    GateRef taggedRestIdx = builder_.TaggedTypeNGC(restIdx);
+
+    const int id = RTSTUB_ID(CopyAotRestArgs);
+    GateRef newGate = LowerCallRuntime(glue, id, {taggedArgc, taggedRestIdx});
     ReplaceHirToCall(gate, newGate);
 }
 }  // namespace panda::ecmascript

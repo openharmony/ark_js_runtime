@@ -1542,7 +1542,7 @@ DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
 {
     RUNTIME_STUBS_HEADER(GetAotUnmapedArgs);
     JSTaggedValue actualNumArgs = GetArg(argv, argc, 0);
-    return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
+    return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt()).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(GetAotUnmapedArgsWithRestArgs)
@@ -1555,8 +1555,7 @@ DEF_RUNTIME_STUBS(GetAotUnmapedArgsWithRestArgs)
 DEF_RUNTIME_STUBS(GetAotLexicalEnv)
 {
     RUNTIME_STUBS_HEADER(GetAotLexicalEnv);
-    JSFunction *jsFunc = GetPtrArg<JSFunction *>(argv, argc, 0);
-    return jsFunc->GetLexicalEnv().GetRawData();
+    return RuntimeGetAotLexEnv(thread).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(NewAotLexicalEnvDyn)
@@ -1570,19 +1569,30 @@ DEF_RUNTIME_STUBS(NewAotLexicalEnvDyn)
 DEF_RUNTIME_STUBS(NewAotLexicalEnvWithNameDyn)
 {
     RUNTIME_STUBS_HEADER(NewAotLexicalEnvWithNameDyn);
-    JSTaggedValue numVars = GetArg(argv, argc, 0);
-    JSTaggedValue scopeId = GetArg(argv, argc, 1);
+    JSTaggedValue taggedNumVars = GetArg(argv, argc, 0);
+    JSTaggedValue taggedScopeId = GetArg(argv, argc, 1);
     JSHandle<JSTaggedValue> currentLexEnv = GetHArg<JSTaggedValue>(argv, argc, 2);
-    return RuntimeNewAotLexicalEnvWithNameDyn(thread, static_cast<uint16_t>(numVars.GetInt()),
-                                              static_cast<uint16_t>(scopeId.GetInt()), currentLexEnv).GetRawData();
+    JSHandle<JSTaggedValue> func = GetHArg<JSTaggedValue>(argv, argc, 3);
+    uint16_t numVars = static_cast<uint16_t>(taggedNumVars.GetInt());
+    uint16_t scopeId = static_cast<uint16_t>(taggedScopeId.GetInt());
+    return RuntimeNewAotLexicalEnvWithNameDyn(thread, numVars, scopeId, currentLexEnv, func).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(PopAotLexicalEnv)
+{
+    RUNTIME_STUBS_HEADER(PopAotLexicalEnv);
+    JSTaggedValue currentLexenv = RuntimeGetAotLexEnv(thread);
+    JSTaggedValue parentLexenv = LexicalEnv::Cast(currentLexenv.GetTaggedObject())->GetParentEnv();
+    RuntimeSetAotLexEnv(thread, parentLexenv);
+    return JSTaggedValue::VALUE_HOLE;
 }
 
 DEF_RUNTIME_STUBS(CopyAotRestArgs)
 {
     RUNTIME_STUBS_HEADER(CopyAotRestArgs);
     JSTaggedValue actualArgc = GetArg(argv, argc, 0);
-    JSTaggedValue restId = GetArg(argv, argc, 1);
-    return RuntimeCopyAotRestArgs(thread, actualArgc.GetInt(), restId.GetInt()).GetRawData();
+    JSTaggedValue restIndex = GetArg(argv, argc, 1);
+    return RuntimeCopyAotRestArgs(thread, actualArgc.GetInt(), restIndex.GetInt()).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(NewAotObjDynRange)
@@ -1614,6 +1624,37 @@ DEF_RUNTIME_STUBS(AotNewObjWithIHClass)
 {
     RUNTIME_STUBS_HEADER(AotNewObjWithIHClass);
     return RuntimeAotNewObjWithIHClass(thread, argv, argc).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(LdAotLexVarDyn)
+{
+    RUNTIME_STUBS_HEADER(LdAotLexVarDyn);
+    JSTaggedValue level = GetArg(argv, argc, 0);
+    JSTaggedValue slot = GetArg(argv, argc, 1);
+    JSTaggedValue env = RuntimeGetAotLexEnv(thread);
+    for (int32_t i = 0; i < level.GetInt(); i++) {
+        JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
+        ASSERT(!taggedParentEnv.IsUndefined());
+        env = taggedParentEnv;
+    }
+    return LexicalEnv::Cast(env.GetTaggedObject())->GetProperties(slot.GetInt()).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(StAotLexVarDyn)
+{
+    RUNTIME_STUBS_HEADER(StAotLexVarDyn);
+    JSTaggedValue level = GetArg(argv, argc, 0);
+    JSTaggedValue slot = GetArg(argv, argc, 1);
+    JSTaggedValue value = GetArg(argv, argc, 2);
+    JSTaggedValue env = RuntimeGetAotLexEnv(thread);
+
+    for (int32_t i = 0; i < level.GetInt(); i++) {
+        JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
+        ASSERT(!taggedParentEnv.IsUndefined());
+        env = taggedParentEnv;
+    }
+    LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(thread, slot.GetInt(), value);
+    return JSTaggedValue::VALUE_HOLE;
 }
 
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
