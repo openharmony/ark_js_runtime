@@ -84,6 +84,12 @@ void ExtendedAssembler::RestoreFpAndLr()
     Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, POSTINDEX));
 }
 
+void ExtendedAssembler::PushLrAndFp()
+{
+    Register sp(SP);
+    Stp(Register(X30), Register(X29), MemoryOperand(sp, -16, PREINDEX));  // 16: 2 registers
+}
+
 void ExtendedAssembler::SaveLrAndFp()
 {
     Register sp(SP);

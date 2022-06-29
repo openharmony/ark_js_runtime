@@ -66,21 +66,21 @@ using Label = panda::ecmascript::Label;
 void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
 {
     Register glue(X0);
-    Register fp(X29);
+    Register fp(FP);
     Register tmp(X19);
     Register sp(SP);
     Register argC(X1);
     Register argV(X2);
 
     __ BindAssemblerStub(RTSTUB_ID(CallRuntime));
-    __ SaveFpAndLr();
+    __ PushFpAndLr();
 
     Register frameType(X2);
-    __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-
     // construct Leave Frame and callee save
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
     __ Stp(tmp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+    __ Add(fp, sp, Immediate(16));  // 16: skip frame type and tmp
+    __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
 
     // load runtime trampoline address
     Register rtfunc(X19);
@@ -1091,6 +1091,8 @@ void AssemblerStubs::CallNativeWithArgv(ExtendedAssembler *assembler, bool callN
     }
     // callTarget
     __ Str(callTarget, MemoryOperand(fpRegister, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Add(temp, fpRegister, Immediate(40));  // 40: skip frame type, numArgs, func, newTarget and this
+    __ Add(Register(FP), temp, Operand(argc, LSL, 3));  // 3: argc * 8
     __ Mov(spRegister, fpRegister);
 
     Label call;
@@ -1155,17 +1157,24 @@ void AssemblerStubs::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 void AssemblerStubs::PushBuiltinFrame(ExtendedAssembler *assembler, Register glue,
     FrameType type, Register op, Register next)
 {
-    __ SaveFpAndLr();
-    __ Str(Register(FP), MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    Register sp(SP);
+    __ PushFpAndLr();
+    __ Mov(op, sp);
+    __ Str(op, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
     __ Mov(op, Immediate(static_cast<int32_t>(type)));
     if (type == FrameType::BUILTIN_FRAME) {
         // push stack args
-        __ Add(next, Register(FP), Immediate(BuiltinFrame::GetStackArgsToFpDelta(false)));
+        __ Add(next, sp, Immediate(BuiltinFrame::GetStackArgsToFpDelta(false)));
         // 16: type & next
-        __ Stp(next, op, MemoryOperand(Register(SP), -16, AddrMode::PREINDEX));
+        __ Stp(next, op, MemoryOperand(sp, -16, AddrMode::PREINDEX));
+        __ Add(Register(FP), sp, Immediate(16));  // 16: skip next and frame type
+    } else if (type == FrameType::BUILTIN_ENTRY_FRAME) {
+        // 16: type & next
+        __ Stp(next, op, MemoryOperand(sp, -16, AddrMode::PREINDEX));
+        __ Add(Register(FP), sp, Immediate(16));  // 16: skip next and frame type
     } else {
         // 16: type & next
-        __ Stp(next, op, MemoryOperand(Register(SP), -16, AddrMode::PREINDEX));
+        __ Stp(next, op, MemoryOperand(sp, -16, AddrMode::PREINDEX));
     }
 }
 
@@ -1209,6 +1218,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     Register opcode(X6, W);
     Register temp(X7);
     Register bcStub(X7);
+    Register fp(X8);
 
     int64_t fpOffset = static_cast<int64_t>(AsmInterpretedFrame::GetFpOffset(false))
         - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
@@ -1216,11 +1226,10 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
     ASSERT(fpOffset < 0);
     ASSERT(spOffset < 0);
-    __ Ldur(temp, MemoryOperand(sp, fpOffset));
-    __ Mov(rsp, temp);  // resume rsp
 
     Label newObjectDynRangeReturn;
     Label dispatch;
+    __ Ldur(fp, MemoryOperand(sp, fpOffset));  // store fp for temporary
     __ Cmp(jumpSizeRegister, Immediate(0));
     __ B(Condition::EQ, &newObjectDynRangeReturn);
     __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
@@ -1229,6 +1238,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Ldrb(opcode, MemoryOperand(pc, 0));
     __ Bind(&dispatch);
     {
+        __ Mov(rsp, fp);  // resume rsp
         __ Add(bcStub, glueRegister, Operand(opcode, UXTW, 3));  // 3： bc * 8
         __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
         __ Br(bcStub);
@@ -1245,11 +1255,14 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         auto thisOffset = index * 8;  // 8: byte size
         ASSERT(thisOffset < 0);
         __ Bind(&getHiddenThis);
-        __ Ldur(ret, MemoryOperand(rsp, thisOffset));  // update acc
         __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
+        __ Mov(rsp, fp);  // resume rsp
+        __ Ldur(ret, MemoryOperand(rsp, thisOffset));  // update acc
         __ Add(pc, pc, Immediate(jumpSize));
         __ Ldrb(opcode, MemoryOperand(pc, 0));
-        __ B(&dispatch);
+        __ Add(bcStub, glueRegister, Operand(opcode, UXTW, 3));  // 3： bc * 8
+        __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
+        __ Br(bcStub);
     }
     __ Bind(&notUndefined);
     {
@@ -1294,18 +1307,23 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     }
 }
 
+// ResumeRspAndReturn(uintptr_t acc)
+// GHC calling convention
+// X19 - acc
+// FP - prevSp
+// X20 - sp
 void AssemblerStubs::ResumeRspAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     Register rsp(SP);
-    Register lr(X30);
+    Register currentSp(X20);
 
     [[maybe_unused]] TempRegister1Scope scope1(assembler);
     Register fpRegister = __ TempRegister1();
     int64_t offset = static_cast<int64_t>(AsmInterpretedFrame::GetFpOffset(false))
         - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
     ASSERT(offset < 0);
-    __ Ldur(fpRegister, MemoryOperand(Register(FP), offset));
+    __ Ldur(fpRegister, MemoryOperand(currentSp, offset));
     __ Mov(rsp, fpRegister);
 
     // return
@@ -1355,14 +1373,15 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
 // ResumeUncaughtFrameAndReturn(uintptr_t glue)
 // GHC calling convention
 // X19 - glue
-// FP  - acc
+// FP - sp
+// X20 - acc
 void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
 
     Register glue(X19);
     Register fp(X5);
-    Register acc(FP);
+    Register acc(X20);
     Register cppRet(X0);
 
     __ Ldr(fp, MemoryOperand(glue, JSThread::GlueData::GetLastFpOffset(false)));
@@ -1634,6 +1653,7 @@ void AssemblerStubs::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *asse
 void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
 {
     Register glue = __ GlueRegister();
+    Register fp(X29);
     Register sp(SP);
 
     if (!assembler->FromInterpreterHandler()) {
@@ -1649,17 +1669,18 @@ void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool 
         // prev managed fp is leave frame or nullptr(the first frame)
         __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
         __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME)));
-        __ SaveFpAndLr();
+        __ PushFpAndLr();
     } else {
         __ Mov(prevFrameRegister, Register(FP));
         __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_BRIDGE_FRAME)));
-        __ SaveLrAndFp();
+        __ PushLrAndFp();
     }
 
     // 2 : 2 means pair
     __ Stp(prevFrameRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     // 2 : pc & glue
     __ Stp(glue, Register(Zero), MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // pc
+    __ Add(fp, sp, Immediate(32));  // 32: skip frame type, prevSp, pc and glue
 }
 
 void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)

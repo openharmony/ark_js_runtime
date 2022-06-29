@@ -155,7 +155,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
         Jump(&afterExceedCon);
     }
     Bind(&afterExceedCon);
-    result = CallNGCRuntime(glue, RTSTUB_ID(FindElementWithCache), { glue, hClass, key, propsNum });
+    result = UpdateLeaveFrameAndCallNGCRuntime(glue, RTSTUB_ID(FindElementWithCache), { glue, hClass, key, propsNum });
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
@@ -978,7 +978,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             }
             Bind(&isNullPtr);
             {
-                CallNGCRuntime(glue,
+                UpdateLeaveFrameAndCallNGCRuntime(glue,
                     RTSTUB_ID(InsertOldToNewRSet),
                     { glue, objectRegion, slotAddr });
                 Jump(&notValidIndex);
@@ -994,7 +994,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             Branch(Int64Equal(stateBitField, Int64(0)), &exit, &marking);
 
             Bind(&marking);
-            CallNGCRuntime(glue,
+            UpdateLeaveFrameAndCallNGCRuntime(glue,
                 RTSTUB_ID(MarkingBarrier), {
                 glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion });
             Jump(&exit);
@@ -3027,7 +3027,7 @@ GateRef Stub::FastStrictEqual(GateRef glue, GateRef left, GateRef right)
             &exit);
         Bind(&contentsCompare);
         {
-            result = CallNGCRuntime(glue, RTSTUB_ID(StringsAreEquals), { left, right });
+            result = UpdateLeaveFrameAndCallNGCRuntime(glue, RTSTUB_ID(StringsAreEquals), { left, right });
             Jump(&exit);
         }
     }
@@ -3041,7 +3041,7 @@ GateRef Stub::FastStrictEqual(GateRef glue, GateRef left, GateRef right)
             Label rightIsBigInt(env);
             Branch(TaggedIsBigInt(right), &rightIsBigInt, &exit);
             Bind(&rightIsBigInt);
-            result = CallNGCRuntime(glue, RTSTUB_ID(BigIntEquals), { left, right });
+            result = UpdateLeaveFrameAndCallNGCRuntime(glue, RTSTUB_ID(BigIntEquals), { left, right });
             Jump(&exit);
         }
     }
@@ -3204,13 +3204,13 @@ GateRef Stub::FastToBoolean(GateRef value)
             Branch(IsBigInt(value), &isBigint, &returnTrue);
             Bind(&isBigint);
             {
-                auto data = Load(VariableType::JS_POINTER(), value, IntPtr(BigInt::DATA_OFFSET));
-                auto len = GetLengthOfTaggedArray(data);
+                auto len = Load(VariableType::INT32(), value, IntPtr(BigInt::LENGTH_OFFSET));
                 Branch(Int32Equal(len, Int32(1)), &lengthIsOne, &returnTrue);
                 Bind(&lengthIsOne);
                 {
-                    auto data0 = GetValueFromTaggedArray(VariableType::JS_POINTER(), data, Int32(0));
-                    Branch(Int64Equal(data0, Int64(JSTaggedValue::VALUE_ZERO)), &returnFalse, &returnTrue);
+                    auto data = PtrAdd(value, IntPtr(BigInt::DATA_OFFSET));
+                    auto data0 = Load(VariableType::INT32(), data, Int32(0));
+                    Branch(Int32Equal(data0, Int32(0)), &returnFalse, &returnTrue);
                 }
             }
         }
@@ -3603,7 +3603,8 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
                     Branch(DoubleIsINF(*doubleRight), &leftIsZeroOrRightIsInf, &rightNotInf);
                     Bind(&rightNotInf);
                     {
-                        result = CallNGCRuntime(glue, RTSTUB_ID(FloatMod), { *doubleLeft, *doubleRight });
+                        result = UpdateLeaveFrameAndCallNGCRuntime(
+                            glue, RTSTUB_ID(FloatMod), { *doubleLeft, *doubleRight });
                         Jump(&exit);
                     }
                 }
@@ -3703,7 +3704,7 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
     }
     Bind(&overflow);
     {
-        result = CallNGCRuntime(glue, RTSTUB_ID(DoubleToInt), { x });
+        result = UpdateLeaveFrameAndCallNGCRuntime(glue, RTSTUB_ID(DoubleToInt), { x });
         Jump(&exit);
     }
     Bind(&exit);

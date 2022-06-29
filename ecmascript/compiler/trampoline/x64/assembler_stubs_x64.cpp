@@ -34,9 +34,9 @@ void AssemblerStubsX64::CallRuntime(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallRuntime));
     __ Pushq(rbp);
-    __ Movq(rsp, rbp);
     __ Movq(rsp, Operand(rax, JSThread::GlueData::GetLeaveFrameOffset(false)));
     __ Pushq(static_cast<int32_t>(FrameType::LEAVE_FRAME));
+    __ Leaq(Operand(rsp, 8), rbp);  // 8: skip frame type
 
     __ Pushq(r10);
     __ Pushq(rdx);
@@ -1100,10 +1100,10 @@ void AssemblerStubsX64::PushAsmInterpEntryFrame(ExtendedAssembler *assembler)
     __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), fpRegister);
     // construct asm interpreter entry frame
     __ Pushq(rbp);
-    __ Movq(rsp, rbp);
     __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME));
     __ Pushq(fpRegister);
     __ Pushq(0);    // pc
+    __ Leaq(Operand(rsp, 24), rbp);  // 24: skip frame type, prevSp and pc
 }
 
 void AssemblerStubsX64::PopAsmInterpEntryFrame(ExtendedAssembler *assembler)
@@ -1126,8 +1126,8 @@ void AssemblerStubsX64::PushAsmInterpBridgeFrame(ExtendedAssembler *assembler)
     // construct asm interpreter bridge frame
     __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_BRIDGE_FRAME));
     __ Pushq(rbp);
-    __ Leaq(Operand(rsp, 16), rbp);  // 16: skip prevSp and frame type
     __ Pushq(0);    // pc
+    __ Leaq(Operand(rsp, 24), rbp);  // 24: skip pc, prevSp and frame type
     __ PushAlignBytes();
     if (!assembler->FromInterpreterHandler()) {
         __ PushCppCalleeSaveRegisters();
@@ -1544,7 +1544,6 @@ void AssemblerStubsX64::PushVregs(ExtendedAssembler *assembler)
 
         StackOverflowCheck(assembler);
 
-        __ Movq(prevSpRegister, tempRegister);
         PushFrameState(assembler, prevSpRegister, fpRegister,
             callTargetRegister, methodRegister, pcRegister, tempRegister);
         // align 16 bytes
@@ -1642,6 +1641,8 @@ void AssemblerStubsX64::CallNativeWithArgv(ExtendedAssembler *assembler, bool ca
         __ Pushq(JSTaggedValue::Undefined().GetRawData());
     }
     __ Pushq(func);
+    // 40: skip frame type, numArgs, func, newTarget and this
+    __ Leaq(Operand(rsp, numArgs, Times8, 40), rbp);
     __ Movq(rsp, stackArgs);
 
     __ Testq(0xf, rsp);  // 0xf: 0x1111
@@ -1720,9 +1721,11 @@ void AssemblerStubsX64::PushBuiltinFrame(ExtendedAssembler *assembler,
                                          Register glue, FrameType type)
 {
     __ Pushq(rbp);
-    __ Movq(rsp, rbp);
-    __ Movq(rbp, Operand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    __ Movq(rsp, Operand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
     __ Pushq(static_cast<int32_t>(type));
+    if (type != FrameType::BUILTIN_FRAME_WITH_ARGV) {
+        __ Leaq(Operand(rsp, 8), rbp);  // 8: skip frame type
+    }
 }
 
 void AssemblerStubsX64::CallNativeInternal(ExtendedAssembler *assembler,
@@ -1762,8 +1765,8 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     Register frameStateBaseRegister = r11;
     __ Movq(spRegister, frameStateBaseRegister);
     __ Subq(AsmInterpretedFrame::GetSize(false), frameStateBaseRegister);
-    __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
 
+    Label dispatch;
     Label newObjectDynRangeReturn;
     __ Cmpq(0, jumpSizeRegister);
     __ Je(&newObjectDynRangeReturn);
@@ -1773,10 +1776,15 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     Register temp = rax;
     Register opcodeRegister = rax;
     __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
-    Register bcStubRegister = r11;
-    __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
-        bcStubRegister);
-    __ Jmp(bcStubRegister);
+
+    __ Bind(&dispatch);
+    {
+        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
+        Register bcStubRegister = r11;
+        __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+            bcStubRegister);
+        __ Jmp(bcStubRegister);
+    }
 
     auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(
         JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV);
@@ -1788,13 +1796,17 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 
     auto index = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
     __ Bind(&getHiddenThis);
-    __ Movq(Operand(rsp, index * 8), ret);  // 8: byte size, update acc
     __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
     __ Addq(jumpSize, pcRegister);  // newPc
     __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
-    __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
-        bcStubRegister);
-    __ Jmp(bcStubRegister);
+    {
+        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
+        __ Movq(Operand(rsp, index * 8), ret);  // 8: byte size, update acc
+        Register bcStubRegister = r11;
+        __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+            bcStubRegister);
+        __ Jmp(bcStubRegister);
+    }
 
     __ Bind(&notUndefined);
     {
@@ -1814,9 +1826,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
         __ Addq(jumpSize, pcRegister);  // newPc
         __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
-        __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
-            bcStubRegister);
-        __ Jmp(bcStubRegister);
+        __ Jmp(&dispatch);
 
         __ Bind(&notEcmaObject);
         {
@@ -1833,9 +1843,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         {
             __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);
             __ Movq(kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeThrowException, opcodeRegister);
-            __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
-                    bcStubRegister);
-            __ Jmp(bcStubRegister);
+            __ Jmp(&dispatch);
         }
     }
 }
@@ -1874,13 +1882,16 @@ void AssemblerStubsX64::CallSetter(ExtendedAssembler *assembler)
 
 // ResumeRspAndReturn(uintptr_t acc)
 // GHC calling convention
-// %r13 - glue
+// %r13 - acc
+// %rbp - prevSp
+// %r12 - sp
 void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
+    Register currentSp = r12;
     Register fpRegister = r10;
     intptr_t offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
-    __ Movq(Operand(rbp, static_cast<int32_t>(offset)), fpRegister);
+    __ Movq(Operand(currentSp, static_cast<int32_t>(offset)), fpRegister);
     __ Movq(fpRegister, rsp);
     // return
     {
@@ -1925,12 +1936,13 @@ void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assemble
 // ResumeUncaughtFrameAndReturn(uintptr_t glue)
 // GHC calling convention
 // %r13 - glue
-// %rbp - acc
+// %rbp - sp
+// %r12 - acc
 void AssemblerStubsX64::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
     Register glueRegister = __ GlueRegister();
-    Register acc(rbp);
+    Register acc(r12);
     Register cppRet(rax);
 
     Label ret;

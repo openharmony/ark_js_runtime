@@ -35,6 +35,7 @@ public:
     void PushFpAndLr();
     void SaveFpAndLr();
     void RestoreFpAndLr();
+    void PushLrAndFp();
     void SaveLrAndFp();
     void RestoreLrAndFp();
     void PushArgsWithArgv(Register argc, Register argv, Register op,

@@ -1545,6 +1545,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
+    GateRef currentSp = *varSp;
     varSp = TaggedCastToIntPtr(CallRuntime(glue,
                                            RTSTUB_ID(JumpToCInterpreter),
                                            { constpool, profileTypeInfo, acc,
@@ -1557,7 +1558,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &shouldReturn, &shouldContinue);
     Bind(&shouldReturn);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { Undefined() });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { Undefined(), *varSp, currentSp });
         Return();
     }
     Bind(&shouldContinue);
@@ -4243,7 +4244,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc, *varSp, currentSp });
         Return();
     }
     Bind(&pcNotEqualNullptr);
@@ -4304,7 +4305,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc, *varSp, currentSp });
         Return();
     }
     Bind(&pcNotEqualNullptr);
@@ -4376,7 +4377,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { *varAcc, *varSp, currentSp });
         Return();
     }
     Bind(&pcNotEqualNullptr);
@@ -4410,15 +4411,15 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     GateRef exceptionOffset = IntPtr(JSThread::GlueData::GetExceptionOffset(env->IsArch32Bit()));
     GateRef exception = Load(VariableType::JS_ANY(), glue, exceptionOffset);
     varPc = TaggedCastToIntPtr(CallRuntime(glue, RTSTUB_ID(UpFrame), {}));
+    varSp = GetCurrentFrame(glue);
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue, *varAcc });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue, *varSp, *varAcc });
         Return();
     }
     Bind(&pcNotInvalid);
     {
-        varSp = GetCurrentFrame(glue);
         varAcc = exception;
         // clear exception
         Store(VariableType::INT64(), glue, glue, exceptionOffset, Hole());
