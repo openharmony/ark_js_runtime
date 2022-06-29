@@ -369,6 +369,11 @@ JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, con
                                                             static_cast<uint32_t>(args.size()),
                                                             args.data(),
                                                             mainFunc->GetCodeEntry());
+    if (JSTaggedValue(res) == JSTaggedValue::Hole()) {
+        res = EcmaInterpreter::GeneratorReEnterInterpreter(thread_, JSHandle<GeneratorContext>(thread_,
+            thread_->GetDeoptContext())).GetRawData();
+        thread_->ClearException();
+    }
     return JSTaggedValue(res);
 }
 

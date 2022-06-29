@@ -94,6 +94,8 @@ public:
         IF_SUCCESS,
         IF_EXCEPTION,
         GET_EXCEPTION,
+        CHECK_POINT,
+        FRAME_STATE,
         // Middle Level IR
         RUNTIME_CALL,
         RUNTIME_CALL_WITH_ARGV,

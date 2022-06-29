@@ -71,6 +71,7 @@ public:
         parser->Add(&snapshotOutputFile_);
         parser->Add(&enableRuntimeStat_);
         parser->Add(&logTypeInfer_);
+        parser->Add(&enableDeopt_);
     }
 
     bool EnableArkTools() const
@@ -459,6 +460,16 @@ public:
         logTypeInfer_.SetValue(value);
     }
 
+    void SetEnableDeopt()
+    {
+        enableDeopt_.SetValue(std::move(true));
+    }
+
+    bool GetEnableDeopt() const
+    {
+        return enableDeopt_.GetValue();
+    }
+
 private:
     static constexpr uint64_t INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT = 2147483648;
     static constexpr uint64_t COMPILER_MEMORY_SIZE_LIMIT_DEFAULT = 268435456;
@@ -521,6 +532,8 @@ private:
         R"(print aot type infer log. Default: false)"};
     PandArg<bool> isWorker_ {"IsWorker", false,
         R"(whether is worker vm)"};
+    PandArg<bool> enableDeopt_ {"EnableDeopt", false,
+        R"(whether support deopt Default: false)"};
 };
 }  // namespace panda::ecmascript
 

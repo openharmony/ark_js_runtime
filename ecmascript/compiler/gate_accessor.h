@@ -329,6 +329,7 @@ public:
     [[nodiscard]] bool IsDependIn(const UsesIterator &useIt) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
+    void ReplaceIn(GateRef gate, size_t idx, GateRef replaceGate);
     // Add for lowering
     [[nodiscard]] GateType GetGateType(GateRef gate) const;
     void SetGateType(GateRef gate, GateType gt);

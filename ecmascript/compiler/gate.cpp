@@ -96,6 +96,10 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case GET_EXCEPTION:
             return {I64, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
+        case CHECK_POINT:
+            return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
+        case FRAME_STATE:
+            return {NOVALUE, NO_STATE, NO_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
         // Middle Level IR
         case RUNTIME_CALL:
         case NOGC_RUNTIME_CALL:
@@ -233,6 +237,8 @@ std::string OpCode::Str() const
         {IF_SUCCESS, "IF_SUCCESS"},
         {IF_EXCEPTION, "IF_EXCEPTION"},
         {GET_EXCEPTION, "GET_EXCEPTION"},
+        {CHECK_POINT, "CHECK_POINT"},
+        {FRAME_STATE, "FRAME_STATE"},
         {RUNTIME_CALL, "RUNTIME_CALL"},
         {NOGC_RUNTIME_CALL, "NOGC_RUNTIME_CALL"},
         {CALL, "CALL"},
