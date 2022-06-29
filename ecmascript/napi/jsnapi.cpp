@@ -39,13 +39,16 @@
 #include "ecmascript/js_bigint.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/js_iterator.h"
 #include "ecmascript/js_map.h"
+#include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/js_serializer.h"
 #include "ecmascript/js_set.h"
+#include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_tagged_number.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
@@ -110,6 +113,10 @@ using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
 using ecmascript::BigInt;
 using ecmascript::MemMapAllocator;
+using ecmascript::JSMapIterator;
+using ecmascript::JSSetIterator;
+using ecmascript::IterationKind;
+using ecmascript::JSIterator;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -1507,10 +1514,85 @@ int32_t MapRef::GetSize()
     return map->GetSize();
 }
 
+Local<JSValueRef> MapRef::GetKey(const EcmaVM *vm, int entry)
+{
+    JSHandle<JSMap> map(JSNApiHelper::ToJSHandle(this));
+    JSThread *thread = vm->GetJSThread();
+    return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, map->GetKey(entry)));
+}
+
+Local<JSValueRef> MapRef::GetValue(const EcmaVM *vm, int entry)
+{
+    JSHandle<JSMap> map(JSNApiHelper::ToJSHandle(this));
+    JSThread *thread = vm->GetJSThread();
+    return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, map->GetValue(entry)));
+}
+
 int32_t SetRef::GetSize()
 {
     JSHandle<JSSet> set(JSNApiHelper::ToJSHandle(this));
     return set->GetSize();
+}
+
+Local<JSValueRef> SetRef::GetValue(const EcmaVM *vm, int entry)
+{
+    JSHandle<JSSet> set(JSNApiHelper::ToJSHandle(this));
+    JSThread *thread = vm->GetJSThread();
+    return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, set->GetValue(entry)));
+}
+
+int32_t MapIteratorRef::GetIndex()
+{
+    JSHandle<JSMapIterator> jsMapIter(JSNApiHelper::ToJSHandle(this));
+    return jsMapIter->GetNextIndex();
+}
+
+Local<JSValueRef> MapIteratorRef::GetKind(const EcmaVM *vm)
+{
+    JSHandle<JSMapIterator> jsMapIter(JSNApiHelper::ToJSHandle(this));
+    IterationKind iterKind = jsMapIter->GetIterationKind();
+    Local<JSValueRef> result;
+    switch (iterKind) {
+        case IterationKind::KEY:
+            result = StringRef::NewFromUtf8(vm, "keys");
+            break;
+        case IterationKind::VALUE:
+            result = StringRef::NewFromUtf8(vm, "values");
+            break;
+        case IterationKind::KEY_AND_VALUE:
+            result = StringRef::NewFromUtf8(vm, "entries");
+            break;
+        default:
+            break;
+    }
+    return result;
+}
+
+int32_t SetIteratorRef::GetIndex()
+{
+    JSHandle<JSSetIterator> jsSetIter(JSNApiHelper::ToJSHandle(this));
+    return jsSetIter->GetNextIndex();
+}
+
+Local<JSValueRef> SetIteratorRef::GetKind(const EcmaVM *vm)
+{
+    JSHandle<JSSetIterator> jsSetIter(JSNApiHelper::ToJSHandle(this));
+    IterationKind iterKind = jsSetIter->GetIterationKind();
+    Local<JSValueRef> result;
+    switch (iterKind) {
+        case IterationKind::KEY:
+            result = StringRef::NewFromUtf8(vm, "keys");
+            break;
+        case IterationKind::VALUE:
+            result = StringRef::NewFromUtf8(vm, "values");
+            break;
+        case IterationKind::KEY_AND_VALUE:
+            result = StringRef::NewFromUtf8(vm, "entries");
+            break;
+        default:
+            break;
+    }
+    return result;
 }
 
 // ----------------------------------- FunctionCallback ---------------------------------

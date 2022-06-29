@@ -89,6 +89,14 @@ const std::string RemoteObject::SetIteratorDescription = "SetIterator";  // NOLI
 const std::string RemoteObject::MapIteratorDescription = "MapIterator";  // NOLINT (readability-identifier-naming)
 const std::string RemoteObject::WeakMapDescription = "WeakMap";          // NOLINT (readability-identifier-naming)
 const std::string RemoteObject::WeakSetDescription = "WeakSet";          // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::JSPrimitiveNumberDescription =           // NOLINT (readability-identifier-naming)
+    "Number";
+const std::string RemoteObject::JSPrimitiveBooleanDescription =          // NOLINT (readability-identifier-naming)
+    "Boolean";
+const std::string RemoteObject::JSPrimitiveStringDescription =           // NOLINT (readability-identifier-naming)
+    "String";
+const std::string RemoteObject::JSPrimitiveSymbolDescription =           // NOLINT (readability-identifier-naming)
+    "Symbol";
 
 std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
@@ -273,19 +281,22 @@ std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, Local
         return RemoteObject::PromiseDescription;
     }
     if (tagged->IsArrayIterator()) {
-        return RemoteObject::ArrayIteratorDescription;
+        return DescriptionForArrayIterator();
     }
     if (tagged->IsStringIterator()) {
         return RemoteObject::StringIteratorDescription;
     }
     if (tagged->IsSetIterator()) {
-        return RemoteObject::SetIteratorDescription;
+        return DescriptionForSetIterator();
     }
     if (tagged->IsMapIterator()) {
-        return RemoteObject::MapIteratorDescription;
+        return DescriptionForMapIterator();
     }
     if (tagged->IsArrayBuffer()) {
         return DescriptionForArrayBuffer(ecmaVm, Local<ArrayBufferRef>(tagged));
+    }
+    if (tagged->IsJSPrimitiveRef() && tagged->IsJSPrimitiveNumber()) {
+        return DescriptionForPrimitiveNumber(ecmaVm, tagged);
     }
     return RemoteObject::ObjectDescription;
 }
@@ -323,16 +334,48 @@ std::string ObjectRemoteObject::DescriptionForSet(Local<SetRef> tagged)
 
 std::string ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, Local<JSValueRef> tagged)
 {
+    // add name
+    Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm, "name");
+    std::string strName = Local<ObjectRef>(tagged)->Get(ecmaVm, name)->ToString(ecmaVm)->ToString();
     // add message
-    Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "message");
-    Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
-    return result->ToString(ecmaVm)->ToString();
+    Local<JSValueRef> message = StringRef::NewFromUtf8(ecmaVm, "message");
+    std::string strMessage = Local<ObjectRef>(tagged)->Get(ecmaVm, message)->ToString(ecmaVm)->ToString();
+    if (strMessage.empty()) {
+        return strName;
+    } else {
+        return strName + ": "+ strMessage;
+    }
+}
+
+std::string ObjectRemoteObject::DescriptionForArrayIterator()
+{
+    std::string description = RemoteObject::ArrayIteratorDescription + "{}";
+    return description;
+}
+
+std::string ObjectRemoteObject::DescriptionForSetIterator()
+{
+    std::string description = RemoteObject::SetIteratorDescription + "{}";
+    return description;
+}
+
+std::string ObjectRemoteObject::DescriptionForMapIterator()
+{
+    std::string description = RemoteObject::MapIteratorDescription + "{}";
+    return description;
 }
 
 std::string ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged)
 {
     int32_t len = tagged->ByteLength(ecmaVm);
     std::string description = ("ArrayBuffer(" + std::to_string(len) + ")");
+    return description;
+}
+
+std::string ObjectRemoteObject::DescriptionForPrimitiveNumber(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+{
+    std::string strValue = tagged->ToString(ecmaVm)->ToString();
+    std::string description = RemoteObject::JSPrimitiveNumberDescription + "{[[PrimitiveValue]]: " + strValue + "}";
     return description;
 }
 
