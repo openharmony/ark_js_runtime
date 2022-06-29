@@ -890,6 +890,7 @@ DEF_RUNTIME_STUBS(UpFrame)
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
+            thread->SetCurrentFrame(frameHandler.GetSp());
             thread->SetLastFp(frameHandler.GetFp());
             return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
         }

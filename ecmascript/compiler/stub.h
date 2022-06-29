@@ -99,6 +99,7 @@ public:
     GateRef CallRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args);
     GateRef CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv);
     GateRef CallNGCRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args);
+    GateRef UpdateLeaveFrameAndCallNGCRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args);
     GateRef CallStub(GateRef glue, int index, const std::initializer_list<GateRef>& args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
