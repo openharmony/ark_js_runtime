@@ -80,6 +80,14 @@ private:
                              std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void GetAdditionalProperties(Local<JSValueRef> value,
         std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void SetKeyValue(Local<JSValueRef> &jsValueRef,
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc, const std::string &cstrProName);
+    void GetPrimitiveNumberValue(Local<JSValueRef> value,
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void GetMapIteratorValue(Local<JSValueRef> value,
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void GetSetIteratorValue(Local<JSValueRef> value,
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
 
     class Frontend {
     public:

@@ -313,6 +313,11 @@ public:
     static const std::string MapIteratorDescription;     // NOLINT (readability-identifier-naming)
     static const std::string WeakMapDescription;         // NOLINT (readability-identifier-naming)
     static const std::string WeakSetDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string JSPrimitiveRefDescription;     // NOLINT (readability-identifier-naming)
+    static const std::string JSPrimitiveNumberDescription;  // NOLINT (readability-identifier-naming)
+    static const std::string JSPrimitiveBooleanDescription; // NOLINT (readability-identifier-naming)
+    static const std::string JSPrimitiveStringDescription;  // NOLINT (readability-identifier-naming)
+    static const std::string JSPrimitiveSymbolDescription;  // NOLINT (readability-identifier-naming)
 
 private:
     NO_COPY_SEMANTIC(RemoteObject);
@@ -372,7 +377,11 @@ private:
     static std::string DescriptionForMap(Local<MapRef> tagged);
     static std::string DescriptionForSet(Local<SetRef> tagged);
     static std::string DescriptionForError(const EcmaVM *ecmaVm, Local<JSValueRef> tagged);
+    static std::string DescriptionForArrayIterator();
+    static std::string DescriptionForMapIterator();
+    static std::string DescriptionForSetIterator();
     static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged);
+    static std::string DescriptionForPrimitiveNumber(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
 };
 
 // Runtime.ExceptionDetails

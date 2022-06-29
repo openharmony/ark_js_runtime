@@ -849,11 +849,26 @@ public:
 class PUBLIC_API MapRef : public ObjectRef {
 public:
     int32_t GetSize();
+    Local<JSValueRef> GetKey(const EcmaVM *vm, int entry);
+    Local<JSValueRef> GetValue(const EcmaVM *vm, int entry);
 };
 
 class PUBLIC_API SetRef : public ObjectRef {
 public:
     int32_t GetSize();
+    Local<JSValueRef> GetValue(const EcmaVM *vm, int entry);
+};
+
+class PUBLIC_API MapIteratorRef : public ObjectRef {
+public:
+    int32_t GetIndex();
+    Local<JSValueRef> GetKind(const EcmaVM *vm);
+};
+
+class PUBLIC_API SetIteratorRef : public ObjectRef {
+public:
+    int32_t GetIndex();
+    Local<JSValueRef> GetKind(const EcmaVM *vm);
 };
 
 class PUBLIC_API JSON {
