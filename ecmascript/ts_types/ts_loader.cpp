@@ -506,7 +506,7 @@ void TSLoader::GenerateStaticHClass(JSHandle<TSTypeTable> tsTypeTable)
         TSClassType *classType = TSClassType::Cast(type.GetTaggedObject());
         instanceType.Update(classType->GetInstanceType());
         GlobalTSTypeRef gt = classType->GetGTRef();
-        JSTaggedValue ihc = JSTaggedValue(instanceType->GetOrCreateHClass(thread));
+        JSTaggedValue ihc = JSTaggedValue(TSObjectType::GetOrCreateHClass(thread, instanceType));
         AddStaticHClassInCompilePhase(gt, ihc);
     }
 }
