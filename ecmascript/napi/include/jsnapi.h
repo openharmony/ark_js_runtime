@@ -1118,7 +1118,7 @@ public:
     static bool StopDebugger(EcmaVM *vm);
     // Serialize & Deserialize.
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
-    static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
+    static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void *recoder, void *hint);
     static void DeleteSerializationData(void *data);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostResolvePathTracker(EcmaVM *vm,

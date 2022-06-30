@@ -731,13 +731,9 @@ bool JSSerializer::WriteAllKeys(const JSHandle<JSTaggedValue> &objValue)
     }
 
     uint32_t propertiesLength = obj->GetNumberOfKeys();
-    uint32_t currentLength = propertiesLength;
     keyVector.clear();
     JSObject::GetAllKeys(obj, keyVector);
-    if (IsNativeBindingObject(keyVector)) {
-        currentLength = propertiesLength - 2; // 2 : two params
-    }
-    if (!WriteInt(static_cast<int32_t>(currentLength))) {
+    if (!WriteInt(static_cast<int32_t>(propertiesLength))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -750,9 +746,6 @@ bool JSSerializer::WriteAllKeys(const JSHandle<JSTaggedValue> &objValue)
         if (keyVector.empty()) {
             bufferSize_ = oldSize;
             return false;
-        }
-        if (keyVector[i].IsSymbol() && IsTargetSymbol(keyVector[i])) {
-            continue;
         }
         JSHandle<JSTaggedValue> key(thread_, keyVector[i]);
         if (!SerializeJSTaggedValue(key)) {
@@ -793,8 +786,7 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     return WriteAllKeys(objValue);
 }
 
-bool JSSerializer::WriteNativeBindingObject(
-    const JSHandle<JSTaggedValue> &objValue)
+bool JSSerializer::WriteNativeBindingObject(const JSHandle<JSTaggedValue> &objValue)
 {
     JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(objValue);
     size_t oldSize = bufferSize_;
@@ -805,11 +797,13 @@ bool JSSerializer::WriteNativeBindingObject(
         return false;
     }
     int32_t paramCount = obj->GetNativePointerFieldCount();
-    void *param1 = nullptr;
-    void *param2 = nullptr;
-    if (paramCount == 2) { // 2 : two params
-        param1 = obj->GetNativePointerField(0);
-        param2 = obj->GetNativePointerField(1);
+    void *enginePointer = nullptr;
+    void *objPointer = nullptr;
+    void *hint = nullptr;
+    if (paramCount == 3) { // 3 : enginePointer, objPointer, hint
+        enginePointer = obj->GetNativePointerField(0);
+        objPointer = obj->GetNativePointerField(1);
+        hint = obj->GetNativePointerField(2); // 2 : hint
     }
     // Write custom object's values: AttachFunc*, buffer*
     JSHandle<JSTaggedValue> detachVal = JSObject::GetProperty(thread_, obj, detach).GetRawValue();
@@ -819,7 +813,7 @@ bool JSSerializer::WriteNativeBindingObject(
     if (detachNative == nullptr) {
         return false;
     }
-    void *buffer = detachNative(param1, param2);
+    void *buffer = detachNative(enginePointer, objPointer, hint);
     AttachFunc attachNative = reinterpret_cast<AttachFunc>(JSNativePointer::Cast(
         attackVal.GetTaggedValue().GetTaggedObject())->GetExternalPointer());
     if (!WriteRawData(&attachNative, sizeof(uintptr_t))) {
@@ -830,7 +824,11 @@ bool JSSerializer::WriteNativeBindingObject(
         bufferSize_ = oldSize;
         return false;
     }
-    return WriteAllKeys(objValue);
+    if (!WriteRawData(&hint, sizeof(uintptr_t))) {
+        bufferSize_ = oldSize;
+        return false;
+    }
+    return true;
 }
 
 bool JSSerializer::WriteDesc(const PropertyDescriptor &desc)
@@ -1150,18 +1148,11 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadPlainObject()
 
 JSHandle<JSTaggedValue> JSDeserializer::ReadNativeBindingObject()
 {
-    JSHandle<GlobalEnv> env = thread_->GetEcmaVM()->GetGlobalEnv();
-    JSHandle<JSTaggedValue> objFunc = env->GetObjectFunction();
-    JSHandle<JSObject> jsObject =
-        thread_->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    JSHandle<JSTaggedValue> objTag(jsObject);
-    referenceMap_.insert(std::pair(objectId_++, objTag));
-
-    uintptr_t pointer;
-    if (!ReadNativePointer(&pointer)) {
+    uintptr_t funcPointer;
+    if (!ReadNativePointer(&funcPointer)) {
         return JSHandle<JSTaggedValue>();
     }
-    AttachFunc attachFunc = reinterpret_cast<AttachFunc>(pointer);
+    AttachFunc attachFunc = reinterpret_cast<AttachFunc>(funcPointer);
     if (attachFunc == nullptr) {
         return JSHandle<JSTaggedValue>();
     }
@@ -1169,15 +1160,17 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadNativeBindingObject()
     if (!ReadNativePointer(&bufferPointer)) {
         return JSHandle<JSTaggedValue>();
     }
-    void *buffer = reinterpret_cast<void *>(bufferPointer);
-    void *returnVal = attachFunc(buffer);
-    jsObject->SetNativePointerFieldCount(1);
-    jsObject->SetNativePointerField(0, returnVal, nullptr, nullptr);
-
-    if (!DefinePropertiesAndElements(objTag)) {
+    uintptr_t hint;
+    if (!ReadNativePointer(&hint)) {
         return JSHandle<JSTaggedValue>();
     }
-    return objTag;
+    Local<JSValueRef> attachVal = attachFunc(
+        engine_, reinterpret_cast<void *>(bufferPointer), reinterpret_cast<void *>(hint));
+    if (attachVal.IsEmpty()) {
+        LOG(ERROR, RUNTIME) << "NativeBindingObject is empty";
+        attachVal = JSValueRef::Undefined(thread_->GetEcmaVM());
+    }
+    return JSNApiHelper::ToJSHandle(attachVal);
 }
 
 JSHandle<JSTaggedValue> JSDeserializer::ReadJSMap()

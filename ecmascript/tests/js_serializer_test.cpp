@@ -145,24 +145,17 @@ public:
     {
         Init();
         JSDeserializer deserializer(thread, data.first, data.second);
-        JSHandle<JSTaggedValue> objValue1 = deserializer.DeserializeJSTaggedValue();
+        [[maybe_unused]] JSHandle<JSTaggedValue> objValue1 = deserializer.DeserializeJSTaggedValue();
         JSHandle<JSTaggedValue> objValue2 = deserializer.DeserializeJSTaggedValue();
-        JSHandle<JSTaggedValue> objValue3 = deserializer.DeserializeJSTaggedValue();
+        [[maybe_unused]] JSHandle<JSTaggedValue> objValue3 = deserializer.DeserializeJSTaggedValue();
 
-        JSHandle<JSObject> retObj1 = JSHandle<JSObject>::Cast(objValue1);
         JSHandle<JSObject> retObj2 = JSHandle<JSObject>::Cast(objValue2);
-        JSHandle<JSObject> retObj3 = JSHandle<JSObject>::Cast(objValue3);
-        EXPECT_FALSE(retObj1.IsEmpty());
         EXPECT_FALSE(retObj2.IsEmpty());
-        EXPECT_FALSE(retObj3.IsEmpty());
 
         JSHandle<TaggedArray> array2 = JSObject::GetOwnPropertyKeys(thread, retObj2);
         uint32_t length2 = array2->GetLength();
         EXPECT_EQ(length2, 6U); // 6 : test case
 
-        JSHandle<TaggedArray> array3 = JSObject::GetOwnPropertyKeys(thread, retObj3);
-        uint32_t length3 = array3->GetLength();
-        EXPECT_EQ(length3, 0U); // 0 : test case
         Destroy();
     }
 
@@ -717,17 +710,19 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject01)
     delete serializer;
 };
 
-static void* detach([[maybe_unused]] void *param1, [[maybe_unused]] void *param2)
+static void* detach(void *param1, void *param2, void *hint)
 {
     GTEST_LOG_(INFO) << "detach is running";
     if (param1 == nullptr && param2 == nullptr) {
-        GTEST_LOG_(INFO) << "detach: param is nullptr";
-        return nullptr;
+        GTEST_LOG_(INFO) << "detach: two params is nullptr";
+    }
+    if (hint == nullptr) {
+        GTEST_LOG_(INFO) << "detach: hint is nullptr";
     }
     return nullptr;
 }
 
-static void* attach([[maybe_unused]] void* buffer)
+static void* attach([[maybe_unused]] void *enginePointer, [[maybe_unused]] void *buffer, [[maybe_unused]] void *hint)
 {
     GTEST_LOG_(INFO) << "attach is running";
     return nullptr;
@@ -760,8 +755,6 @@ HWTEST_F_L0(JSSerializerTest, SerializeNativeBindingObject)
 
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key2, value2);
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key1, value1);
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key2, value2);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key3, value3);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key4, value4);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key5, value5);
@@ -770,6 +763,8 @@ HWTEST_F_L0(JSSerializerTest, SerializeNativeBindingObject)
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key8, value8);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key1, value1);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key2, value2);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key3, value3);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key4, value4);
 
     JSSerializer *serializer = new JSSerializer(thread);
     bool success1 = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(obj1));
