@@ -119,14 +119,7 @@ bool HeapSnapshot::FinishSnapshot()
 
 void HeapSnapshot::RecordSampleTime()
 {
-    uint32_t len = timeStamps_.size();
-    if (len > 0) {
-        if (sequenceId_ != timeStamps_[len - 1U].GetLastSequenceId()) {
-            timeStamps_.emplace_back(sequenceId_);
-        }
-    } else {
-        timeStamps_.emplace_back(sequenceId_);
-    }
+    timeStamps_.emplace_back(sequenceId_ + SEQ_STEP);
 }
 
 void HeapSnapshot::PushHeapStat(Stream* stream)
@@ -166,7 +159,7 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
         stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int32_t>(statsBuffer.size()));
         statsBuffer.clear();
     }
-    stream->UpdateLastSeenObjectId(sequenceId);
+    stream->UpdateLastSeenObjectId(sequenceId_);
 }
 
 void HeapSnapshot::AddNode(TaggedObject* address)

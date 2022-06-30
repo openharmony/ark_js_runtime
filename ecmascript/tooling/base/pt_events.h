@@ -992,12 +992,12 @@ public:
         return *this;
     }
 
-    int64_t GetTimestamp() const
+    double GetTimestamp() const
     {
         return timestamp_;
     }
 
-    LastSeenObjectId &SetTimestamp(int64_t timestamp)
+    LastSeenObjectId &SetTimestamp(double timestamp)
     {
         timestamp_ = timestamp;
         return *this;
@@ -1008,7 +1008,7 @@ private:
     NO_MOVE_SEMANTIC(LastSeenObjectId);
 
     int32_t lastSeenObjectId_ {};
-    int64_t timestamp_ {};
+    double timestamp_ {};
 };
 
 class ReportHeapSnapshotProgress final : public PtBaseEvents {
