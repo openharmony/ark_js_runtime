@@ -22,6 +22,9 @@ compiler:=
 compiler_args:=
 stub_compiler:=
 jsvm:=
+module_flag:=
+empty:=
+space:=$(empty) $(empty)
 root_dir=$(shell pwd)
 ifeq ($(test), )
 	test_name=helloaot
@@ -29,8 +32,12 @@ else
 	test_name=$(test)
 endif
 
+ifeq ($(module), yes)
+	module_flag=-m
+endif
+
 ifeq ($(log), yes)
-	args+= --log-compiled-methods=all
+	args+= --log-compiled-methods=all --log-level=info
 endif
 
 ifeq ($(arm), no)
@@ -73,53 +80,57 @@ com_stub_args=--asm-interpreter=true --stub-file=$(out_dir)/stub.m
 
 abc:
 	mkdir -p $(case_dir)
-	node --expose-gc $(ts2abc) $(wildcard $(test_dir)/$(test_name)/*.[tj]s) -o $(case_dir)/$(test_name).abc
+	node --expose-gc $(ts2abc) $(wildcard $(test_dir)/$(test_name)/$(test_name).[tj]s) $(module_flag)
 
 stub:
 	mkdir -p $(out_dir)
 	$(stub_compiler) $(compiler_args) $(args) --stub-file=$(out_dir)/stub.m
 	
 aot:
-	$(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(case_dir)/$(test_name).abc
+	$(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(subst $(space),:,$(wildcard $(test_dir)/$(test_name)/*.abc))
 
 aotd:
-	gdb --args $(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(case_dir)/$(test_name).abc
+	gdb --args $(compiler) $(compiler_args) $(args) --aot-file=$(case_dir)/aot_file.m $(subst $(space),:,$(wildcard $(test_dir)/$(test_name)/*.abc))
 
 run:
-	$(qemu) $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
+	$(qemu) $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 
 rund:
 ifeq ($(arm), no)
-	gdb --args $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
+	gdb --args $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 else
 	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
 	@echo "gdb-server connect: target remote:123456"
-	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(case_dir)/$(test_name).abc
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) --aot-file=$(case_dir)/aot_file.m $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 endif
 
 int:
-	$(qemu) $(jsvm) $(args) $(case_dir)/$(test_name).abc
+	$(qemu) $(jsvm) $(args) $(test_dir)/$(test_name)/$(test_name).abc
 
 intd:
 ifeq ($(arm), no)
-	gdb --args $(jsvm) $(args) $(case_dir)/$(test_name).abc
+	gdb --args $(jsvm) $(args) $(test_dir)/$(test_name)/$(test_name).abc
 else
 	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
 	@echo "gdb-server connect: target remote:123456"
-	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(case_dir)/$(test_name).abc
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(test_dir)/$(test_name)/$(test_name).abc
 endif
 
 asmint:
-	$(qemu) $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
+	$(qemu) $(jsvm) $(args) $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 
 asmintd:
 ifeq ($(arm), no)
-	gdb --args $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
+	gdb --args $(jsvm) $(args) $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 else
 	@echo "gdb-client start:   gdb-multiarch $(jsvm)"
 	@echo "gdb-server connect: target remote:123456"
-	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(com_stub_args) $(case_dir)/$(test_name).abc
+	$(qemu) -cpu max,sve=off -g 123456 $(jsvm) $(args) $(com_stub_args) $(test_dir)/$(test_name)/$(test_name).abc
 endif
+
+clean:
+	rm $(test_dir)/$(test_name)/*.abc
+	rm -rf $(case_dir)
 
 env:
 	@echo "root_dir=$(root_dir)"

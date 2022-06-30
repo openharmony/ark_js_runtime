@@ -13,6 +13,6 @@
 
 import("//ark/js_runtime/test/test_helper.gni")
 
-host_aot_test_action("undefined") {
+host_aot_test_action("call_same_bytecode_func") {
   deps = []
 }

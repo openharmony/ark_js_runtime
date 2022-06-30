@@ -128,11 +128,16 @@ echo "Run test: $test_dir/$test_name ================="
 
 out_dir="out/$product/clang_x64/aottest"
 if [ ! -f "$out_dir/stub.m" ]; then
-    make -n -f $test_dir/makefile $run_args stub
-    run_check $timeout make -s -f $test_dir/makefile $run_args stub
+    make -f $test_dir/makefile $run_args stub
+    check_result_fexit "make stub.m FAILED"
 fi
 
-make_cmd="make -f $test_dir/makefile $run_args test=$test_name"
+module=""
+if [ -n "$(grep 'import' $(ls $test_dir/$test_name/$test_name.[tj]s))" ]; then
+    module="module=yes"
+fi
+
+make_cmd="make -f $test_dir/makefile $run_args test=$test_name $module"
 
 if [ -n "$make_opt" ]; then
     $make_cmd $make_opt
@@ -148,15 +153,15 @@ case "$run_mode" in
         $make_cmd -n aot
         run_check $timeout $make_cmd -s aot
         $make_cmd -n run
-        run_check $timeout $make_cmd -s run &> $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s run > $out_dir/$test_name/$run_output
         ;;
     "int")
         $make_cmd -n int
-        run_check $timeout $make_cmd -s int &> $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s int > $out_dir/$test_name/$run_output
         ;;
     "asmint")
         $make_cmd -n asmint
-        run_check $timeout $make_cmd -s asmint &> $out_dir/$test_name/$run_output
+        run_check $timeout $make_cmd -s asmint > $out_dir/$test_name/$run_output
         ;;
 esac
 
