@@ -1441,6 +1441,7 @@ std::unique_ptr<PtJson> CallFrame::ToJson() const
     size_t len = scopeChain_.size();
     std::unique_ptr<PtJson> values = PtJson::CreateArray();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(scopeChain_[i] != nullptr);
         std::unique_ptr<PtJson> scope = scopeChain_[i]->ToJson();
         values->Push(scope);
     }
@@ -1651,6 +1652,7 @@ std::unique_ptr<PtJson> SamplingHeapProfileNode::ToJson() const
     std::unique_ptr<PtJson> childrens = PtJson::CreateArray();
     size_t len = children_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(children_[i] != nullptr);
         childrens->Push(children_[i]->ToJson());
     }
     result->Add("children", childrens);
@@ -2294,6 +2296,7 @@ std::unique_ptr<PtJson> TypeProfileEntry::ToJson() const
     std::unique_ptr<PtJson> types = PtJson::CreateArray();
     size_t len = types_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(types_[i] != nullptr);
         types->Push(types_[i]->ToJson());
     }
     result->Add("types", types);
@@ -2359,6 +2362,7 @@ std::unique_ptr<PtJson> ScriptTypeProfile::ToJson() const
     std::unique_ptr<PtJson> entries = PtJson::CreateArray();
     size_t len = entries_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(entries_[i] != nullptr);
         entries->Push(entries_[i]->ToJson());
     }
     result->Add("entries", entries);
