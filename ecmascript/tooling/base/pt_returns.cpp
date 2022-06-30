@@ -33,6 +33,7 @@ std::unique_ptr<PtJson> SetBreakpointByUrlReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = locations_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(locations_[i] != nullptr);
         std::unique_ptr<PtJson> location = locations_[i]->ToJson();
         array->Push(location);
     }
@@ -62,6 +63,7 @@ std::unique_ptr<PtJson> GetPossibleBreakpointsReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = locations_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(locations_[i] != nullptr);
         std::unique_ptr<PtJson> location = locations_[i]->ToJson();
         array->Push(location);
     }
@@ -89,6 +91,7 @@ std::unique_ptr<PtJson> RestartFrameReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = callFrames_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(callFrames_[i] != nullptr);
         std::unique_ptr<PtJson> location = callFrames_[i]->ToJson();
         array->Push(location);
     }
@@ -104,6 +107,7 @@ std::unique_ptr<PtJson> SearchInContentReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = result_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(result_[i] != nullptr);
         std::unique_ptr<PtJson> res = result_[i]->ToJson();
         array->Push(res);
     }
@@ -117,6 +121,7 @@ std::unique_ptr<PtJson> SetBreakpointReturns::ToJson() const
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("breakpointId", breakpointId_.c_str());
+    ASSERT(location_ != nullptr);
     result->Add("actualLocation", location_->ToJson());
 
     return result;
@@ -139,6 +144,7 @@ std::unique_ptr<PtJson> SetScriptSourceReturns::ToJson() const
         std::unique_ptr<PtJson> array = PtJson::CreateArray();
         size_t len = callFrames_->size();
         for (size_t i = 0; i < len; i++) {
+            ASSERT(callFrames_.value()[i] != nullptr);
             std::unique_ptr<PtJson> location = callFrames_.value()[i]->ToJson();
             array->Push(location);
         }
@@ -162,6 +168,7 @@ std::unique_ptr<PtJson> GetPropertiesReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = result_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(result_[i] != nullptr);
         std::unique_ptr<PtJson> location = result_[i]->ToJson();
         array->Push(location);
     }
@@ -170,6 +177,7 @@ std::unique_ptr<PtJson> GetPropertiesReturns::ToJson() const
         array = PtJson::CreateArray();
         len = internalPropertyDescripties_->size();
         for (size_t i = 0; i < len; i++) {
+            ASSERT(internalPropertyDescripties_.value()[i] != nullptr);
             std::unique_ptr<PtJson> location = internalPropertyDescripties_.value()[i]->ToJson();
             array->Push(location);
         }
@@ -179,6 +187,7 @@ std::unique_ptr<PtJson> GetPropertiesReturns::ToJson() const
         array = PtJson::CreateArray();
         len = privateProperties_->size();
         for (size_t i = 0; i < len; i++) {
+            ASSERT(privateProperties_.value()[i] != nullptr);
             std::unique_ptr<PtJson> location = privateProperties_.value()[i]->ToJson();
             array->Push(location);
         }
@@ -196,6 +205,7 @@ std::unique_ptr<PtJson> CallFunctionOnReturns::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
+    ASSERT(result_ != nullptr);
     result->Add("result", result_->ToJson());
     if (exceptionDetails_) {
         ASSERT(exceptionDetails_.value() != nullptr);
@@ -209,6 +219,7 @@ std::unique_ptr<PtJson> StopSamplingReturns::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
+    ASSERT(profile_ != nullptr);
     result->Add("profile", profile_->ToJson());
 
     return result;
@@ -227,6 +238,7 @@ std::unique_ptr<PtJson> GetObjectByHeapObjectIdReturns::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
+    ASSERT(remoteObjectResult_ != nullptr);
     result->Add("result", remoteObjectResult_->ToJson());
 
     return result;
@@ -236,6 +248,7 @@ std::unique_ptr<PtJson> StopReturns::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
+    ASSERT(profile_ != nullptr);
     result->Add("profile", profile_->ToJson());
 
     return result;
@@ -258,6 +271,7 @@ std::unique_ptr<PtJson> GetBestEffortCoverageReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = result_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(result_[i] != nullptr);
         std::unique_ptr<PtJson> scriptCoverage = result_[i]->ToJson();
         array->Push(scriptCoverage);
     }
@@ -282,6 +296,7 @@ std::unique_ptr<PtJson> TakePreciseCoverageReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = result_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(result_[i] != nullptr);
         std::unique_ptr<PtJson> scriptTypeProfile = result_[i]->ToJson();
         array->Push(scriptTypeProfile);
     }
@@ -298,6 +313,7 @@ std::unique_ptr<PtJson> TakeTypeProfileReturns::ToJson() const
     std::unique_ptr<PtJson> array = PtJson::CreateArray();
     size_t len = result_.size();
     for (size_t i = 0; i < len; i++) {
+        ASSERT(result_[i] != nullptr);
         std::unique_ptr<PtJson> scriptTypeProfile = result_[i]->ToJson();
         array->Push(scriptTypeProfile);
     }

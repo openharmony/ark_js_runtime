@@ -96,6 +96,11 @@ void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchReq
 
     std::unique_ptr<RemoteObject> remoteObjectResult;
     DispatchResponse response = heapprofiler_->GetObjectByHeapObjectId(*params, &remoteObjectResult);
+    if (remoteObjectResult == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
+
     GetObjectByHeapObjectIdReturns result(std::move(remoteObjectResult));
     SendResponse(request, response, result);
 }
@@ -104,6 +109,11 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 {
     std::unique_ptr<SamplingHeapProfile> profile;
     DispatchResponse response = heapprofiler_->GetSamplingProfile(&profile);
+    if (profile == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
+
     // The return value type of GetSamplingProfile is the same as of StopSampling.
     StopSamplingReturns result(std::move(profile));
     SendResponse(request, response, result);
@@ -137,6 +147,11 @@ void HeapProfilerImpl::DispatcherImpl::StopSampling(const DispatchRequest &reque
 {
     std::unique_ptr<SamplingHeapProfile> profile;
     DispatchResponse response = heapprofiler_->StopSampling(&profile);
+    if (profile == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
+
     StopSamplingReturns result(std::move(profile));
     SendResponse(request, response, result);
 }
@@ -241,25 +256,21 @@ void HeapProfilerImpl::Frontend::ResetProfiles()
 DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
     [[maybe_unused]] const AddInspectedHeapObjectParams &params)
 {
-    LOG(ERROR, DEBUGGER) << "AddInspectedHeapObject not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("AddInspectedHeapObject not support now");
 }
 
 DispatchResponse HeapProfilerImpl::CollectGarbage()
 {
-    LOG(ERROR, DEBUGGER) << "CollectGarbage not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("CollectGarbage not support now");
 }
 
 DispatchResponse HeapProfilerImpl::Enable()
 {
-    LOG(ERROR, DEBUGGER) << "Enable not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::Disable()
 {
-    LOG(ERROR, DEBUGGER) << "Disable not support now.";
     return DispatchResponse::Ok();
 }
 
@@ -268,28 +279,24 @@ DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] const GetHea
 {
     ASSERT(objectId != nullptr);
     *objectId = 0;
-    LOG(ERROR, DEBUGGER) << "GetHeapObjectId not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("GetHeapObjectId not support now");
 }
 
 DispatchResponse HeapProfilerImpl::GetObjectByHeapObjectId(
     [[maybe_unused]] const GetObjectByHeapObjectIdParams &params,
     [[maybe_unused]] std::unique_ptr<RemoteObject> *remoteObjectResult)
 {
-    LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectId not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("GetObjectByHeapObjectId not support now");
 }
 
 DispatchResponse HeapProfilerImpl::GetSamplingProfile([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
-    LOG(ERROR, DEBUGGER) << "GetSamplingProfile not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("GetSamplingProfile not support now");
 }
 
 DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]const StartSamplingParams &params)
 {
-    LOG(ERROR, DEBUGGER) << "StartSampling not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StartSampling not support now");
 }
 
 DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
@@ -305,8 +312,7 @@ DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
 
 DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
-    LOG(ERROR, DEBUGGER) << "StopSampling not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StopSampling not support now.");
 }
 
 DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(const StopTrackingHeapObjectsParams &params)
