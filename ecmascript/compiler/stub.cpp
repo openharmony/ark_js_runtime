@@ -4018,26 +4018,27 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
         {
             GateRef newTarget = Undefined();
             GateRef thisValue = Undefined();
+            GateRef lexEnv = builder_.GetLexicalEnv(func);
             GateRef realNumArgs = Int32Add(actualNumArgs, Int32(NUM_MANDATORY_JSFUNC_ARGS));
             switch (mode) {
                 case JSCallMode::CALL_ARG0:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, thisValue});
+                        { glue, lexEnv, realNumArgs, func, newTarget, thisValue});
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_ARG1:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, thisValue,  data[0] });
+                        { glue, lexEnv, realNumArgs, func, newTarget, thisValue,  data[0] });
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_ARG2:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, thisValue,  data[0], data[1] });
+                        { glue, lexEnv, realNumArgs, func, newTarget, thisValue,  data[0], data[1] });
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_ARG3:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, thisValue,
+                        { glue, lexEnv, realNumArgs, func, newTarget, thisValue,
                           data[0], data[1], data[2] }); // 2: args2
                     Jump(&exit);
                     break;
@@ -4056,12 +4057,12 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                     break;
                 case JSCallMode::CALL_GETTER:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, data[0]});
+                        { glue, lexEnv, realNumArgs, func, newTarget, data[0]});
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_SETTER:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
-                        { glue, realNumArgs, func, newTarget, data[0], data[1]});
+                        { glue, lexEnv, realNumArgs, func, newTarget, data[0], data[1]});
                     Jump(&exit);
                     break;
                 default:

@@ -360,13 +360,15 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
     fileLoader_->UpdateJSMethods(mainFunc, jsPandaFile);
-    std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
+    std::vector<JSTaggedType> args(7, JSTaggedValue::Undefined().GetRawData()); // 7: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
     auto entry = thread_->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    JSTaggedValue env = mainFunc->GetLexicalEnv();
+    args[6] = env.GetRawData(); // 6: last arg is env.
     auto res = reinterpret_cast<JSFunctionEntryType>(entry)(thread_->GetGlueAddr(),
                                                             reinterpret_cast<uintptr_t>(thread_->GetCurrentSPFrame()),
-                                                            static_cast<uint32_t>(args.size()),
-                                                            static_cast<uint32_t>(args.size()),
+                                                            static_cast<uint32_t>(args.size()) - 1,
+                                                            static_cast<uint32_t>(args.size()) - 1,
                                                             args.data(),
                                                             mainFunc->GetCodeEntry());
     return JSTaggedValue(res);

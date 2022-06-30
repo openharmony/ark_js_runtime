@@ -550,11 +550,12 @@ DEF_CALL_SIGNATURE(OptimizedCallOptimized)
 DEF_CALL_SIGNATURE(JSCall)
 {
     // 5 : 5 input parameters
-    CallSignature jSCall("JSCall", 0, 5,
+    CallSignature jSCall("JSCall", 0, 6,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = jSCall;
-    std::array<VariableType, 5> params = { // 5 : 5 input parameters
+    std::array<VariableType, 6> params = { // 6 : 6 input parameters
         VariableType::NATIVE_POINTER(),     // glue
+        VariableType::JS_ANY(),      // lexenv
         VariableType::INT32(),       // actual argC
         VariableType::JS_ANY(),      // call target
         VariableType::JS_ANY(),      // new target

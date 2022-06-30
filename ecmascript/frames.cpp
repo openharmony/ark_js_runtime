@@ -37,6 +37,11 @@ FrameIterator::FrameIterator(JSTaggedType *sp, const JSThread *thread) : current
     }
 }
 
+int FrameIterator::ComputeDelta() const
+{
+    return stackmapParser_->GetFuncFpDelta(optimizedReturnAddr_);
+}
+
 void FrameIterator::Advance()
 {
     ASSERT(!Done());
@@ -79,6 +84,13 @@ void FrameIterator::Advance()
         }
         case FrameType::LEAVE_FRAME_WITH_ARGV : {
             auto frame = GetFrame<OptimizedWithArgvLeaveFrame>();
+            optimizedCallSiteSp_ = GetPrevFrameCallSiteSp();
+            optimizedReturnAddr_ = frame->GetReturnAddr();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::BUILTIN_CALL_LEAVE_FRAME : {
+            auto frame = GetFrame<OptimizedBuiltinLeaveFrame>();
             optimizedCallSiteSp_ = GetPrevFrameCallSiteSp();
             optimizedReturnAddr_ = frame->GetReturnAddr();
             current_ = frame->GetPrevFrameFp();
@@ -156,6 +168,10 @@ uintptr_t FrameIterator::GetPrevFrameCallSiteSp(uintptr_t curPc) const
             auto frame = GetFrame<OptimizedWithArgvLeaveFrame>();
             return frame->GetCallSiteSp();
         }
+        case FrameType::BUILTIN_CALL_LEAVE_FRAME: {
+            auto frame = GetFrame<OptimizedBuiltinLeaveFrame>();
+            return frame->GetCallSiteSp();
+        }
         case FrameType::BUILTIN_FRAME_WITH_ARGV: {
             auto frame = GetFrame<BuiltinWithArgvFrame>();
             return frame->GetCallSiteSp();
@@ -224,11 +240,17 @@ ARK_INLINE void OptimizedFrame::GCIterate(const FrameIterator &it,
 
 ARK_INLINE JSTaggedType* OptimizedJSFunctionFrame::GetArgv(const FrameIterator &it) const
 {
-    auto thread = it.GetThread();
-    ASSERT(thread != nullptr);
-    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(it.GetOptimizedReturnAddr());
-    uintptr_t *preFrameSp = ComputePrevFrameSp(it.GetSp(), delta);
+    uintptr_t *preFrameSp = ComputePrevFrameSp(it);
     return GetArgv(preFrameSp);
+}
+
+ARK_INLINE uintptr_t* OptimizedJSFunctionFrame::ComputePrevFrameSp(const FrameIterator &it) const
+{
+    const JSTaggedType *sp = it.GetSp();
+    int delta = it.ComputeDelta();
+    uintptr_t *preFrameSp = reinterpret_cast<uintptr_t *>(const_cast<JSTaggedType *>(sp))
+            + delta / sizeof(uintptr_t);
+    return preFrameSp;
 }
 
 ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
@@ -238,13 +260,13 @@ ARK_INLINE void OptimizedJSFunctionFrame::GCIterate(const FrameIterator &it,
     bool isVerifying) const
 {
     OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(it.GetSp());
+    uintptr_t *envPtr = reinterpret_cast<uintptr_t *>(frame);
+    uintptr_t envslot = ToUintPtr(envPtr);
+    v0(Root::ROOT_FRAME, ObjectSlot(envslot));
 
-    const JSThread *thread = it.GetThread();
-    ASSERT(thread != nullptr);
-    int delta = thread->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(it.GetOptimizedReturnAddr());
-    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it.GetSp(), delta);
+    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(it);
 
-    auto argc = *(reinterpret_cast<uint64_t *>(preFrameSp));
+    auto argc = frame->GetArgc(preFrameSp);
     JSTaggedType *argv = frame->GetArgv(reinterpret_cast<uintptr_t *>(preFrameSp));
     if (argc > 0) {
         uintptr_t start = ToUintPtr(argv); // argv
@@ -358,6 +380,22 @@ ARK_INLINE void OptimizedWithArgvLeaveFrame::GCIterate(const FrameIterator &it,
     if (frame->argc > 0) {
         uintptr_t* argvPtr = reinterpret_cast<uintptr_t *>(&frame->argc + 1);
         JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(*argvPtr);
+        uintptr_t start = ToUintPtr(argv); // argv
+        uintptr_t end = ToUintPtr(argv + frame->argc);
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    }
+}
+
+ARK_INLINE void OptimizedBuiltinLeaveFrame::GCIterate(const FrameIterator &it,
+    [[maybe_unused]] const RootVisitor &v0,
+    const RootRangeVisitor &v1,
+    [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    [[maybe_unused]] bool isVerifying) const
+{
+    const JSTaggedType *sp = it.GetSp();
+    OptimizedBuiltinLeaveFrame *frame = OptimizedBuiltinLeaveFrame::GetFrameFromSp(sp);
+    if (frame->argc > 0) {
+        JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(&frame->argc + 1);
         uintptr_t start = ToUintPtr(argv); // argv
         uintptr_t end = ToUintPtr(argv + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
