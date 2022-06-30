@@ -223,12 +223,12 @@ std::string ErrorHelper::BuildJsStackTrace(JSThread *thread, bool needNative)
             int lineNumber = 0;
             auto callbackLineFunc = [&data, &lineNumber](int32_t line) -> bool {
                 lineNumber = line + 1;
-                data += ToCString(lineNumber);
+                data += std::to_string(lineNumber);
                 data.push_back(':');
                 return true;
             };
             auto callbackColumnFunc = [&data](int32_t column) -> bool {
-                data += ToCString(column + 1);
+                data += std::to_string(column + 1);
                 return true;
             };
             panda_file::File::EntityId methodId = method->GetMethodId();
