@@ -1147,7 +1147,6 @@ void SnapshotProcessor::DeserializeString(uintptr_t stringBegin, uintptr_t strin
         size_t strSize = str->ObjectSize();
         strSize = AlignUp(strSize, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
         auto strFromTable = stringTable->GetString(str);
-
         if (strFromTable) {
             stringVector_.emplace_back(ToUintPtr(strFromTable));
         } else {
@@ -1456,7 +1455,6 @@ void *SnapshotProcessor::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
     size_t index = nativeBit.GetNativePointerOrObjectIndex();
     void *addr = nullptr;
     size_t nativeTableSize = GetNativeTableSize();
-
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<void *>(vm_->GetFactory()->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
@@ -1510,7 +1508,6 @@ void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
     size_t index = native.GetNativePointerOrObjectIndex();
     uintptr_t addr = 0U;
     size_t nativeTableSize = GetNativeTableSize();
-
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<uintptr_t>(vm_->GetFactory()->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
