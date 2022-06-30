@@ -778,4 +778,167 @@ std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(con
     }
     return paramsObject;
 }
+
+std::unique_ptr<RecordClockSyncMarkerParams> RecordClockSyncMarkerParams::Create(const PtJson &params)
+{
+    std::string error;
+    auto recordClockSyncMarkerParams = std::make_unique<RecordClockSyncMarkerParams>();
+    Result ret;
+    
+    std::string syncId;
+    ret = params.GetString("syncId", &syncId);
+    if (ret == Result::SUCCESS) {
+        recordClockSyncMarkerParams->syncId_ = syncId;
+    } else {
+        error += "Unknown 'syncId';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "RecordClockSyncMarkerParams::Create " << error;
+        return nullptr;
+    }
+
+    return recordClockSyncMarkerParams;
+}
+
+std::unique_ptr<RequestMemoryDumpParams> RequestMemoryDumpParams::Create(const PtJson &params)
+{
+    std::string error;
+    auto requestMemoryDumpParams = std::make_unique<RequestMemoryDumpParams>();
+    Result ret;
+    
+    bool deterministic;
+    ret = params.GetBool("deterministic", &deterministic);
+    if (ret == Result::SUCCESS) {
+        requestMemoryDumpParams->deterministic_ = deterministic;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'deterministic';";
+    }
+
+    std::string levelOfDetail;
+    ret = params.GetString("levelOfDetail", &levelOfDetail);
+    if (ret == Result::SUCCESS) {
+        if (MemoryDumpLevelOfDetailValues::Valid(levelOfDetail)) {
+            requestMemoryDumpParams->levelOfDetail_ = std::move(levelOfDetail);
+        } else {
+            error += "'levelOfDetail' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'levelOfDetail';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "RequestMemoryDumpParams::Create " << error;
+        return nullptr;
+    }
+
+    return requestMemoryDumpParams;
+}
+
+std::unique_ptr<StartParams> StartParams::Create(const PtJson &params)
+{
+    std::string error;
+    auto startParams = std::make_unique<StartParams>();
+    Result ret;
+    
+    std::string categories;
+    ret = params.GetString("categories", &categories);
+    if (ret == Result::SUCCESS) {
+        startParams->categories_ = std::move(categories);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'categories';";
+    }
+
+    std::string options;
+    ret = params.GetString("options", &options);
+    if (ret == Result::SUCCESS) {
+        startParams->options_ = std::move(options);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'options';";
+    }
+
+    int32_t bufferUsageReportingInterval;
+    ret = params.GetInt("bufferUsageReportingInterval", &bufferUsageReportingInterval);
+    if (ret == Result::SUCCESS) {
+        startParams->bufferUsageReportingInterval_ = bufferUsageReportingInterval;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'bufferUsageReportingInterval';";
+    }
+
+    std::string transferMode;
+    ret = params.GetString("transferMode", &transferMode);
+    if (ret == Result::SUCCESS) {
+        if (StartParams::TransferModeValues::Valid(transferMode)) {
+            startParams->transferMode_ = std::move(transferMode);
+        } else {
+            error += "'transferMode' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'transferMode';";
+    }
+
+    std::string streamFormat;
+    ret = params.GetString("streamFormat", &streamFormat);
+    if (ret == Result::SUCCESS) {
+        if (StreamFormatValues::Valid(streamFormat)) {
+            startParams->streamFormat_ = std::move(streamFormat);
+        } else {
+            error += "'streamFormat' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'streamFormat';";
+    }
+
+    std::string streamCompression;
+    ret = params.GetString("streamCompression", &streamCompression);
+    if (ret == Result::SUCCESS) {
+        if (StreamCompressionValues::Valid(streamCompression)) {
+            startParams->streamCompression_ = std::move(streamCompression);
+        } else {
+            error += "'streamCompression' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'streamCompression';";
+    }
+
+    std::unique_ptr<PtJson> traceConfig;
+    ret = params.GetObject("traceConfig", &traceConfig);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<TraceConfig> pTraceConfig = TraceConfig::Create(*traceConfig);
+        if (pTraceConfig == nullptr) {
+            error += "'traceConfig' format invalid;";
+        } else {
+            startParams->traceConfig_ = std::move(pTraceConfig);
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'traceConfig';";
+    }
+
+    std::string perfettoConfig;
+    ret = params.GetString("perfettoConfig", &perfettoConfig);
+    if (ret == Result::SUCCESS) {
+        startParams->perfettoConfig_ = std::move(perfettoConfig);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'perfettoConfig';";
+    }
+
+    std::string tracingBackend;
+    ret = params.GetString("tracingBackend", &tracingBackend);
+    if (ret == Result::SUCCESS) {
+        if (TracingBackendValues::Valid(tracingBackend)) {
+            startParams->tracingBackend_ = std::move(tracingBackend);
+        } else {
+            error += "'tracingBackend' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'tracingBackend';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "StartParams::Create " << error;
+        return nullptr;
+    }
+
+    return startParams;
+}
 }  // namespace panda::ecmascript::tooling
