@@ -789,7 +789,11 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::PENDING_JOB: {
+#if defined(ENABLE_HITRACE)
+                CHECK_DUMP_FIELDS(Record::SIZE, ecmascript::job::PendingJob::SIZE, 6U)
+#else
                 CHECK_DUMP_FIELDS(Record::SIZE, ecmascript::job::PendingJob::SIZE, 2U)
+#endif
                 JSHandle<JSHClass> pendingClass(thread,
                     JSHClass::Cast(globalConst->GetPendingJobClass().GetTaggedObject()));
                 JSHandle<TaggedObject> pendingJob(thread, factory->NewDynObject(pendingClass));
