@@ -207,7 +207,7 @@ private:
     void LowerStModuleVar(GateRef gate, GateRef glue);
     void LowerGetTemplateObject(GateRef gate, GateRef glue);
     void LowerSetObjectWithProto(GateRef gate, GateRef glue);
-    void LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdBigInt(GateRef gate, GateRef glue);
     void LowerLdModuleVar(GateRef gate, GateRef glue);
     void LowerGetModuleNamespace(GateRef gate, GateRef glue);
     void LowerGetIteratorNext(GateRef gate, GateRef glue);
