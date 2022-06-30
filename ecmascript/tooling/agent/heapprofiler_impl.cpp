@@ -226,7 +226,8 @@ void HeapProfilerImpl::Frontend::LastSeenObjectId(int32_t lastSeenObjectId)
     gettimeofday(&tv, nullptr);
     const int THOUSAND = 1000;
     timestamp = static_cast<int64_t>(tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND);
-    lastSeenObjectIdEvent.SetTimestamp(timestamp);
+    double timestampMS = static_cast<double>(timestamp) / THOUSAND;
+    lastSeenObjectIdEvent.SetTimestamp(timestampMS);
     channel_->SendNotification(lastSeenObjectIdEvent);
 }
 
