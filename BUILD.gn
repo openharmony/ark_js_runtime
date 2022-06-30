@@ -510,6 +510,11 @@ if (!is_mingw && !is_mac) {
   ecma_source += [ "ecmascript/tooling/interface/file_stream.cpp" ]
 }
 
+hitrace_scope_source = []
+if (is_ohos && is_standard_system && enable_hitrace) {
+  hitrace_scope_source += [ "ecmascript/jobs/hitrace_scope.cpp" ]
+}
+
 ecma_debugger_source = []
 if (!is_mingw && !is_mac) {
   ecma_debugger_source += [
@@ -541,6 +546,7 @@ source_set("libark_jsruntime_set") {
   sources = ecma_source
   sources += ecma_profiler_source
   sources += ecma_debugger_source
+  sources += hitrace_scope_source
 
   public_configs = [
     "$js_root:ark_jsruntime_common_config",
@@ -574,6 +580,11 @@ source_set("libark_jsruntime_set") {
       defines += [ "ENABLE_BYTRACE" ]
       include_dirs += [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter" ]
       cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
+    }
+    if (enable_hitrace) {
+      defines += [ "ENABLE_HITRACE" ]
+      include_dirs +=
+          [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include" ]
     }
     if (enable_dump_in_faultlog) {
       defines += [ "ENABLE_DUMP_IN_FAULTLOG" ]
@@ -631,7 +642,7 @@ if (!defined(ark_independent_build)) {
     ]
 
     if (is_ohos && is_standard_system) {
-      if (enable_dump_in_faultlog || enable_bytrace) {
+      if (enable_dump_in_faultlog || enable_bytrace || enable_hitrace) {
         external_deps = []
       }
       if (enable_dump_in_faultlog) {
@@ -639,6 +650,9 @@ if (!defined(ark_independent_build)) {
       }
       if (enable_bytrace) {
         external_deps += [ "hitrace_native:hitrace_meter" ]
+      }
+      if (enable_hitrace) {
+        external_deps += [ "hitrace_native:libhitrace" ]
       }
     }
 
