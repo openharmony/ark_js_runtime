@@ -174,6 +174,7 @@ JSTaggedValue FrameHandler::GetFunction() const
             case FrameType::OPTIMIZED_FRAME:
             case FrameType::LEAVE_FRAME:
             case FrameType::LEAVE_FRAME_WITH_ARGV:
+            case FrameType::BUILTIN_CALL_LEAVE_FRAME:
             case FrameType::OPTIMIZED_ENTRY_FRAME:
             default: {
                 LOG_ECMA(FATAL) << "frame type error!";
@@ -268,6 +269,7 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         case FrameType::OPTIMIZED_FRAME:
         case FrameType::LEAVE_FRAME:
         case FrameType::LEAVE_FRAME_WITH_ARGV:
+        case FrameType::BUILTIN_CALL_LEAVE_FRAME:
         case FrameType::OPTIMIZED_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_BRIDGE_FRAME:
@@ -366,6 +368,11 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
                 frame->GCIterate(it, v0, v1, derivedPointers, isVerifying);
                 break;
             }
+            case FrameType::BUILTIN_CALL_LEAVE_FRAME: {
+                auto frame = it.GetFrame<OptimizedBuiltinLeaveFrame>();
+                frame->GCIterate(it, v0, v1, derivedPointers, isVerifying);
+                break;
+            }
             case FrameType::BUILTIN_FRAME_WITH_ARGV: {
                 auto frame = it.GetFrame<BuiltinWithArgvFrame>();
                 frame->GCIterate(it, v0, v1, derivedPointers, isVerifying);
@@ -408,8 +415,8 @@ void FrameHandler::CollectBCOffsetInfo()
     thread_->GetEcmaVM()->ClearExceptionBCList();
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
     FrameIterator it(current, thread_);
-    ASSERT(it.GetFrameType() == FrameType::LEAVE_FRAME);
-    auto leaveFrame = it.GetFrame<OptimizedLeaveFrame>();
+    ASSERT(it.GetFrameType() == FrameType::BUILTIN_CALL_LEAVE_FRAME);
+    auto leaveFrame = it.GetFrame<OptimizedBuiltinLeaveFrame>();
     auto returnAddr = leaveFrame->GetReturnAddr();
     // skip native function, need to fixit later.
     it.Advance();
@@ -428,11 +435,12 @@ void FrameHandler::CollectBCOffsetInfo()
                 returnAddr = frame->GetReturnAddr();
                 break;
             }
-            case FrameType::LEAVE_FRAME: {
-                auto frame = it.GetFrame<OptimizedLeaveFrame>();
+            case FrameType::BUILTIN_CALL_LEAVE_FRAME: {
+                auto frame = it.GetFrame<OptimizedBuiltinLeaveFrame>();
                 returnAddr = frame->GetReturnAddr();
                 break;
             }
+            case FrameType::LEAVE_FRAME:
             case FrameType::OPTIMIZED_ENTRY_FRAME:
             case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
             case FrameType::ASM_INTERPRETER_FRAME:

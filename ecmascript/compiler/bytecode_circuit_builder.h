@@ -376,6 +376,7 @@ enum BytecodeOffset {
 
 enum CommonArgIdx : uint8_t {
     GLUE = 0,
+    LEXENV,
     ACTUAL_ARGC,
     FUNC,
     NEW_TARGET,

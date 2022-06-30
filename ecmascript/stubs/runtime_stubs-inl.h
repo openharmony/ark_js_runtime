@@ -20,6 +20,7 @@
 #include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/ecma_string_table.h"
+#include "ecmascript/file_loader.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/profile_type_info.h"
@@ -35,6 +36,8 @@
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/template_string.h"
 #include "ecmascript/ts_types/ts_loader.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 
 namespace panda::ecmascript {
 static constexpr size_t FIXED_NUM_ARGS = 3;
@@ -1575,14 +1578,18 @@ JSTaggedValue RuntimeStubs::RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, ui
     return newEnv.GetTaggedValue();
 }
 
-JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv)
+JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs - FIXED_NUM_ARGS);
-    for (uint32_t i = 0; i < actualNumArgs - FIXED_NUM_ARGS; ++i) {
+
+    auto argv = GetActualArgv(thread);
+    int idx = 0;
+    for (uint32_t i = FIXED_NUM_ARGS; i < actualNumArgs; ++i) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip actualNumArgs
-        argumentsList->Set(thread, i, JSTaggedValue(arg));
+        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i];
+        JSTaggedValue args = JSTaggedValue(arg);
+        argumentsList->Set(thread, idx++, args);
     }
     return RuntimeGetUnmapedJSArgumentObj(thread, argumentsList);
 }
@@ -1652,36 +1659,41 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvDyn(JSThread *thread, uint16_
     newEnv->SetParentEnv(thread, currentLexEnv.GetTaggedValue());
     newEnv->SetScopeInfo(thread, JSTaggedValue::Hole());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return newEnv.GetTaggedValue();
+    JSTaggedValue taggedEnv = newEnv.GetTaggedValue();
+    RuntimeSetAotLexEnv(thread, taggedEnv);
+    return taggedEnv;
 }
 
 JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
-                                                               JSHandle<JSTaggedValue> &currentLexEnv)
+                                                               JSHandle<JSTaggedValue> &currentLexEnv,
+                                                               JSHandle<JSTaggedValue> &func)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<LexicalEnv> newEnv = factory->NewLexicalEnv(numVars);
 
     newEnv->SetParentEnv(thread, currentLexEnv.GetTaggedValue());
-    JSTaggedValue scopeInfo = ScopeInfoExtractor::GenerateScopeInfo(thread, scopeId);
+    JSTaggedValue scopeInfo = RuntimeGenerateAotScopeInfo(thread, scopeId, func.GetTaggedValue());
     newEnv->SetScopeInfo(thread, scopeInfo);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return newEnv.GetTaggedValue();
+    JSTaggedValue taggedEnv = newEnv.GetTaggedValue();
+    RuntimeSetAotLexEnv(thread, taggedEnv);
+    return taggedEnv;
 }
 
-JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t autualArgc, uint32_t restId)
+JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t actualArgc, uint32_t restIndex)
 {
-    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-    auto frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
-    uint32_t actualRestNum = autualArgc - restId - FIXED_NUM_ARGS;
+    uint32_t actualRestNum = actualArgc - FIXED_NUM_ARGS - restIndex;
     JSHandle<JSTaggedValue> restArray = JSArray::ArrayCreate(thread, JSTaggedNumber(actualRestNum));
-    JSTaggedType *argv = frame->GetJsFuncFrameArgv(thread);
+
+    auto argv = GetActualArgv(thread);
+    int idx = 0;
     JSMutableHandle<JSTaggedValue> element(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < actualRestNum; ++i) {
+
+    for (uint32_t i = FIXED_NUM_ARGS + restIndex; i < actualArgc; ++i) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        JSTaggedType arg = argv[i + FIXED_NUM_ARGS + restId];
-        [[maybe_unused]]auto a = JSTaggedValue(arg);
+        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i];
         element.Update(JSTaggedValue(arg));
-        JSObject::SetProperty(thread, restArray, i, element, true);
+        JSObject::SetProperty(thread, restArray, idx++, element, true);
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return restArray.GetTaggedValue();
@@ -1752,6 +1764,70 @@ JSTaggedValue RuntimeStubs::RuntimeAotNewObjWithIHClass(JSThread *thread, uintpt
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return object;
+}
+
+JSTaggedValue RuntimeStubs::RuntimeGetAotLexEnv(JSThread *thread)
+{
+    [[maybe_unused]] DisallowGarbageCollection noGc;
+    auto optimizedJSFunctionFrame = GetOptimizedJSFunctionFrame(thread);
+    return optimizedJSFunctionFrame->GetEnv();
+}
+
+void RuntimeStubs::RuntimeSetAotLexEnv(JSThread *thread, JSTaggedValue lexEnv)
+{
+    auto optimizedJSFunctionFrame = GetOptimizedJSFunctionFrame(thread);
+    optimizedJSFunctionFrame->SetEnv(lexEnv);
+}
+
+JSTaggedValue RuntimeStubs::RuntimeGenerateAotScopeInfo(JSThread *thread, uint16_t scopeId, JSTaggedValue func)
+{
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSMethod *method = ECMAObject::Cast(func.GetTaggedObject())->GetCallTarget();
+    const JSPandaFile *jsPandaFile = method->GetJSPandaFile();
+    JSHandle<TaggedArray> elementsLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, scopeId);
+    ASSERT(elementsLiteral->GetLength() > 0);
+    size_t length = elementsLiteral->GetLength();
+
+    auto buffer = ecmaVm->GetNativeAreaAllocator()->New<struct ScopeDebugInfo>();
+    auto scopeDebugInfo = static_cast<struct ScopeDebugInfo *>(buffer);
+
+    for (size_t i = 1; i < length; i += 2) {  // 2: Each literal buffer contains a pair of key-value.
+        JSTaggedValue val = elementsLiteral->Get(i);
+        ASSERT(val.IsString());
+        CString name = ConvertToString(EcmaString::Cast(val.GetTaggedObject()));
+        int32_t slot = elementsLiteral->Get(i + 1).GetInt();
+        if (scopeDebugInfo == nullptr) {
+            return JSTaggedValue::Hole();
+        }
+        scopeDebugInfo->scopeInfo.insert(std::make_pair(name, slot));
+    }
+    
+    auto freeObjFunc = NativeAreaAllocator::FreeObjectFunc<struct ScopeDebugInfo>;
+    auto allocator = ecmaVm->GetNativeAreaAllocator();
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(buffer, freeObjFunc, allocator);
+    return pointer.GetTaggedValue();
+}
+
+JSTaggedType *RuntimeStubs::GetActualArgv(JSThread *thread)
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    ASSERT(FrameHandler::GetFrameType(current) == FrameType::LEAVE_FRAME);
+    FrameIterator it(current, thread);
+    it.Advance();
+    ASSERT(it.GetFrameType() == FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
+    auto optimizedJSFunctionFrame = it.GetFrame<OptimizedJSFunctionFrame>();
+    return optimizedJSFunctionFrame->GetArgv(it);
+}
+
+OptimizedJSFunctionFrame *RuntimeStubs::GetOptimizedJSFunctionFrame(JSThread *thread)
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    ASSERT(FrameHandler::GetFrameType(current) == FrameType::LEAVE_FRAME);
+    FrameIterator it(current, thread);
+    it.Advance();
+    ASSERT(it.GetFrameType()  == FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
+    return it.GetFrame<OptimizedJSFunctionFrame>();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_STUBS_RUNTIME_STUBS_INL_H

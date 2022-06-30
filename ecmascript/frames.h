@@ -106,6 +106,19 @@
 //   |       callSiteSp     |   v
 //   +--------------------------+
 
+//   Optimized JSFunction Frame Frame(alias OptimizedJSFunctionFrame) layout
+//   +--------------------------+
+//   | calleesave registers |   ^
+//   |----------------------|   |
+//   |   returnaddress      | Fixed
+//   |----------------------| OptimizedJSFunctionFrame
+//   |       prevFp         |   |
+//   |----------------------|   |
+//   |     frameType        |   |
+//   |----------------------|   |
+//   |       lexEnv         |   v
+//   +--------------------------+
+
 //   Optimized Entry Frame(alias OptimizedEntryFrame) layout
 //   +--------------------------+
 //   |   returnaddress      |   ^
@@ -194,12 +207,13 @@
 //   | calleesave registers |   ^                           ^
 //   |----------------------|   |                           |
 //   |   returnaddress      | Fixed                         |
-//   |----------------------| OptimizedFrame                |
+//   |----------------------| OptimizedJSFunctionFrame      |
 //   |       prevFp         |   |                           |
 //   |----------------------|   |                       baz's frame Header
 //   |     frameType        |   |                           |
 //   |----------------------|   |                           |
-//   |   callsitesp         |   v                           V
+//   |       lexEnv         |   |                           V
+//   +--------------------------+
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
@@ -249,17 +263,18 @@ enum class FrameType: uintptr_t {
     OPTIMIZED_JS_FUNCTION_FRAME = 2,
     LEAVE_FRAME = 3,
     LEAVE_FRAME_WITH_ARGV = 4,
-    INTERPRETER_FRAME = 5,
-    ASM_INTERPRETER_FRAME = 6,
-    INTERPRETER_CONSTRUCTOR_FRAME = 7,
-    BUILTIN_FRAME = 8,
-    BUILTIN_FRAME_WITH_ARGV = 9,
-    BUILTIN_ENTRY_FRAME = 10,
-    INTERPRETER_FAST_NEW_FRAME = 11,
-    INTERPRETER_ENTRY_FRAME = 12,
-    ASM_INTERPRETER_ENTRY_FRAME = 13,
-    ASM_INTERPRETER_BRIDGE_FRAME = 14,
-    OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME = 15,
+    BUILTIN_CALL_LEAVE_FRAME = 5,
+    INTERPRETER_FRAME = 6,
+    ASM_INTERPRETER_FRAME = 7,
+    INTERPRETER_CONSTRUCTOR_FRAME = 8,
+    BUILTIN_FRAME = 9,
+    BUILTIN_FRAME_WITH_ARGV = 10,
+    BUILTIN_ENTRY_FRAME = 11,
+    INTERPRETER_FAST_NEW_FRAME = 12,
+    INTERPRETER_ENTRY_FRAME = 13,
+    ASM_INTERPRETER_ENTRY_FRAME = 14,
+    ASM_INTERPRETER_BRIDGE_FRAME = 15,
+    OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME = 16,
 
     INTERPRETER_BEGIN = INTERPRETER_FRAME,
     INTERPRETER_END = INTERPRETER_FAST_NEW_FRAME,
@@ -269,7 +284,7 @@ enum class FrameType: uintptr_t {
 
 enum class ReservedSlots: int {
     OPTIMIZED_RESERVED_SLOT = 1,
-    OPTIMIZED_JS_FUNCTION_RESERVED_SLOT = 1,
+    OPTIMIZED_JS_FUNCTION_RESERVED_SLOT = 2,
     OPTIMIZED_ENTRY_RESERVED_SLOT = 2,
 };
 
@@ -358,13 +373,16 @@ STATIC_ASSERT_EQ_ARCH(sizeof(OptimizedJSFunctionArgConfigFrame),
     OptimizedJSFunctionArgConfigFrame::SizeArch32, OptimizedJSFunctionArgConfigFrame::SizeArch64);
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct OptimizedJSFunctionFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
+struct OptimizedJSFunctionFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                   JSTaggedValue,
                                                    base::AlignedPointer,
                                                    base::AlignedPointer,
                                                    base::AlignedPointer> {
 public:
+    static constexpr size_t ENV_SLOT_DIFF = 2;
     enum class Index : size_t {
-        TypeIndex = 0,
+        EnvIndex = 0,
+        TypeIndex,
         PrevFpIndex,
         ReturnAddrIndex,
         NumOfMembers
@@ -375,15 +393,16 @@ public:
     {
         return prevFp;
     }
-    uintptr_t* ComputePrevFrameSp(const JSTaggedType *sp, int delta) const
-    {
-        uintptr_t *preFrameSp = reinterpret_cast<uintptr_t *>(const_cast<JSTaggedType *>(sp))
-            + delta / sizeof(uintptr_t);
-        return preFrameSp;
-    }
+    uintptr_t* ComputePrevFrameSp(const FrameIterator &it) const;
+
     JSTaggedType* GetArgv(uintptr_t *preFrameSp) const
     {
-        return reinterpret_cast<JSTaggedType *>(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
+        return reinterpret_cast<JSTaggedType *>(preFrameSp + ENV_SLOT_DIFF * sizeof(uint64_t) / sizeof(uintptr_t));
+    }
+
+    size_t GetArgc(uintptr_t *preFrameSp) const
+    {
+        return *(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
     }
 
     JSTaggedType* GetArgv(const FrameIterator &it) const;
@@ -395,7 +414,25 @@ public:
     void GCIterate(
         const FrameIterator &it, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+
+    inline JSTaggedValue GetEnv() const
+    {
+        return env;
+    }
+    inline void SetEnv(JSTaggedValue lexEnv)
+    {
+        env = lexEnv;
+    }
+    friend class FrameIterator;
+
+private:
+    static OptimizedJSFunctionFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedJSFunctionFrame *>(reinterpret_cast<uintptr_t>(sp)
+            - MEMBER_OFFSET(OptimizedJSFunctionFrame, prevFp));
+    }
     // dynamic callee saveregisters for x86-64
+    alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
     [[maybe_unused]] alignas(EAS) FrameType type {0};
     alignas(EAS) JSTaggedType *prevFp {nullptr};
     alignas(EAS) uintptr_t returnAddr {0};
@@ -404,13 +441,6 @@ public:
     // argv[0]
     // argv[1]
     // ... argv[n - 1]
-    friend class FrameIterator;
-private:
-    static OptimizedJSFunctionFrame* GetFrameFromSp(const JSTaggedType *sp)
-    {
-        return reinterpret_cast<OptimizedJSFunctionFrame *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedJSFunctionFrame, prevFp));
-    }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(OptimizedJSFunctionFrame), OptimizedJSFunctionFrame::SizeArch32,
     OptimizedJSFunctionFrame::SizeArch64);
@@ -802,6 +832,39 @@ struct OptimizedWithArgvLeaveFrame {
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
 };
 
+struct OptimizedBuiltinLeaveFrame {
+public:
+    static OptimizedBuiltinLeaveFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedBuiltinLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptimizedBuiltinLeaveFrame, callsiteFp));
+    }
+    uintptr_t GetCallSiteSp() const
+    {
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedBuiltinLeaveFrame, argRuntimeId);
+    }
+    inline JSTaggedType* GetPrevFrameFp() const
+    {
+        return reinterpret_cast<JSTaggedType*>(callsiteFp);
+    }
+    uintptr_t GetReturnAddr() const
+    {
+        return returnAddr;
+    }
+    void GCIterate(
+        const FrameIterator &it, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+
+private:
+    [[maybe_unused]] FrameType type;
+    uintptr_t callsiteFp; // thread sp set here
+    uintptr_t returnAddr;
+    [[maybe_unused]] uint64_t argRuntimeId;
+    JSTaggedValue env;
+    uint64_t argc;
+    // argv[0]...argv[argc-1] dynamic according to agc
+};
+
 struct BuiltinFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
                                                  base::AlignedSize,
                                                  base::AlignedPointer,
@@ -978,6 +1041,7 @@ public:
     {
         return current_;
     }
+    int ComputeDelta() const;
     void Advance();
     uintptr_t GetPrevFrameCallSiteSp(uintptr_t curPc = 0) const;
     uintptr_t GetCallSiteSp() const
