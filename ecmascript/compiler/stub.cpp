@@ -1452,7 +1452,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     Label lengthNotLessIndex(env);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     GateRef index = TryToElementsIndex(key);
-    Branch(Int32UnsignedLessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
+    Branch(Int32LessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
@@ -1496,7 +1496,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(varHandler, VariableType::JS_ANY(), handler);
     GateRef index = TryToElementsIndex(key);
-    Branch(Int32UnsignedLessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
+    Branch(Int32LessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
