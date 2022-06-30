@@ -389,11 +389,11 @@ void *JSNApi::SerializeValue(const EcmaVM *vm, Local<JSValueRef> value, Local<JS
     }
 }
 
-Local<JSValueRef> JSNApi::DeserializeValue(const EcmaVM *vm, void *recoder)
+Local<JSValueRef> JSNApi::DeserializeValue(const EcmaVM *vm, void *recoder, void *hint)
 {
     ecmascript::JSThread *thread = vm->GetJSThread();
     std::unique_ptr<ecmascript::SerializationData> data(reinterpret_cast<ecmascript::SerializationData *>(recoder));
-    ecmascript::Deserializer deserializer(thread, data.release());
+    ecmascript::Deserializer deserializer(thread, data.release(), hint);
     JSHandle<JSTaggedValue> result = deserializer.ReadValue();
     return JSNApiHelper::ToLocal<ObjectRef>(result);
 }
