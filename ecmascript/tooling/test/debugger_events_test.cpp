@@ -392,4 +392,45 @@ HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToJsonTest)
     ASSERT_EQ(params->GetInt("total", &tmpInt), Result::SUCCESS);
     EXPECT_EQ(tmpInt, 100);
 }
+
+HWTEST_F_L0(DebuggerEventsTest, BufferUsageToJsonTest)
+{
+    BufferUsage bufferUsage;
+    bufferUsage.SetPercentFull(17).SetEventCount(15).SetValue(12);
+
+    std::unique_ptr<PtJson> json = bufferUsage.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    int tmpInt;
+    ASSERT_EQ(params->GetInt("percentFull", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 17);
+
+    ASSERT_EQ(params->GetInt("eventCount", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 15);
+
+    ASSERT_EQ(params->GetInt("value", &tmpInt), Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 12);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, TracingCompleteToJsonTest)
+{
+    TracingComplete tracingComplete;
+    auto traceFormat = std::make_unique<StreamFormat>();
+    auto streamCompression = std::make_unique<StreamCompression>();
+    tracingComplete.SetDataLossOccurred(true)
+                    .SetTraceFormat(std::move(traceFormat))
+                    .SetStreamCompression(std::move(streamCompression));
+
+    std::unique_ptr<PtJson> json = tracingComplete.ToJson();
+    std::unique_ptr<PtJson> params;
+    ASSERT_EQ(json->GetObject("params", &params), Result::SUCCESS);
+
+    bool tmpBool;
+    ASSERT_EQ(params->GetBool("dataLossOccurred", &tmpBool), Result::SUCCESS);
+
+    std::string tmpStr;
+    ASSERT_EQ(params->GetString("traceFormat", &tmpStr), Result::SUCCESS);
+    ASSERT_EQ(params->GetString("streamCompression", &tmpStr), Result::SUCCESS);
+}
 }  // namespace panda::test

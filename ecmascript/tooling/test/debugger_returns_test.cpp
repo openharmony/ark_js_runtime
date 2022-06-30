@@ -371,4 +371,32 @@ HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToJsonTest)
     ASSERT_NE(json, nullptr);
     EXPECT_EQ(json->GetSize(), 0);
 }
+
+HWTEST_F_L0(DebuggerReturnsTest, GetCategoriesReturnsToJsonTest)
+{
+    auto result = std::vector<std::string>();
+    std::unique_ptr<GetCategoriesReturns> getCategoriesReturns = std::make_unique
+                                                    <GetCategoriesReturns>(std::move(result));
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(getCategoriesReturns->ToJson()->GetArray("categories", &json), Result::SUCCESS);
+    ASSERT_NE(json, nullptr);
+    EXPECT_EQ(json->GetSize(), 0);
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, RequestMemoryDumpReturnsToJsonTest)
+{
+    std::unique_ptr<RequestMemoryDumpReturns> requestMemoryDumpReturns
+                     = std::make_unique<RequestMemoryDumpReturns>("123", true);
+    ASSERT_NE(requestMemoryDumpReturns, nullptr);
+
+    std::string dumpGuid;
+    ASSERT_EQ(requestMemoryDumpReturns->ToJson()->GetString("dumpGuid", &dumpGuid),
+              Result::SUCCESS);
+    EXPECT_EQ(dumpGuid, "123");
+
+    bool success;
+    ASSERT_EQ(requestMemoryDumpReturns->ToJson()->GetBool("success", &success), Result::SUCCESS);
+    ASSERT_TRUE(success);
+}
 }  // namespace panda::test

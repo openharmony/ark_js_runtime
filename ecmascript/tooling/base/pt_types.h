@@ -2166,7 +2166,7 @@ public:
 
     static std::unique_ptr<ScriptTypeProfile> Create(const PtJson &params);
     std::unique_ptr<PtJson> ToJson() const override;
-    
+
     const std::string &GetScriptId() const
     {
         return scriptId_;
@@ -2207,6 +2207,254 @@ private:
     std::string scriptId_ {};
     std::string url_ {};
     std::vector<std::unique_ptr<TypeProfileEntry>> entries_ {};
+};
+
+// ========== Tracing types begin
+// Tracing.MemoryDumpConfig
+using MemoryDumpConfig = PtJson;
+
+// Tracing.MemoryDumpLevelOfDetail
+using MemoryDumpLevelOfDetail = std::string;
+struct MemoryDumpLevelOfDetailValues {
+    static bool Valid(const std::string &values)
+    {
+        return values == Background() || values == Light() || values == Detailed();
+    }
+    static std::string Background()
+    {
+        return "background";
+    }
+    static std::string Light()
+    {
+        return "light";
+    }
+    static std::string Detailed()
+    {
+        return "detailed";
+    }
+};
+
+// Tracing.StreamCompression
+using StreamCompression = std::string;
+struct StreamCompressionValues {
+    static bool Valid(const std::string &values)
+    {
+        return values == None() || values == Gzip();
+    }
+    static std::string None()
+    {
+        return "none";
+    }
+    static std::string Gzip()
+    {
+        return "gzip";
+    }
+};
+
+// Tracing.StreamFormat
+using StreamFormat = std::string;
+struct StreamFormatValues {
+    static bool Valid(const std::string &values)
+    {
+        return values == Json() || values == Proto();
+    }
+    static std::string Json()
+    {
+        return "json";
+    }
+    static std::string Proto()
+    {
+        return "proto";
+    }
+};
+
+// Tracing.TraceConfig
+class TraceConfig final : public PtBaseTypes {
+public:
+    TraceConfig() = default;
+    ~TraceConfig() override = default;
+
+    static std::unique_ptr<TraceConfig> Create(const PtJson &params);
+    std::unique_ptr<PtJson> ToJson() const override;
+
+    std::string GetRecordMode() const
+    {
+        return recordMode_.value();
+    }
+
+    TraceConfig &SetRecordMode(std::string recordMode)
+    {
+        recordMode_ = recordMode;
+        return *this;
+    }
+
+    bool HasRecordMode() const
+    {
+        return recordMode_.has_value();
+    }
+
+    struct RecordModeValues {
+        static bool Valid(const std::string &values)
+        {
+            return values == RecordUntilFull() || values == RecordContinuously() ||
+                   values == RecordAsMuchAsPossible() || values == EchoToConsole();
+        }
+        static std::string RecordUntilFull()
+        {
+            return "recordUntilFull";
+        }
+        static std::string RecordContinuously()
+        {
+            return "recordContinuously";
+        }
+        static std::string RecordAsMuchAsPossible()
+        {
+            return "recordAsMuchAsPossible";
+        }
+        static std::string EchoToConsole()
+        {
+            return "echoToConsole";
+        }
+    };
+
+    bool GetEnableSampling() const
+    {
+        return enableSampling_.value();
+    }
+
+    TraceConfig &SetEnableSampling(bool enableSampling)
+    {
+        enableSampling_ = enableSampling;
+        return *this;
+    }
+
+    bool HasEnableSampling() const
+    {
+        return enableSampling_.has_value();
+    }
+
+    bool GetEnableSystrace() const
+    {
+        return enableSystrace_.value();
+    }
+
+    TraceConfig &SetEnableSystrace(bool enableSystrace)
+    {
+        enableSystrace_ = enableSystrace;
+        return *this;
+    }
+
+    bool HasEnableSystrace() const
+    {
+        return enableSystrace_.has_value();
+    }
+
+    bool GetEnableArgumentFilter() const
+    {
+        return enableArgumentFilter_.value();
+    }
+
+    TraceConfig &SetEnableArgumentFilter(bool enableArgumentFilter)
+    {
+        enableArgumentFilter_ = enableArgumentFilter;
+        return *this;
+    }
+
+    bool HasEnableArgumentFilter() const
+    {
+        return enableArgumentFilter_.has_value();
+    }
+
+    const std::vector<std::string> *GetIncludedCategories() const
+    {
+        if (includedCategories_) {
+            return &includedCategories_.value();
+        }
+        return nullptr;
+    }
+
+    TraceConfig &SetIncludedCategories(std::vector<std::string> includedCategories)
+    {
+        includedCategories_ = includedCategories;
+        return *this;
+    }
+
+    bool HasIncludedCategories() const
+    {
+        return includedCategories_.has_value();
+    }
+
+    const std::vector<std::string> *GetExcludedCategories() const
+    {
+        if (excludedCategories_) {
+            return &excludedCategories_.value();
+        }
+        return nullptr;
+    }
+
+    TraceConfig &SetExcludedCategories(std::vector<std::string> excludedCategories)
+    {
+        excludedCategories_ = excludedCategories;
+        return *this;
+    }
+
+    bool HasExcludedCategories() const
+    {
+        return excludedCategories_.has_value();
+    }
+
+    const std::vector<std::string> *GetSyntheticDelays() const
+    {
+        if (syntheticDelays_) {
+            return &syntheticDelays_.value();
+        }
+        return nullptr;
+    }
+
+    TraceConfig &SetSyntheticDelays(std::vector<std::string> syntheticDelays)
+    {
+        syntheticDelays_ = syntheticDelays;
+        return *this;
+    }
+
+    bool HasSyntheticDelays() const
+    {
+        return syntheticDelays_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(TraceConfig);
+    NO_MOVE_SEMANTIC(TraceConfig);
+
+    std::optional<std::string> recordMode_ {};
+    std::optional<bool> enableSampling_ {};
+    std::optional<bool> enableSystrace_ {};
+    std::optional<bool> enableArgumentFilter_ {};
+    std::optional<std::vector<std::string>> includedCategories_ {};
+    std::optional<std::vector<std::string>> excludedCategories_ {};
+    std::optional<std::vector<std::string>> syntheticDelays_ {};
+    std::optional<std::unique_ptr<MemoryDumpConfig>> memoryDumpConfig_ {};
+};
+
+// Tracing.TracingBackend
+using TracingBackend = std::string;
+struct TracingBackendValues {
+    static bool Valid(const std::string &values)
+    {
+        return values == Auto() || values == Chrome() || values == System();
+    }
+    static std::string Auto()
+    {
+        return "auto";
+    }
+    static std::string Chrome()
+    {
+        return "chrome";
+    }
+    static std::string System()
+    {
+        return "system";
+    }
 };
 }  // namespace panda::ecmascript::tooling
 #endif
