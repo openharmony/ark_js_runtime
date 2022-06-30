@@ -18,10 +18,11 @@
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/jobs/hitrace_scope.h"
 #include "ecmascript/js_function.h"
-#include "ecmascript/record.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/record.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/mem/c_containers.h"
@@ -37,6 +38,7 @@ public:
 
     static JSTaggedValue ExecutePendingJob(const JSHandle<PendingJob> &pendingJob, JSThread *thread)
     {
+        EXECUTE_JOB_HITRACE(pendingJob);
         tooling::JsDebuggerManager *jsDebuggerManager = thread->GetEcmaVM()->GetJsDebuggerManager();
         jsDebuggerManager->GetNotificationManager()->PendingJobEntryEvent();
 
@@ -52,11 +54,22 @@ public:
 
     static constexpr size_t JOB_OFFSET = Record::SIZE;
     ACCESSORS(Job, JOB_OFFSET, ARGUMENT_OFFSET);
+#if defined(ENABLE_HITRACE)
+    ACCESSORS(Arguments, ARGUMENT_OFFSET, CHAINID_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(ChainId, uint64_t, CHAINID_OFFSET, SPANID_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(SpanId, uint64_t, SPANID_OFFSET, PARENTSPANID_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ParentSpanId, uint64_t, PARENTSPANID_OFFSET, FLAGS_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(Flags, uint32_t, FLAGS_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    DECL_VISIT_OBJECT(JOB_OFFSET, CHAINID_OFFSET)
+#else
     ACCESSORS(Arguments, ARGUMENT_OFFSET, SIZE);
 
-    DECL_DUMP()
-
     DECL_VISIT_OBJECT(JOB_OFFSET, SIZE)
+#endif
+
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript::job
 #endif  // ECMASCRIPT_JOBS_PENDING_JOB_H

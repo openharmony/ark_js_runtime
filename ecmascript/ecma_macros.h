@@ -42,6 +42,14 @@
     #define ECMA_BYTRACE_NAME(tag, name) HITRACE_METER_NAME(tag, name); trace::ScopedTrace scopedTrace(name)
 #endif
 
+#if defined(ENABLE_HITRACE)
+    #define ENQUEUE_JOB_HITRACE(pendingJob, queueType) job::EnqueueJobScope hitraceScope(pendingJob, queueType)
+    #define EXECUTE_JOB_HITRACE(pendingJob) job::ExecuteJobScope hitraceScope(pendingJob)
+#else
+    #define ENQUEUE_JOB_HITRACE(pendingJob, queueType)
+    #define EXECUTE_JOB_HITRACE(pendingJob)
+#endif
+
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
 /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

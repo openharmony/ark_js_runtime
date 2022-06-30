@@ -2363,8 +2363,20 @@ void PendingJob::Dump(std::ostream &os) const
 {
     os << " - job: ";
     GetJob().Dump(os);
+    os << "\n";
     os << " - arguments: ";
     GetArguments().Dump(os);
+#if defined(ENABLE_HITRACE)
+    os << "\n";
+    os << " - chainId: " << GetChainId();
+    os << "\n";
+    os << " - spanId: " << GetSpanId();
+    os << "\n";
+    os << " - parentSpanId: " << GetParentSpanId();
+    os << "\n";
+    os << " - flags: " << GetFlags();
+    os << "\n";
+#endif
 }
 
 void CompletionRecord::Dump(std::ostream &os) const
@@ -4394,6 +4406,12 @@ void PendingJob::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> 
 {
     vec.push_back(std::make_pair(CString("job"), GetJob()));
     vec.push_back(std::make_pair(CString("arguments"), GetArguments()));
+#if defined(ENABLE_HITRACE)
+    vec.push_back(std::make_pair(CString("chainId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("spanId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("parentSpanId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("flags"), JSTaggedValue(GetChainId())));
+#endif
 }
 
 void CompletionRecord::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
