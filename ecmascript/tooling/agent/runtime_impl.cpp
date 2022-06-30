@@ -183,6 +183,12 @@ DispatchResponse RuntimeImpl::GetProperties(const GetPropertiesParams &params,
     if (value->IsArrayBuffer()) {
         Local<ArrayBufferRef> arrayBufferRef(value);
         AddTypedArrayRefs(arrayBufferRef, outPropertyDesc);
+    } else if (value->IsMapIterator()) {
+        GetMapIteratorValue(value, outPropertyDesc);
+    } else if (value->IsSetIterator()) {
+        GetSetIteratorValue(value, outPropertyDesc);
+    } else if (value->IsJSPrimitiveRef() && value->IsJSPrimitiveNumber()) {
+        GetPrimitiveNumberValue(value, outPropertyDesc);
     }
     Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(vm_);
     int32_t length = keys->Length(vm_);
@@ -351,6 +357,56 @@ void RuntimeImpl::GetAdditionalProperties(Local<JSValueRef> value,
                 .SetValue(std::move(remoteObjElement));
             outPropertyDesc->emplace_back(std::move(debuggerProperty));
         }
+    }
+}
+
+void RuntimeImpl::SetKeyValue(Local<JSValueRef> &jsValueRef,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc, const std::string &strProName)
+{
+    std::unique_ptr<RemoteObject> remoteObj = RemoteObject::FromTagged(vm_, jsValueRef);
+    remoteObj->SetObjectId(curObjectId_);
+    properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsValueRef);
+    std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+    debuggerProperty->SetName(strProName)
+        .SetWritable(false)
+        .SetConfigurable(false)
+        .SetEnumerable(false)
+        .SetIsOwn(false)
+        .SetValue(std::move(remoteObj));
+    outPropertyDesc->emplace_back(std::move(debuggerProperty));
+}
+
+void RuntimeImpl::GetPrimitiveNumberValue(Local<JSValueRef> value,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRef;
+    jsValueRef = value->ToNumber(vm_);
+    SetKeyValue(jsValueRef, outPropertyDesc, "[[PrimitiveValue]]");
+}
+
+void RuntimeImpl::GetMapIteratorValue(Local<JSValueRef> value,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRef;
+    Local<MapIteratorRef> iterRef = value->ToObject(vm_);
+    if (!iterRef.IsEmpty()) {
+        jsValueRef = NumberRef::New(vm_, iterRef->GetIndex());
+        SetKeyValue(jsValueRef, outPropertyDesc, "[[IteratorIndex]]");
+        jsValueRef = iterRef->GetKind(vm_);
+        SetKeyValue(jsValueRef, outPropertyDesc, "[[IteratorKind]]");
+    }
+}
+
+void RuntimeImpl::GetSetIteratorValue(Local<JSValueRef> value,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRef;
+    Local<SetIteratorRef> iterRef = value->ToObject(vm_);
+    if (!iterRef.IsEmpty()) {
+        jsValueRef = NumberRef::New(vm_, iterRef->GetIndex());
+        SetKeyValue(jsValueRef, outPropertyDesc, "[[IteratorIndex]]");
+        jsValueRef = iterRef->GetKind(vm_);
+        SetKeyValue(jsValueRef, outPropertyDesc, "[[IteratorKind]]");
     }
 }
 }  // namespace panda::ecmascript::tooling
