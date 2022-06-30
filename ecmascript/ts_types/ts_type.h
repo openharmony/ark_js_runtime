@@ -54,7 +54,7 @@ public:
 
     static constexpr size_t PROPERTIES_OFFSET = TSType::SIZE;
 
-    JSHClass *GetOrCreateHClass(JSThread *thread);
+    static JSHClass *GetOrCreateHClass(JSThread *thread, JSHandle<TSObjectType> objectType);
 
     static GlobalTSTypeRef GetPropTypeGT(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
                                           JSHandle<EcmaString> propName);

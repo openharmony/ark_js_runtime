@@ -24,15 +24,15 @@
 #include "ecmascript/ts_types/ts_type_table.h"
 
 namespace panda::ecmascript {
-JSHClass *TSObjectType::GetOrCreateHClass(JSThread *thread)
+JSHClass *TSObjectType::GetOrCreateHClass(JSThread *thread, JSHandle<TSObjectType> objectType)
 {
-    JSTaggedValue mayBeHClass = GetHClass();
+    JSTaggedValue mayBeHClass = objectType->GetHClass();
     if (mayBeHClass.IsJSHClass()) {
         return JSHClass::Cast(mayBeHClass.GetTaggedObject());
     }
-    JSHandle<TSObjLayoutInfo> propTypeInfo(thread, GetObjLayoutInfo().GetTaggedObject());
-    JSHClass *hclass = CreateHClassByProps(thread, propTypeInfo);
-    SetHClass(thread, JSTaggedValue(hclass));
+    JSHandle<TSObjLayoutInfo> propTypeInfo(thread, objectType->GetObjLayoutInfo());
+    JSHClass *hclass = objectType->CreateHClassByProps(thread, propTypeInfo);
+    objectType->SetHClass(thread, JSTaggedValue(hclass));
 
     return hclass;
 }
