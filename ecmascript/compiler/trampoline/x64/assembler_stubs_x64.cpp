@@ -415,10 +415,12 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
         __ Movq(rsp, rbp); // set frame pointer
         __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)); // set frame type
         __ Movq(MessageString::Message_NonCallable, rax);
+        __ Movabs(JSTaggedValue::TAG_INT, r10);
+        __ Orq(r10, rax);
         __ Pushq(rax); // message id
         __ Pushq(1); // argc
-        __ Pushq(EcmaRuntimeCallerId::RUNTIME_ID_ThrowTypeError); // runtime id
-        __ Movq(rcx, rax); // glue
+        __ Pushq(RTSTUB_ID(ThrowTypeError)); // runtime id
+        __ Movq(glueReg, rax); // glue
         __ Movq(kungfu::RuntimeStubCSigns::ID_CallRuntime, r10);
         __ Movq(Operand(rax, r10, Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r10);
         __ Callq(r10); // call CallRuntime
@@ -668,10 +670,12 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Movq(rsp, rbp); // set frame pointer
         __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)); // set frame type
         __ Movq(MessageString::Message_NonCallable, rax);
+        __ Movabs(JSTaggedValue::TAG_INT, r10);
+        __ Orq(r10, rax);
         __ Pushq(rax); // message id
         __ Pushq(1); // argc
-        __ Pushq(EcmaRuntimeCallerId::RUNTIME_ID_ThrowTypeError); // runtime id
-        __ Movq(rcx, rax); // glue
+        __ Pushq(RTSTUB_ID(ThrowTypeError)); // runtime id
+        __ Movq(glueReg, rax); // glue
         __ Movq(kungfu::RuntimeStubCSigns::ID_CallRuntime, r10);
         __ Movq(Operand(rax, r10, Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r10);
         __ Callq(r10); // call CallRuntime
