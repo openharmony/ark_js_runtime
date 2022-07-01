@@ -104,6 +104,7 @@ public:
           wasted_(0)
     {
         flags_.spaceFlag_ = spaceType;
+        flags_.gcFlags_ = 0;
         bitsetSize_ = (spaceType == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE) ?
             GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(end - begin);
         markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
