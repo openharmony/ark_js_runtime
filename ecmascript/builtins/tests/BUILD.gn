@@ -48,6 +48,7 @@ host_unittest_action("BuiltinsInternational_002_Test") {
     "builtins_intl_test.cpp",
     "builtins_list_format_test.cpp",
     "builtins_locale_test.cpp",
+    "builtins_number_format_test.cpp",
     "builtins_plural_rules_test.cpp",
     "builtins_relative_time_format_test.cpp",
   ]
