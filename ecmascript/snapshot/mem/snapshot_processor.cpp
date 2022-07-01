@@ -655,7 +655,6 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(NumberFormat::Format),
     reinterpret_cast<uintptr_t>(NumberFormat::FormatToParts),
     reinterpret_cast<uintptr_t>(NumberFormat::ResolvedOptions),
-    reinterpret_cast<uintptr_t>(NumberFormat::NumberFormatInternalFormatNumber),
     reinterpret_cast<uintptr_t>(RelativeTimeFormat::RelativeTimeFormatConstructor),
     reinterpret_cast<uintptr_t>(RelativeTimeFormat::SupportedLocalesOf),
     reinterpret_cast<uintptr_t>(RelativeTimeFormat::Format),
