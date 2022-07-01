@@ -38,16 +38,11 @@ public:
         };
 
         loadModule = [this](std::string_view moduleName) {
-            if (flag_) {
-                if (moduleName != pandaFile_) {
-                    return true;
-                }
-                ASSERT_TRUE(debugger_->NotifyScriptParsed(0, pandaFile_));
-                flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(vm_);
-                auto ret = debugInterface_->SetBreakpoint(location_, condFuncRef);
-                ASSERT_TRUE(ret);
-            }
+            ASSERT_EQ(moduleName, pandaFile_);
+            ASSERT_TRUE(debugger_->NotifyScriptParsed(0, pandaFile_));
+            auto condFuncRef = FunctionRef::Undefined(vm_);
+            auto ret = debugInterface_->SetBreakpoint(location_, condFuncRef);
+            ASSERT_TRUE(ret);
             return true;
         };
 
@@ -77,7 +72,6 @@ private:
     std::string entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
-    bool flag_ = true;
 };
 
 std::unique_ptr<TestEvents> GetJsBreakpointArrowTest()

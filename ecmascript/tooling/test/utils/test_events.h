@@ -33,6 +33,7 @@ enum class DebugEvent {
     BREAKPOINT,
     LOAD_MODULE,
     PAUSED,
+    STEP_COMPLETE,
     EXCEPTION,
     METHOD_ENTRY,
     SINGLE_STEP,
