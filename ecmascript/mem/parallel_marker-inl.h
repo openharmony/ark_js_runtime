@@ -23,7 +23,6 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
-#include "ecmascript/mem/utils.h"
 
 namespace panda::ecmascript {
 constexpr size_t HEAD_SIZE = TaggedObject::TaggedObjectSize();
@@ -160,8 +159,10 @@ inline uintptr_t MovableMarker::AllocateDstSpace(uint32_t threadId, size_t size,
 inline void MovableMarker::UpdateForwardAddressIfSuccess(uint32_t threadId, TaggedObject *object, JSHClass *klass,
     uintptr_t toAddress, size_t size, const MarkWord &markWord, ObjectSlot slot, bool isPromoted)
 {
-    Utils::Copy(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
-        size - HEAD_SIZE);
+    if (memcpy_s(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
+        size - HEAD_SIZE) != EOK) {
+        LOG_ECMA(FATAL) << "memcpy_s failed";
+    }
     workManager_->IncreaseAliveSize(threadId, size);
     if (isPromoted) {
         workManager_->IncreasePromotedSize(threadId, size);
