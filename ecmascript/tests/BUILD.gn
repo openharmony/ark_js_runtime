@@ -17,23 +17,6 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("ReadOnlySpaceTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "read_only_space_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
 host_unittest_action("EcmaVm_001_Test") {
   module_out_path = module_output_path
 
@@ -124,6 +107,7 @@ host_unittest_action("EcmaVm_002_Test") {
     "native_pointer_test.cpp",
     "object_factory_test.cpp",
     "object_operator_test.cpp",
+    "read_only_space_test.cpp",
     "symbol_table_test.cpp",
     "tagged_tree_test.cpp",
     "tagged_value_test.cpp",
@@ -152,7 +136,6 @@ group("unittest") {
   deps = [
     ":EcmaVm_001_Test",
     ":EcmaVm_002_Test",
-    ":ReadOnlySpaceTest",
   ]
 }
 
@@ -163,6 +146,5 @@ group("host_unittest") {
   deps = [
     ":EcmaVm_001_TestAction",
     ":EcmaVm_002_TestAction",
-    ":ReadOnlySpaceTestAction",
   ]
 }

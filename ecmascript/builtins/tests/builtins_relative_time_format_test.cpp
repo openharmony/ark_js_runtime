@@ -59,7 +59,7 @@ public:
     JSThread *thread {nullptr};
 };
 
-// new RelativeTimeFormat(newTarget is defined)
+// new RelativeTimeFormat(newTarget is undefined)
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, RelativeTimeFormatConstructor)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
