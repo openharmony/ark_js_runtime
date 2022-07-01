@@ -504,14 +504,14 @@ public:
     }
 
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
-                                                 JSTaggedValue,
-                                                 JSTaggedValue,
-                                                 base::AlignedPointer,
-                                                 base::AlignedPointer,
-                                                 base::AlignedPointer,
-                                                 base::AlignedPointer,
-                                                 base::AlignedPointer,
                                                  BCStubEntries,
+                                                 JSTaggedValue,
+                                                 JSTaggedValue,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
                                                  RTStubEntries,
                                                  COStubEntries,
                                                  BCDebuggerStubEntries,
@@ -519,14 +519,14 @@ public:
                                                  base::AlignedPointer,
                                                  GlobalEnvConstants> {
         enum class Index : size_t {
-            ExceptionIndex = 0,
+            BCStubEntriesIndex = 0,
+            ExceptionIndex,
             GlobalObjIndex,
             CurrentFrameIndex,
             LeaveFrameIndex,
             LastFpIndex,
             NewSpaceAllocationTopAddressIndex,
             NewSpaceAllocationEndAddressIndex,
-            BCStubEntriesIndex,
             RTStubEntriesIndex,
             COStubEntriesIndex,
             BCDebuggerStubEntriesIndex,
@@ -607,6 +607,7 @@ public:
             return GetOffset<static_cast<size_t>(Index::FrameBaseIndex)>(isArch32);
         }
 
+        alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) JSTaggedValue exception_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
@@ -614,7 +615,6 @@ public:
         alignas(EAS) JSTaggedType *lastFp_ {nullptr};
         alignas(EAS) const uintptr_t *newSpaceAllocationTopAddress_ {nullptr};
         alignas(EAS) const uintptr_t *newSpaceAllocationEndAddress_ {nullptr};
-        alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) RTStubEntries rtStubEntries_;
         alignas(EAS) COStubEntries coStubEntries_;
         alignas(EAS) BCDebuggerStubEntries bcDebuggerStubEntries_;
