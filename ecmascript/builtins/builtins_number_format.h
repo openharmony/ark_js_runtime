@@ -36,6 +36,9 @@ public:
     // 13.4.5 Intl.DateTimeFormat.prototype.resolvedOptions ()
     static JSTaggedValue ResolvedOptions(EcmaRuntimeCallInfo *argv);
 
+private:
+    friend class panda::ecmascript::ObjectFactory;
+    // Number Format Functions
     static JSTaggedValue NumberFormatInternalFormatNumber(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
