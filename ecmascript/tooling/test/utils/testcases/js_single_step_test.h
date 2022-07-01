@@ -36,15 +36,10 @@ public:
         };
 
         loadModule = [this](std::string_view moduleName) {
-            if (flag_) {
-                if (moduleName != pandaFile_) {
-                    return true;
-                }
-                flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(vm_);
-                auto ret = debugInterface_->SetBreakpoint(locationEnd_, condFuncRef);
-                ASSERT_TRUE(ret);
-            }
+            ASSERT_EQ(moduleName, pandaFile_);
+            auto condFuncRef = FunctionRef::Undefined(vm_);
+            auto ret = debugInterface_->SetBreakpoint(locationEnd_, condFuncRef);
+            ASSERT_TRUE(ret);
             return true;
         };
 
@@ -92,7 +87,6 @@ private:
     int32_t breakpointCounter_ = 0;
     bool collectSteps_ = false;
     uint32_t bytecodeOffset_ = std::numeric_limits<uint32_t>::max();
-    bool flag_ = true;
 };
 
 std::unique_ptr<TestEvents> GetJsSingleStepTest()
