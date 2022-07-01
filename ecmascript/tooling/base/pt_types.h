@@ -382,6 +382,8 @@ private:
     static std::string DescriptionForSetIterator();
     static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, Local<ArrayBufferRef> tagged);
     static std::string DescriptionForPrimitiveNumber(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    static std::string DescriptionForPrimitiveString(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    static std::string DescriptionForPrimitiveBoolean(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
 };
 
 // Runtime.ExceptionDetails
