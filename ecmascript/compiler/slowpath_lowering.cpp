@@ -925,8 +925,10 @@ void SlowPathLowering::LowerNewObjSpreadDyn(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerThrowDyn(GateRef gate, GateRef glue)
 {
     GateRef exception = acc_.GetValueIn(gate, 0);
+    GateRef exceptionOffset = builder_.Int64(JSThread::GlueData::GetExceptionOffset(false));
+    GateRef val = builder_.Int64Add(glue, exceptionOffset);
     GateRef setException = circuit_->NewGate(OpCode(OpCode::STORE), 0,
-        {dependEntry_, exception, glue}, VariableType::INT64().GetGateType());
+        {dependEntry_, exception, val}, VariableType::INT64().GetGateType());
     ReplaceHirToThrowCall(gate, setException);
 }
 
@@ -1026,12 +1028,14 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
 {
     GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
     GateRef depend = acc_.GetDep(hirGate);
+    GateRef exceptionOffset = builder_.Int64(JSThread::GlueData::GetExceptionOffset(false));
+    GateRef val = builder_.Int64Add(glue, exceptionOffset);
     GateRef loadException = circuit_->NewGate(OpCode(OpCode::LOAD), VariableType::JS_ANY().GetMachineType(),
-        0, { depend, glue }, VariableType::JS_ANY().GetGateType());
+        0, { depend, val }, VariableType::JS_ANY().GetGateType());
     acc_.SetDep(loadException, depend);
     GateRef holeCst = builder_.HoleConstant(VariableType::JS_ANY().GetGateType());
     GateRef clearException = circuit_->NewGate(OpCode(OpCode::STORE), 0,
-        { loadException, holeCst, glue }, VariableType::INT64().GetGateType());
+        { loadException, holeCst, val }, VariableType::INT64().GetGateType());
     auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
         if (acc_.GetDep(*it) == hirGate && acc_.IsDependIn(it)) {

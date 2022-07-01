@@ -3719,7 +3719,8 @@ void Stub::ReturnExceptionIfAbruptCompletion(GateRef glue)
     env->SubCfgEntry(&entry);
     Label exit(env);
     Label hasPendingException(env);
-    GateRef exception = Load(VariableType::JS_ANY(), glue);
+    GateRef exceptionOffset = IntPtr(JSThread::GlueData::GetExceptionOffset(env->IsArch32Bit()));
+    GateRef exception = Load(VariableType::JS_ANY(), glue, exceptionOffset);
     Branch(Int64NotEqual(exception, Int64(JSTaggedValue::VALUE_HOLE)), &hasPendingException, &exit);
     Bind(&hasPendingException);
     Return(Exception());

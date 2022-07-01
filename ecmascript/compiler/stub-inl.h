@@ -2005,7 +2005,8 @@ inline GateRef Stub::GetGlobalConstantValue(VariableType type, GateRef glue, Con
 
 inline GateRef Stub::HasPendingException(GateRef glue)
 {
-    GateRef exception = Load(VariableType::JS_ANY(), glue);
+    GateRef exceptionOffset = IntPtr(JSThread::GlueData::GetExceptionOffset(env_.IsArch32Bit()));
+    GateRef exception = Load(VariableType::JS_ANY(), glue, exceptionOffset);
     return Int64NotEqual(exception, Int64(JSTaggedValue::VALUE_HOLE));
 }
 } //  namespace panda::ecmascript::kungfu
