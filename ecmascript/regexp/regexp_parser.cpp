@@ -1211,9 +1211,6 @@ bool RegExpParser::ParseClassRanges(RangeSet *result)
                     ParseError("invalid class range");
                     return false;
                 }
-            } else {
-                result->Insert(s1);
-                continue;
             }
             if (IsIgnoreCase()) {
                 c1 = static_cast<uint32_t>(Canonicalize(c1, IsUtf16()));
