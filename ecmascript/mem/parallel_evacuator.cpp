@@ -23,7 +23,6 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
-#include "ecmascript/mem/utils.h"
 #include "ecmascript/mem/visitor.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/ecma_string_table.h"
@@ -132,7 +131,9 @@ void ParallelEvacuator::EvacuateRegion(TlabAllocator *allocator, Region *region)
         }
         LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
 
-        Utils::Copy(ToVoidPtr(address), size, ToVoidPtr(ToUintPtr(mem)), size);
+        if (memcpy_s(ToVoidPtr(address), size, ToVoidPtr(ToUintPtr(mem)), size) != EOK) {
+            LOG_ECMA(FATAL) << "memcpy_s failed";
+        }
 
         Barriers::SetDynPrimitive(header, 0, MarkWord::FromForwardingAddress(address));
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
