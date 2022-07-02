@@ -293,6 +293,10 @@ void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &re
     }
     std::unique_ptr<RemoteObject> result1;
     DispatchResponse response = debugger_->EvaluateOnCallFrame(*params, &result1);
+    if (result1 == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
 
     EvaluateOnCallFrameReturns result(std::move(result1));
     SendResponse(request, response, result);
@@ -626,7 +630,7 @@ DispatchResponse DebuggerImpl::RemoveBreakpoint(const RemoveBreakpointParams &pa
         return DispatchResponse::Fail("Breakpoint not found.");
     }
 
-    LOG(INFO, DEBUGGER) << "remove breakpoint32_t line number:" << metaData.line_;
+    LOG(INFO, DEBUGGER) << "remove breakpoint line number:" << metaData.line_;
     return DispatchResponse::Ok();
 }
 
@@ -639,8 +643,7 @@ DispatchResponse DebuggerImpl::Resume([[maybe_unused]] const ResumeParams &param
 
 DispatchResponse DebuggerImpl::SetAsyncCallStackDepth()
 {
-    LOG(ERROR, DEBUGGER) << "SetAsyncCallStackDepth not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("SetAsyncCallStackDepth not support now");
 }
 
 DispatchResponse DebuggerImpl::SetBreakpointByUrl(const SetBreakpointByUrlParams &params,
@@ -755,8 +758,7 @@ DispatchResponse DebuggerImpl::StepOver([[maybe_unused]] const StepOverParams &p
 
 DispatchResponse DebuggerImpl::SetBlackboxPatterns()
 {
-    LOG(ERROR, DEBUGGER) << "SetBlackboxPatterns not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("SetBlackboxPatterns not support now");
 }
 
 void DebuggerImpl::CleanUpOnPaused()

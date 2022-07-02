@@ -78,6 +78,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
     DispatchResponse response = runtime_->GetProperties(*params, &outPropertyDesc, &outInternalDescs,
         &outPrivateProperties, &outExceptionDetails);
     if (outExceptionDetails) {
+        ASSERT(outExceptionDetails.value() != nullptr);
         LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
     }
     GetPropertiesReturns result(std::move(outPropertyDesc),
@@ -99,8 +100,14 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
     DispatchResponse response = runtime_->CallFunctionOn(*params, &outRemoteObject, &outExceptionDetails);
     if (outExceptionDetails) {
+        ASSERT(outExceptionDetails.value() != nullptr);
         LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
     }
+    if (outRemoteObject == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
+
     CallFunctionOnReturns result(std::move(outRemoteObject), std::move(outExceptionDetails));
     SendResponse(request, response, result);
 }

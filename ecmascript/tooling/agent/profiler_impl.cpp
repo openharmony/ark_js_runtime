@@ -70,6 +70,11 @@ void ProfilerImpl::DispatcherImpl::Stop(const DispatchRequest &request)
 {
     std::unique_ptr<Profile> profile;
     DispatchResponse response = profiler_->Stop(&profile);
+    if (profile == nullptr) {
+        SendResponse(request, response);
+        return;
+    }
+
     StopReturns result(std::move(profile));
     SendResponse(request, response, result);
 }
@@ -169,13 +174,11 @@ void ProfilerImpl::Frontend::PreciseCoverageDeltaUpdate()
 
 DispatchResponse ProfilerImpl::Disable()
 {
-    LOG(ERROR, DEBUGGER) << "Disable not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse ProfilerImpl::Enable()
 {
-    LOG(ERROR, DEBUGGER) << "Enable not support now.";
     return DispatchResponse::Ok();
 }
 
@@ -204,43 +207,36 @@ DispatchResponse ProfilerImpl::SetSamplingInterval(const SetSamplingIntervalPara
 
 DispatchResponse ProfilerImpl::GetBestEffortCoverage()
 {
-    LOG(ERROR, DEBUGGER) << "GetBestEffortCoverage not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("GetBestEffortCoverage not support now");
 }
 
 DispatchResponse ProfilerImpl::StopPreciseCoverage()
 {
-    LOG(ERROR, DEBUGGER) << "StopPreciseCoverage not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StopPreciseCoverage not support now");
 }
 
 DispatchResponse ProfilerImpl::TakePreciseCoverage()
 {
-    LOG(ERROR, DEBUGGER) << "TakePreciseCoverage not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("TakePreciseCoverage not support now");
 }
 
 DispatchResponse ProfilerImpl::StartPreciseCoverage([[maybe_unused]] const StartPreciseCoverageParams &params)
 {
-    LOG(ERROR, DEBUGGER) << "StartPreciseCoverage not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StartPreciseCoverage not support now");
 }
 
 DispatchResponse ProfilerImpl::StartTypeProfile()
 {
-    LOG(ERROR, DEBUGGER) << "StartTypeProfile not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StartTypeProfile not support now");
 }
 
 DispatchResponse ProfilerImpl::StopTypeProfile()
 {
-    LOG(ERROR, DEBUGGER) << "StopTypeProfile not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("StopTypeProfile not support now");
 }
 
 DispatchResponse ProfilerImpl::TakeTypeProfile()
 {
-    LOG(ERROR, DEBUGGER) << "TakeTypeProfile not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("TakeTypeProfile not support now");
 }
 }  // namespace panda::ecmascript::tooling
