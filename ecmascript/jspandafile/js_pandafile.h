@@ -122,6 +122,10 @@ public:
         return typeSummaryIndex_;
     }
 
+    uint32_t GetFileUniqId() const
+    {
+        return static_cast<uint32_t>(GetPandaFile()->GetUniqId());
+    }
 private:
     void Initialize();
     uint32_t constpoolIndex_ {0};

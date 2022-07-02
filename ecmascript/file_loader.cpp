@@ -273,7 +273,7 @@ void FileLoader::TryLoadSnapshotFile()
 
 bool FileLoader::hasLoaded(const JSPandaFile *jsPandaFile)
 {
-    auto fileHash = jsPandaFile->GetPandaFile()->GetFilenameHash();
+    auto fileHash = jsPandaFile->GetFileUniqId();
     return !(hashToEntryMap_.find(fileHash) == hashToEntryMap_.end());
 }
 
@@ -286,7 +286,7 @@ void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFil
 
     // get main func method
     auto mainFuncMethodId = jsPandaFile->GetMainMethodIndex();
-    auto fileHash = jsPandaFile->GetPandaFile()->GetFilenameHash();
+    auto fileHash = jsPandaFile->GetFileUniqId();
     auto mainEntry = GetAOTFuncEntry(fileHash, mainFuncMethodId);
     // 1 : default para number
     JSMethod *mainMethod =  jsPandaFile->FindMethods(mainFuncMethodId);
