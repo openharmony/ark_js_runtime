@@ -140,6 +140,7 @@ bool DebuggerImpl::NotifySingleStep(const JSPtLocation &location)
         return false;
     }
 
+    singleStepper_.reset();
     LOG(INFO, DEBUGGER) << "StepComplete: pause on current byte_code";
     return true;
 }

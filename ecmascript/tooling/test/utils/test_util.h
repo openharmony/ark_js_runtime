@@ -66,6 +66,12 @@ public:
             }, [] {});
     }
 
+    static bool WaitForStepComplete()
+    {
+        auto predicate = []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::STEP_COMPLETE; };
+        return WaitForEvent(DebugEvent::STEP_COMPLETE, predicate, [] {});
+    }
+
     static bool WaitForException()
     {
         auto predicate = []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::EXCEPTION; };
