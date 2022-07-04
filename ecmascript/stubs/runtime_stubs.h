@@ -50,7 +50,6 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(PushCallNewAndDispatchNative)          \
     V(PushCallIRangeAndDispatchNative)       \
     V(PushCallIThisRangeAndDispatch)         \
-    V(CallOptimizedJSFunction)               \
     V(JSCallWithArgV)                        \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
@@ -62,7 +61,6 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(JSCall)                                \
     V(JSProxyCallInternalWithArgV)           \
     V(JSFunctionEntry)                       \
-    V(CallBuiltinTrampoline)                 \
     V(OptimizedCallOptimized)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \

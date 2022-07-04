@@ -12,31 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-declare function print(str:any):string;
+declare function print(str: any): string;
 
-function foo()
-{
+function foo() {
     return "pass";
 }
 
-function foo1(a:any)
-{
-    return "pass";
+function foo1(a: any) {
+    return a + 1;
 }
 
-function foo2(a:any, b:any)
-{
-    return "pass";
+function foo2(a: any, b: any) {
+    return a + b;
 }
 
-function foo3(a:any, b:any, c:any)
-{
-    return "pass";
+function foo3(a: any, b: any, c: any) {
+    return a + b + c;
 }
 
-function foo4(a:any, b:any, c:any, d:any)
-{
-    return "pass";
+function foo4(a: any, b: any, c: any, d: any) {
+    return a + b + c + d;
 }
 
 print(foo());
