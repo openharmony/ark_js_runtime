@@ -196,6 +196,10 @@ DispatchResponse RuntimeImpl::GetProperties(const GetPropertiesParams &params,
         GetSetIteratorValue(value, outPropertyDesc);
     } else if (value->IsJSPrimitiveRef() && value->IsJSPrimitiveNumber()) {
         GetPrimitiveNumberValue(value, outPropertyDesc);
+    } else if (value->IsJSPrimitiveRef() && value->IsJSPrimitiveString()) {
+        GetPrimitiveStringValue(value, outPropertyDesc);
+    } else if (value->IsJSPrimitiveRef() && value->IsJSPrimitiveBoolean()) {
+        GetPrimitiveBooleanValue(value, outPropertyDesc);
     }
     Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(vm_);
     int32_t length = keys->Length(vm_);
@@ -388,6 +392,22 @@ void RuntimeImpl::GetPrimitiveNumberValue(Local<JSValueRef> value,
 {
     Local<JSValueRef> jsValueRef;
     jsValueRef = value->ToNumber(vm_);
+    SetKeyValue(jsValueRef, outPropertyDesc, "[[PrimitiveValue]]");
+}
+
+void RuntimeImpl::GetPrimitiveStringValue(Local<JSValueRef> value,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRef;
+    jsValueRef = value->ToString(vm_);
+    SetKeyValue(jsValueRef, outPropertyDesc, "[[PrimitiveValue]]");
+}
+
+void RuntimeImpl::GetPrimitiveBooleanValue(Local<JSValueRef> value,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRef;
+    jsValueRef = value->ToBoolean(vm_);
     SetKeyValue(jsValueRef, outPropertyDesc, "[[PrimitiveValue]]");
 }
 

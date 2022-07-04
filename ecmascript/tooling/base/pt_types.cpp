@@ -298,6 +298,12 @@ std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, Local
     if (tagged->IsJSPrimitiveRef() && tagged->IsJSPrimitiveNumber()) {
         return DescriptionForPrimitiveNumber(ecmaVm, tagged);
     }
+    if (tagged->IsJSPrimitiveRef() && tagged->IsJSPrimitiveString()) {
+        return DescriptionForPrimitiveString(ecmaVm, tagged);
+    }
+    if (tagged->IsJSPrimitiveRef() && tagged->IsJSPrimitiveBoolean()) {
+        return DescriptionForPrimitiveBoolean(ecmaVm, tagged);
+    }
     return RemoteObject::ObjectDescription;
 }
 
@@ -376,6 +382,20 @@ std::string ObjectRemoteObject::DescriptionForPrimitiveNumber(const EcmaVM *ecma
 {
     std::string strValue = tagged->ToString(ecmaVm)->ToString();
     std::string description = RemoteObject::JSPrimitiveNumberDescription + "{[[PrimitiveValue]]: " + strValue + "}";
+    return description;
+}
+
+std::string ObjectRemoteObject::DescriptionForPrimitiveString(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+{
+    std::string strValue = tagged->ToString(ecmaVm)->ToString();
+    std::string description = RemoteObject::JSPrimitiveStringDescription + "{[[PrimitiveValue]]: " + strValue + "}";
+    return description;
+}
+
+std::string ObjectRemoteObject::DescriptionForPrimitiveBoolean(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+{
+    std::string strValue = tagged->ToString(ecmaVm)->ToString();
+    std::string description = RemoteObject::JSPrimitiveBooleanDescription + "{[[PrimitiveValue]]: " + strValue + "}";
     return description;
 }
 
