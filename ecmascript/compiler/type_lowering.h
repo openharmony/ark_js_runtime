@@ -16,11 +16,12 @@
 #ifndef ECMASCRIPT_COMPILER_TYPE_LOWERING_H
 #define ECMASCRIPT_COMPILER_TYPE_LOWERING_H
 
-#include "circuit.h"
-#include "bytecode_circuit_builder.h"
-#include "circuit_builder.h"
-#include "circuit_builder-inl.h"
-#include "gate_accessor.h"
+#include "ecmascript/compiler/argument_accessor.h"
+#include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/compiler/circuit_builder-inl.h"
+#include "ecmascript/compiler/gate_accessor.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript::kungfu {

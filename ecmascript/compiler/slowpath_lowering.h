@@ -16,11 +16,12 @@
 #ifndef ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H
 #define ECMASCRIPT_COMPILER_SLOWPATH_LOWERING_H
 
-#include "circuit.h"
-#include "bytecode_circuit_builder.h"
-#include "circuit_builder.h"
-#include "circuit_builder-inl.h"
-#include "gate_accessor.h"
+#include "ecmascript/compiler/argument_accessor.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/compiler/circuit_builder-inl.h"
+#include "ecmascript/compiler/gate_accessor.h"
 
 namespace panda::ecmascript::kungfu {
 // slowPath Lowering Process
@@ -111,8 +112,10 @@ class SlowPathLowering {
 public:
     SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg,
                      bool enableLog)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg),
-          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog) {}
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit),
+          argAcc_(circuit), builder_(circuit, cmpCfg),
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))),
+          enableLog_(enableLog) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
@@ -258,14 +261,15 @@ private:
     void LowerGetResumeMode(GateRef gate);
     void LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerGetUnmappedArgs(GateRef gate, GateRef glue);
-    void LowerCopyRestArgs(GateRef gate, GateRef glue);
+    void LowerGetUnmappedArgs(GateRef gate, GateRef glue, GateRef actualArgc);
+    void LowerCopyRestArgs(GateRef gate, GateRef glue, GateRef actualArgc);
     GateRef LowerCallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     int32_t ComputeCallArgc(GateRef gate, EcmaOpcode op);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
     GateAccessor acc_;
+    ArgumentAccessor argAcc_;
     CircuitBuilder builder_;
     GateRef dependEntry_;
     bool enableLog_ {false};

@@ -243,7 +243,7 @@ public:
         }
     }
 
-    void SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
+    void SaveAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
     {
         hashToEntryMap_[hash][methodId] = funcEntry;
     }
@@ -260,6 +260,8 @@ public:
 
     void UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
     bool hasLoaded(const JSPandaFile *jsPandaFile);
+    void SetAOTFuncEntry(const JSPandaFile *jsPandaFile, const JSHandle<JSFunction> &func);
+    void SetAOTFuncEntryForLiteral(const JSPandaFile *jsPandaFile, const JSHandle<TaggedArray> &obj);
     void TryLoadSnapshotFile();
     kungfu::LLVMStackMapParser* GetStackMapParser();
 private:

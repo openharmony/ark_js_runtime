@@ -12,28 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 declare function print(str:any):string;
+
+function foo1(a:number, b:number)
+{
+    return a + b;
+}
+
+var obj = {
+    fun (a:number, b:number) { return a + b; },
+};
+
 class Obj1 {
-    value:number;
-    constructor(value:number) {
-        this.value = value;
-    }
-    fun(s:number):number {
-        return 1 + this.value + s;
+    fun(a:number, b:number):number {
+        return a + b;
     }
 }
 
-class Obj2 {
-    fun():void {
-        print("Hello World");
-    }
+function foo2(a:number, b:number)
+{
+    return a + b;
 }
 
-var obj1 = new Obj1(1);
-print(obj1.value);
-print(obj1.fun(2));
-var obj2 = new Obj2();
-obj2.fun();
+var obj1 = new Obj1();
 
-print(obj1 instanceof Object);
+print(foo1(1, 1));
+print(foo2(2, 2));
+print(obj.fun(3, 3));
+print(obj1.fun(4, 4));
