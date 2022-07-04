@@ -1688,7 +1688,8 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
     Chunk chunk(thread->GetNativeAreaAllocator());
     RegExpParser parser = RegExpParser(&chunk);
     RegExpParserCache *regExpParserCache = thread->GetEcmaVM()->GetRegExpParserCache();
-    auto getCache = regExpParserCache->GetCache(*patternStrHandle, flagsBits);
+    CVector<CString> groupName;
+    auto getCache = regExpParserCache->GetCache(*patternStrHandle, flagsBits, groupName);
     if (getCache.first == JSTaggedValue::Hole()) {
         parser.Init(const_cast<char *>(reinterpret_cast<const char *>(patternStdStr.c_str())), patternStdStr.size(),
                     flagsBits);
@@ -1698,13 +1699,13 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
                 factory->GetJSError(base::ErrorType::SYNTAX_ERROR, parser.GetErrorMsg().c_str());
             THROW_NEW_ERROR_AND_RETURN_VALUE(thread, syntaxError.GetTaggedValue(), JSTaggedValue::Exception());
         }
+        groupName = parser.GetGroupNames();
     }
     JSHandle<JSRegExp> regexp(thread, JSRegExp::Cast(obj->GetTaggedObject()));
     // 11. Set the value of obj’s [[OriginalSource]] internal slot to P.
     regexp->SetOriginalSource(thread, patternStrHandle.GetTaggedValue());
     // 12. Set the value of obj’s [[OriginalFlags]] internal slot to F.
     regexp->SetOriginalFlags(thread, JSTaggedValue(flagsBits));
-    auto groupName = parser.GetGroupNames();
     if (!groupName.empty()) {
         JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(groupName.size());
         for (size_t i = 0; i < groupName.size(); ++i) {
@@ -1718,7 +1719,7 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
         auto bufferSize = parser.GetOriginBufferSize();
         auto buffer = parser.GetOriginBuffer();
         factory->NewJSRegExpByteCodeData(regexp, buffer, bufferSize);
-        regExpParserCache->SetCache(*patternStrHandle, flagsBits, regexp->GetByteCodeBuffer(), bufferSize);
+        regExpParserCache->SetCache(*patternStrHandle, flagsBits, regexp->GetByteCodeBuffer(), bufferSize, groupName);
     } else {
         regexp->SetByteCodeBuffer(thread, getCache.first);
         regexp->SetLength(static_cast<uint32_t>(getCache.second));
