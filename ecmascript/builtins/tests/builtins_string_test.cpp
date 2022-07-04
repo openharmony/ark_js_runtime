@@ -73,8 +73,9 @@ JSTaggedValue CreateBuiltinsStringRegExpObjByPatternAndFlags(JSThread *thread, c
     ecmaRuntimeCallInfo->SetCallArg(0, pattern.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, flags.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRegExp::RegExpConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRegExp::RegExpConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -92,8 +93,8 @@ HWTEST_F_L0(BuiltinsStringTest, StringConstructor1)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, string2.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::StringConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::StringConstructor(ecmaRuntimeCallInfo);
     JSTaggedValue value(static_cast<JSTaggedType>(result.GetRawData()));
     ASSERT_TRUE(value.IsECMAObject());
     JSHandle<JSPrimitiveRef> ref(thread, JSPrimitiveRef::Cast(value.GetTaggedObject()));
@@ -118,8 +119,8 @@ HWTEST_F_L0(BuiltinsStringTest, fromCharCode1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(arg2));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(arg3));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::FromCharCode(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::FromCharCode(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSTaggedValue value(static_cast<JSTaggedType>(result.GetRawData()));
     JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value.GetTaggedObject()));
@@ -144,8 +145,8 @@ HWTEST_F_L0(BuiltinsStringTest, fromCodePoint1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(arg2));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(arg3));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::FromCodePoint(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::FromCodePoint(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
@@ -163,8 +164,8 @@ HWTEST_F_L0(BuiltinsStringTest, charAt1)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(5)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("c").GetTaggedValue();
@@ -182,8 +183,8 @@ HWTEST_F_L0(BuiltinsStringTest, charAt2)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromUtf8("三").GetTaggedValue();
@@ -201,8 +202,8 @@ HWTEST_F_L0(BuiltinsStringTest, charAt3)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->GetEmptyString().GetTaggedValue();
@@ -220,8 +221,8 @@ HWTEST_F_L0(BuiltinsStringTest, charCodeAt1)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CharCodeAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CharCodeAt(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(65).GetRawData());
 }
@@ -237,8 +238,8 @@ HWTEST_F_L0(BuiltinsStringTest, charCodeAt2)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CharCodeAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CharCodeAt(ecmaRuntimeCallInfo);
 
     JSTaggedValue test = BuiltinsString::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), test.GetRawData());
@@ -255,8 +256,8 @@ HWTEST_F_L0(BuiltinsStringTest, codePointAt1)
     ecmaRuntimeCallInfo->SetThis(thisVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::CodePointAt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::CodePointAt(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(66).GetRawData());
 }
@@ -277,8 +278,8 @@ HWTEST_F_L0(BuiltinsStringTest, concat1)
     ecmaRuntimeCallInfo->SetCallArg(1, val2.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, val3.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Concat(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Concat(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("abcd").GetTaggedValue();
@@ -297,8 +298,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1).GetRawData());
 }
@@ -316,8 +317,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof2)
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(4).GetRawData());
 }
@@ -334,8 +335,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof3)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::IndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(-1).GetRawData());
 }
@@ -352,8 +353,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(7).GetRawData());
 }
@@ -370,8 +371,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf2)
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1).GetRawData());
 }
@@ -388,8 +389,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf3)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LastIndexOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(-1).GetRawData());
 }
@@ -406,8 +407,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes2)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -425,8 +426,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes3)
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
 }
@@ -443,8 +444,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes4)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Includes(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -461,8 +462,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -479,8 +480,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith2)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
 }
@@ -498,8 +499,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith3)
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(10)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::StartsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -516,8 +517,8 @@ HWTEST_F_L0(BuiltinsStringTest, endsWith1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -534,8 +535,8 @@ HWTEST_F_L0(BuiltinsStringTest, endsWith2)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
 }
@@ -553,8 +554,8 @@ HWTEST_F_L0(BuiltinsStringTest, endsWith3)
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(19)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::EndsWith(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 }
@@ -570,8 +571,8 @@ HWTEST_F_L0(BuiltinsStringTest, toLocaleLowerCase2)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(this_str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::ToLocaleLowerCase(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::ToLocaleLowerCase(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> result_handle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromUtf8("有abc").GetTaggedValue();
@@ -588,8 +589,8 @@ HWTEST_F_L0(BuiltinsStringTest, toLowerCase1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::ToLowerCase(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::ToLowerCase(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> test = factory->NewFromASCII("abc");
@@ -606,8 +607,8 @@ HWTEST_F_L0(BuiltinsStringTest, toUpperCase1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::ToUpperCase(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::ToUpperCase(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
@@ -626,8 +627,8 @@ HWTEST_F_L0(BuiltinsStringTest, localecompare1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(-1).GetRawData());
 }
@@ -644,8 +645,8 @@ HWTEST_F_L0(BuiltinsStringTest, localecompare2)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(0).GetRawData());
 }
@@ -662,8 +663,8 @@ HWTEST_F_L0(BuiltinsStringTest, localecompare3)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::LocaleCompare(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1).GetRawData());
 }
@@ -681,8 +682,8 @@ HWTEST_F_L0(BuiltinsStringTest, normalize1)
     ecmaRuntimeCallInfo->SetThis(this_str.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, val.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Normalize(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Normalize(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> result_handle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("abc").GetTaggedValue();
@@ -700,8 +701,8 @@ HWTEST_F_L0(BuiltinsStringTest, repeat1)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(5)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Repeat(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Repeat(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("abcabcabcabcabc").GetTaggedValue();
@@ -720,8 +721,8 @@ HWTEST_F_L0(BuiltinsStringTest, slice1)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(4)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(-2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("morning is upon u").GetTaggedValue();
@@ -739,8 +740,8 @@ HWTEST_F_L0(BuiltinsStringTest, slice2)
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(12)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("is upon us.").GetTaggedValue();
@@ -759,8 +760,8 @@ HWTEST_F_L0(BuiltinsStringTest, substring1)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(3)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(-3)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("Moz").GetTaggedValue();
@@ -779,8 +780,8 @@ HWTEST_F_L0(BuiltinsStringTest, substring2)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(7)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(4)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("lla").GetTaggedValue();
@@ -797,8 +798,8 @@ HWTEST_F_L0(BuiltinsStringTest, trim1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(thisStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("Hello world!").GetTaggedValue();
@@ -820,8 +821,8 @@ HWTEST_F_L0(BuiltinsStringTest, trim2)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = factory->NewFromASCII("Hello world!").GetTaggedValue();
@@ -843,8 +844,8 @@ HWTEST_F_L0(BuiltinsStringTest, ToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::ToString(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = JSTaggedValue(*thisStr);
@@ -866,8 +867,8 @@ HWTEST_F_L0(BuiltinsStringTest, ValueOf)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::ValueOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::ValueOf(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSTaggedValue test = JSTaggedValue(*thisStr);
@@ -915,8 +916,8 @@ HWTEST_F_L0(BuiltinsStringTest, Raw)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(5)));
     ecmaRuntimeCallInfo->SetCallArg(2, javascript.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Raw(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Raw(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(reinterpret_cast<EcmaString *>(result.GetRawData()), *test));
 }
@@ -935,8 +936,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ecmaRuntimeCallInfo->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, replaceStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsString());
@@ -951,8 +952,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ecmaRuntimeCallInfo1->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(1, replaceStr1.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsString::Replace(ecmaRuntimeCallInfo1.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsString::Replace(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString1(thread, result1);
@@ -968,8 +969,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ecmaRuntimeCallInfo2->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, replaceStr2.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsString::Replace(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsString::Replace(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString2(thread, result2);
@@ -985,8 +986,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ecmaRuntimeCallInfo3->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo3->SetCallArg(1, replaceStr3.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result3 = BuiltinsString::Replace(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result3 = BuiltinsString::Replace(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString3(thread, result3);
@@ -1003,8 +1004,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ecmaRuntimeCallInfo4->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo4->SetCallArg(1, replaceStr4.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    JSTaggedValue result4 = BuiltinsString::Replace(ecmaRuntimeCallInfo4.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    JSTaggedValue result4 = BuiltinsString::Replace(ecmaRuntimeCallInfo4);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString4(thread, result4);
@@ -1026,8 +1027,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ecmaRuntimeCallInfo->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, replaceStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsString());
@@ -1043,8 +1044,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ecmaRuntimeCallInfo2->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, replaceStr2.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsString::Replace(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsString::Replace(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString2(thread, result2);
@@ -1061,8 +1062,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ecmaRuntimeCallInfo3->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo3->SetCallArg(1, replaceStr3.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result3 = BuiltinsString::Replace(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result3 = BuiltinsString::Replace(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> resultString3(thread, result3);
@@ -1079,8 +1080,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ecmaRuntimeCallInfo4->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo4->SetCallArg(1, replaceStr4.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    JSTaggedValue result4 = BuiltinsString::Replace(ecmaRuntimeCallInfo4.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    JSTaggedValue result4 = BuiltinsString::Replace(ecmaRuntimeCallInfo4);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result4.IsString());
@@ -1103,8 +1104,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace3)
     ecmaRuntimeCallInfo->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, replaceStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(reinterpret_cast<EcmaString *>(result.GetRawData()), *expected));
@@ -1133,8 +1134,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace4)
     ecmaRuntimeCallInfo->SetCallArg(0, searchStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, replaceStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Replace(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(reinterpret_cast<EcmaString *>(result.GetRawData()), *expected));
@@ -1157,8 +1158,8 @@ HWTEST_F_L0(BuiltinsStringTest, Split)
     ecmaRuntimeCallInfo->SetCallArg(0, separatorStr.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(3)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Split(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Split(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSArray> resultArray(thread, reinterpret_cast<JSArray *>(result.GetRawData()));
@@ -1196,8 +1197,8 @@ HWTEST_F_L0(BuiltinsStringTest, Split2)
     ecmaRuntimeCallInfo->SetCallArg(0, separatorObj.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(3)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsString::Split(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsString::Split(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSArray> resultArray(thread, result);

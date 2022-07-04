@@ -1503,8 +1503,6 @@ DEF_RUNTIME_STUBS(ThrowDerivedMustReturnException)
 DEF_RUNTIME_STUBS(CallNative)
 {
     RUNTIME_STUBS_HEADER(CallNative);
-    JSTaggedValue numArgs = GetArg(argv, argc, 0);
-
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     auto state = reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
     // leave frame prev is prevSp now, change it to current sp
@@ -1514,9 +1512,9 @@ DEF_RUNTIME_STUBS(CallNative)
     frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
 
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
+    EcmaRuntimeCallInfo *ecmaRuntimeCallInfo = reinterpret_cast<EcmaRuntimeCallInfo *>(sp);
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
-        const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+        const_cast<void *>(method->GetNativePointer()))(ecmaRuntimeCallInfo);
     frame->callsiteFp = cachedFpValue;
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
     return retValue.GetRawData();

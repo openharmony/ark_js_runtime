@@ -104,8 +104,8 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeApply(EcmaRuntimeCallInfo *argv
     // 2. If argArray is null or undefined, then
     if (GetCallArg(argv, 1)->IsUndefined()) {  // null will also get undefined
         // a. Return Call(func, thisArg).
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, 0);
-        return JSFunction::Call(&info);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, 0);
+        return JSFunction::Call(info);
     }
     // 3. Let argList be CreateListFromArrayLike(argArray).
     JSHandle<JSTaggedValue> arrayObj = GetCallArg(argv, 1);
@@ -115,16 +115,18 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeApply(EcmaRuntimeCallInfo *argv
             JSObject::CreateListFromArrayLike(thread, arrayObj));
         // 4. ReturnIfAbrupt(argList).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        const size_t argsLength = argList->GetLength();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-        info.SetCallArg(argsLength, argList);
-        return JSFunction::Call(&info);
+        const int32_t argsLength = argList->GetLength();
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(argsLength, argList);
+        return JSFunction::Call(info);
     }
     // 6. Return Call(func, thisArg, argList).
-    const size_t argsLength = argumentsList.second;
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-    info.SetCallArg(argsLength, argumentsList.first);
-    return JSFunction::Call(&info);
+    const int32_t argsLength = argumentsList.second;
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, argumentsList.first);
+    return JSFunction::Call(info);
 }
 
 // ecma 19.2.3.2 Function.prototype.bind (thisArg , ...args)
@@ -243,9 +245,10 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeCall(EcmaRuntimeCallInfo *argv)
     //    starting with the second argument, append each argument as the last element of argList.
     // 5. Return Call(func, thisArg, argList).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-    info.SetCallArg(argsLength, 0, argv, 1);
-    return JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, 0, argv, 1);
+    return JSFunction::Call(info);
 }
 
 // ecma 19.2.3.5 Function.prototype.toString ()

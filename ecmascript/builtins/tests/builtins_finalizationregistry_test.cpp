@@ -89,8 +89,10 @@ JSTaggedValue CreateFinalizationRegistryConstructor(JSThread *thread)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, handleFunc.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    return JSTaggedValue(BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo.get()));
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue res = BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
+    return res;
 }
 
 // new FinalizationRegistry (cleanupCallback)
@@ -107,8 +109,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, FinalizationRegistryConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, handleFunc.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
 }
 
@@ -133,8 +135,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register0)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
     ASSERT_EQ(testValue, 0);
 }
 
@@ -160,8 +162,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
     ecmaRuntimeCallInfo->SetCallArg(2, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
     ASSERT_EQ(testValue, 0);
 }
 
@@ -190,8 +192,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register2)
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);
@@ -232,8 +234,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register3)
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -243,8 +245,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register3)
         ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo1->SetCallArg(2, target1);
 
-        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1);
         TestHelper::TearDownFrame(thread, prev1);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);
@@ -286,8 +288,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register4)
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -297,8 +299,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register4)
         ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo1->SetCallArg(2, target1);
 
-        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1);
         TestHelper::TearDownFrame(thread, prev1);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);
@@ -338,8 +340,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register5)
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -349,8 +351,8 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register5)
         ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo1->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1);
         TestHelper::TearDownFrame(thread, prev1);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);
@@ -383,16 +385,17 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
     ecmaRuntimeCallInfo->SetCallArg(2, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsfinalizationRegistry.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1);
     ASSERT_EQ(testValue, 0);
 }
 
@@ -420,15 +423,15 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister2)
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
         ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo);
 
         auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo1->SetThis(jsfinalizationRegistry.GetTaggedValue());
         ecmaRuntimeCallInfo1->SetCallArg(0, target);
 
-        BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1.get());
+        BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1);
         TestHelper::TearDownFrame(thread, prev);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);

@@ -676,9 +676,10 @@ bool JSObject::CallSetter(JSThread *thread, const AccessorData &accessor, const 
 
     JSHandle<JSTaggedValue> func(thread, setter);
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 1);
-    info.SetCallArg(value.GetTaggedValue());
-    JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 1);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(value.GetTaggedValue());
+    JSFunction::Call(info);
 
     // 10. ReturnIfAbrupt(setterResult).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
@@ -697,8 +698,8 @@ JSTaggedValue JSObject::CallGetter(JSThread *thread, const AccessorData *accesso
 
     JSHandle<JSTaggedValue> func(thread, getter);
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 0);
-    JSTaggedValue res = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 0);
+    JSTaggedValue res = JSFunction::Call(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return res;
 }
@@ -1485,10 +1486,11 @@ bool JSObject::InstanceOf(JSThread *thread, const JSHandle<JSTaggedValue> &objec
     if (!instOfHandler->IsUndefined()) {
         // a. Return ! ToBoolean(? Call(instOfHandler, target, «object»)).
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, instOfHandler, target, undefined, 1);
-        info.SetCallArg(object.GetTaggedValue());
-        JSTaggedValue tagged = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+        info->SetCallArg(object.GetTaggedValue());
+        JSTaggedValue tagged = JSFunction::Call(info);
         return tagged.ToBoolean();
     }
 

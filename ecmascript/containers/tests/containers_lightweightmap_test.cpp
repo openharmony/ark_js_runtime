@@ -84,8 +84,8 @@ protected:
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(
             0, JSTaggedValue(static_cast<int>(ContainerTag::LightWeightMap))); // 0 means the argument
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         return result;
@@ -100,8 +100,8 @@ protected:
         objCallInfo->SetNewTarget(newTarget.GetTaggedValue());
         objCallInfo->SetThis(JSTaggedValue::Undefined());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::LightWeightMapConstructor(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersLightWeightMap::LightWeightMapConstructor(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPILightWeightMap> map(thread, result);
         return map;
@@ -118,8 +118,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, LightWeightMapConstructor)
     objCallInfo->SetNewTarget(newTarget.GetTaggedValue());
     objCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-    JSTaggedValue result = ContainersLightWeightMap::LightWeightMapConstructor(objCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+    JSTaggedValue result = ContainersLightWeightMap::LightWeightMapConstructor(objCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsJSAPILightWeightMap());
@@ -140,8 +140,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAndGet)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i + 1));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
                                          JSHandle<JSTaggedValue>(thread, JSTaggedValue::True())));
         TestHelper::TearDownFrame(thread, prev);
@@ -165,8 +165,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAndGet)
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = lightWeightMap->GetLength();
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
@@ -180,8 +180,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAndGet)
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i + 1));
     }
@@ -196,8 +196,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAndGet)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, value.GetTaggedValue());
     }
@@ -214,8 +214,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Remove)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i + 1));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         EXPECT_EQ(result, JSTaggedValue::True());
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = lightWeightMap->GetLength();
@@ -228,8 +228,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Remove)
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(NODE_NUMBERS / 2));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue rvalue = ContainersLightWeightMap::Remove(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue rvalue = ContainersLightWeightMap::Remove(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(rvalue, JSTaggedValue(NODE_NUMBERS / 2  + 1));
         uint32_t len = lightWeightMap->GetLength();
@@ -241,8 +241,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Remove)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (NODE_NUMBERS / 2 == i) {
             EXPECT_EQ(keyResult, JSTaggedValue::False());
@@ -253,8 +253,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Remove)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i + 1));
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (NODE_NUMBERS / 2 == i) {
             EXPECT_EQ(valueResult, JSTaggedValue::False());
@@ -275,8 +275,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Clear)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = lightWeightMap->GetLength();
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
@@ -289,8 +289,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, Clear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersLightWeightMap::Clear(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersLightWeightMap::Clear(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t len = lightWeightMap->GetLength();
         uint32_t empty = 0;
@@ -309,8 +309,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, ToString)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = lightWeightMap->GetLength();
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
@@ -324,8 +324,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, ToString)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue res = ContainersLightWeightMap::ToString(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue res = ContainersLightWeightMap::ToString(callInfo);
         JSHandle<JSTaggedValue> resHandle(thread, res);
         TestHelper::TearDownFrame(thread, prev);
         std::string myString("0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:7");
@@ -346,8 +346,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAll)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = oldLightWeightMap->GetLength();
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
@@ -362,8 +362,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAll)
         callInfo->SetThis(LightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, oldLightWeightMap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersLightWeightMap::SetAll(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersLightWeightMap::SetAll(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = LightWeightMap->GetLength();
         EXPECT_EQ(length, NODE_NUMBERS);
@@ -374,13 +374,13 @@ HWTEST_F_L0(ContainersLightWeightMapTest, SetAll)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(LightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(keyResult, JSTaggedValue::True());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(valueResult, JSTaggedValue::True());
     }
@@ -397,8 +397,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t length = lightWeightMap->GetLength();
         EXPECT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, result),
@@ -411,8 +411,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
     callInfo->SetFunction(JSTaggedValue::Undefined());
     callInfo->SetThis(lightWeightMap.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-    JSHandle<JSTaggedValue> iterKeys(thread, ContainersLightWeightMap::Keys(callInfo.get()));
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+    JSHandle<JSTaggedValue> iterKeys(thread, ContainersLightWeightMap::Keys(callInfo));
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(iterKeys->IsJSAPILightWeightMapIterator());
     for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
@@ -420,8 +420,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPILightWeightMapIterator::Next(callInfo.get()));
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPILightWeightMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSTaggedValue> keyHandle = JSIterator::IteratorValue(thread, result);
 
@@ -430,8 +430,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, keyHandle.GetTaggedValue());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(keyResult, JSTaggedValue::True());
     }
@@ -440,8 +440,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
     callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     callInfo->SetFunction(JSTaggedValue::Undefined());
     callInfo->SetThis(lightWeightMap.GetTaggedValue());
-    prev = TestHelper::SetupFrame(thread, callInfo.get());
-    JSHandle<JSTaggedValue> iterValues(thread, ContainersLightWeightMap::Values(callInfo.get()));
+    prev = TestHelper::SetupFrame(thread, callInfo);
+    JSHandle<JSTaggedValue> iterValues(thread, ContainersLightWeightMap::Values(callInfo));
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(iterValues->IsJSAPILightWeightMapIterator());
 
@@ -450,8 +450,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterValues.GetTaggedValue());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPILightWeightMapIterator::Next(callInfo.get()));
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPILightWeightMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSTaggedValue> ValueHandle = JSIterator::IteratorValue(thread, result);
 
@@ -460,8 +460,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, ValueHandle.GetTaggedValue());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(valueResult, JSTaggedValue::True());
     }
@@ -469,8 +469,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
     callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     callInfo->SetFunction(JSTaggedValue::Undefined());
     callInfo->SetThis(lightWeightMap.GetTaggedValue());
-    prev = TestHelper::SetupFrame(thread, callInfo.get());
-    JSHandle<JSTaggedValue> iter(thread, ContainersLightWeightMap::Entries(callInfo.get()));
+    prev = TestHelper::SetupFrame(thread, callInfo);
+    JSHandle<JSTaggedValue> iter(thread, ContainersLightWeightMap::Entries(callInfo));
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(iter->IsJSAPILightWeightMapIterator());
 
@@ -482,8 +482,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iter.GetTaggedValue());
 
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPILightWeightMapIterator::Next(callInfo.get()));
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPILightWeightMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         entries.Update(JSIterator::IteratorValue(thread, result).GetTaggedValue());
 
@@ -492,8 +492,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(entriesKey));
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue keyResult = ContainersLightWeightMap::HasKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(keyResult, JSTaggedValue::True());
 
@@ -502,8 +502,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(lightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(entriesValue));
-        prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo.get());
+        prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue valueResult = ContainersLightWeightMap::HasValue(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(valueResult, JSTaggedValue::True());
     }
@@ -521,8 +521,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, ForEach)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         uint32_t len = lightWeightMap->GetLength();
         EXPECT_EQ(result, JSTaggedValue::True());
@@ -539,8 +539,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, ForEach)
         callInfo->SetCallArg(0, func.GetTaggedValue());
         callInfo->SetCallArg(1, newLightWeightMap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersLightWeightMap::ForEach(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersLightWeightMap::ForEach(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
     EXPECT_EQ(newLightWeightMap->GetLength(), NODE_NUMBERS);
@@ -553,8 +553,8 @@ HWTEST_F_L0(ContainersLightWeightMapTest, ForEach)
         callInfo->SetThis(newLightWeightMap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersLightWeightMap::HasKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersLightWeightMap::HasKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
     }

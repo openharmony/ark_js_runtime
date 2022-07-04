@@ -177,9 +177,9 @@ JSTaggedValue BuiltinsDate::ToJSON(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("toISOString"));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, objectHandle, undefined, 0);
-    return JSFunction::Invoke(&info, calleeKey);
+    return JSFunction::Invoke(info, calleeKey);
 }
 
 // 20.4.4.44

@@ -198,10 +198,11 @@ JSTaggedValue ContainersDeque::ForEach(EcmaRuntimeCallInfo *argv)
     uint32_t index = 0;
     while (first != last) {
         JSTaggedValue kValue = deque->Get(index);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, 3); // 3:three args
-        info.SetCallArg(kValue, JSTaggedValue(index), thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(kValue, JSTaggedValue(index), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         ASSERT(capacity != 0);
         first = (first + 1) % capacity;

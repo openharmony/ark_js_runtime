@@ -65,8 +65,8 @@ protected:
         ecmaRuntimeCallInfo->SetThis(value.GetTaggedValue());
         ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::Stack)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = containers::ContainersPrivate::Load(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = containers::ContainersPrivate::Load(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSTaggedValue> constructor(thread, result);
@@ -104,8 +104,8 @@ HWTEST_F_L0(JSAPIStackIteratorTest, Next)
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(stackIterator.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = JSAPIStackIterator::Next(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = JSAPIStackIterator::Next(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSObject> resultObj(thread, result);

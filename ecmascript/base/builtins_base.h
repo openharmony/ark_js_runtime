@@ -49,7 +49,7 @@ public:
         return msg->GetNewTarget();
     }
 
-    static inline JSHandle<JSTaggedValue> GetCallArg(EcmaRuntimeCallInfo *msg, uint32_t position)
+    static inline JSHandle<JSTaggedValue> GetCallArg(EcmaRuntimeCallInfo *msg, int32_t position)
     {
         if (position >= msg->GetArgsNumber()) {
             JSThread *thread = msg->GetThread();

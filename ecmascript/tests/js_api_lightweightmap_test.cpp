@@ -78,9 +78,10 @@ protected:
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWeightMap)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
+        auto prev = TestHelper::SetupFrame(thread, objCallInfo);
         JSHandle<JSTaggedValue> constructor =
-            JSHandle<JSTaggedValue>(thread, containers::ContainersPrivate::Load(objCallInfo.get()));
+            JSHandle<JSTaggedValue>(thread, containers::ContainersPrivate::Load(objCallInfo));
+        TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPILightWeightMap> lightWeightMap = JSHandle<JSAPILightWeightMap>::
             Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
         JSHandle<JSTaggedValue> hashArray = JSHandle<JSTaggedValue>(factory->NewTaggedArray(DEFAULT_SIZE));

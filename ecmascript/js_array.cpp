@@ -156,10 +156,11 @@ JSTaggedValue JSArray::ArraySpeciesCreate(JSThread *thread, const JSHandle<JSObj
     }
     // Return Construct(C, «length»).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 1);
-    info.SetCallArg(JSTaggedValue(arrayLength));
-    JSTaggedValue result = JSFunction::Construct(&info);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+    info->SetCallArg(JSTaggedValue(arrayLength));
+    JSTaggedValue result = JSFunction::Construct(info);
 
     // NOTEIf originalArray was created using the standard built-in Array constructor for
     // a Realm that is not the Realm of the running execution context, then a new Array is

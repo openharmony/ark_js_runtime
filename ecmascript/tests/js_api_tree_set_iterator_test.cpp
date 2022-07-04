@@ -67,8 +67,8 @@ protected:
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::TreeSet)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSTaggedValue> constructor(thread, result);
@@ -212,8 +212,8 @@ HWTEST_F_L0(JSAPITreeSetIteratorTest, KEY_Next)
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(treeSetIterator.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = JSAPITreeSetIterator::Next(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = JSAPITreeSetIterator::Next(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSObject> resultObj(thread, result);
@@ -247,8 +247,8 @@ HWTEST_F_L0(JSAPITreeSetIteratorTest, KEY_AND_VALUE_Next)
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(treeSetIterator.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = JSAPITreeSetIterator::Next(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = JSAPITreeSetIterator::Next(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSObject> resultObj(thread, result);

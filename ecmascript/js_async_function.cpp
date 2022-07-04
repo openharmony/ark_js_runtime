@@ -49,10 +49,11 @@ void JSAsyncFunction::AsyncFunctionAwait(JSThread *thread, const JSHandle<JSAsyn
     JSHandle<JSTaggedValue> thisArg = globalConst->GetHandledUndefined();
 
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, thisArg, undefined, 1);
-    info.SetCallArg(value.GetTaggedValue());
-    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(&info);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(value.GetTaggedValue());
+    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(info);
 
     // 4.Let onFulfilled be a new built-in function object as defined in AsyncFunction Awaited Fulfilled.
     JSHandle<JSAsyncAwaitStatusFunction> fulFunc = factory->NewJSAsyncAwaitStatusFunction(

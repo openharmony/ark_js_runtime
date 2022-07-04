@@ -70,8 +70,9 @@ JSTypedArray *CreateTypedArray(JSThread *thread, const JSHandle<TaggedArray> &ar
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue(*globalObject));
     ecmaRuntimeCallInfo1->SetCallArg(0, jsarray.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = TypedArray::Int8ArrayConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = TypedArray::Int8ArrayConstructor(ecmaRuntimeCallInfo1);
+    TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsECMAObject());
     JSTypedArray *int8arr = JSTypedArray::Cast(reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -95,8 +96,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Add_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(5)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
 }
@@ -115,8 +116,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Add_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 0);
 }
@@ -135,8 +136,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Add_3)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 0);
 
@@ -147,8 +148,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Add_3)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    JSTaggedValue results = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    JSTaggedValue results = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(results.GetInt(), 2);
 }
@@ -170,8 +171,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, And_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Add(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
 }
@@ -193,8 +194,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, And_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::And(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::And(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
     
@@ -205,8 +206,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, And_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 2);
 }
@@ -229,8 +230,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, CompareExchange_1)
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(5)));
     ecmaRuntimeCallInfo->SetCallArg(3, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::CompareExchange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::CompareExchange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
 }
@@ -253,8 +254,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, CompareExchange_2)
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(5)));
     ecmaRuntimeCallInfo->SetCallArg(3, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::CompareExchange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::CompareExchange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
     
@@ -265,8 +266,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, CompareExchange_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 2);
 }
@@ -288,8 +289,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Exchange_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(6)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Exchange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Exchange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 3);
 }
@@ -311,8 +312,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Exchange_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(6)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Exchange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Exchange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 3);
     
@@ -323,8 +324,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Exchange_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 6);
 }
@@ -346,8 +347,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Or_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Or(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Or(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
 }
@@ -369,8 +370,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Or_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Or(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Or(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
     
@@ -381,8 +382,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Or_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
 }
@@ -404,8 +405,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Sub_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Sub(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Sub(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
 }
@@ -427,8 +428,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Sub_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Sub(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Sub(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
     
@@ -438,8 +439,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Sub_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 3);
 }
@@ -461,8 +462,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Xor_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Xor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Xor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
 }
@@ -484,8 +485,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Xor_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
     
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Xor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Xor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 7);
     
@@ -495,8 +496,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Xor_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 5);
 }
@@ -508,8 +509,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, IsLockFree_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.ToBoolean());
 }
@@ -521,8 +522,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, IsLockFree_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.ToBoolean());
 }
@@ -534,8 +535,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, IsLockFree_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(4)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.ToBoolean());
 }
@@ -547,8 +548,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, IsLockFree_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-3)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_FALSE(result.ToBoolean());
 }
@@ -560,8 +561,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, IsLockFree_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(8)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::IsLockFree(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.ToBoolean());
 }
@@ -584,8 +585,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Store_1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Store(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Store(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetDouble(), 2);
 }
@@ -607,8 +608,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Store_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsAtomics::Store(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsAtomics::Store(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetDouble(), 2);
 
@@ -618,8 +619,8 @@ HWTEST_F_L0(BuiltinsAtomicsTest, Store_2)
     ecmaRuntimeCallInfos->SetCallArg(0, obj.GetTaggedValue());
     ecmaRuntimeCallInfos->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos.get());
-    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfos);
+    result = BuiltinsAtomics::Load(ecmaRuntimeCallInfos);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetInt(), 2);
 }

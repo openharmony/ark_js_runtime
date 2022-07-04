@@ -147,9 +147,9 @@ HWTEST_F_L0(JSFunctionTest, Invoke)
     JSHandle<JSTaggedValue> calleeValue(calleeFunc);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(callee), calleeKey, calleeValue);
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, callee, undefined, 1);
-    info.SetCallArg(JSTaggedValue(1));
-    JSTaggedValue res = JSFunction::Invoke(&info, calleeKey);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, callee, undefined, 1);
+    info->SetCallArg(JSTaggedValue(1));
+    JSTaggedValue res = JSFunction::Invoke(info, calleeKey);
 
     JSTaggedValue ruler = BuiltinsBase::GetTaggedBoolean(true);
     EXPECT_EQ(res.GetRawData(), ruler.GetRawData());

@@ -105,8 +105,8 @@ protected:
         objCallInfo->SetFunction(JSTaggedValue::Undefined());
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(ContainerTag::Vector)));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         return result;
@@ -122,8 +122,8 @@ protected:
         objCallInfo->SetThis(JSTaggedValue::Undefined());
         objCallInfo->SetCallArg(0, compareHandle.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersVector::VectorConstructor(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersVector::VectorConstructor(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPIVector> vector(thread, result);
         return vector;
@@ -142,8 +142,8 @@ HWTEST_F_L0(ContainersVectorTest, VectorConstructor)
     objCallInfo->SetNewTarget(newTarget.GetTaggedValue());
     objCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-    JSTaggedValue result = ContainersVector::VectorConstructor(objCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+    JSTaggedValue result = ContainersVector::VectorConstructor(objCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.IsJSAPIVector());
     
@@ -166,8 +166,8 @@ HWTEST_F_L0(ContainersVectorTest, AddAndHas)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -187,8 +187,8 @@ HWTEST_F_L0(ContainersVectorTest, AddAndHas)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), ELEMENT_NUMS + i + 1);
@@ -202,8 +202,8 @@ HWTEST_F_L0(ContainersVectorTest, AddAndHas)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::Insert(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::Insert(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(vector->GetSize(), ELEMENT_NUMS * 2 + i + 1);
     }
@@ -215,8 +215,8 @@ HWTEST_F_L0(ContainersVectorTest, AddAndHas)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Has(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Has(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
     }
@@ -229,8 +229,8 @@ HWTEST_F_L0(ContainersVectorTest, AddAndHas)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Has(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Has(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
     }
@@ -247,12 +247,12 @@ HWTEST_F_L0(ContainersVectorTest, GetFirstValueAndGetLastValue)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         // double
-        result = ContainersVector::Add(callInfo.get());
+        result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), 2 * (i + 1));
@@ -266,8 +266,8 @@ HWTEST_F_L0(ContainersVectorTest, GetFirstValueAndGetLastValue)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetIndexOf(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetIndexOf(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(2 * i));
     }
@@ -278,8 +278,8 @@ HWTEST_F_L0(ContainersVectorTest, GetFirstValueAndGetLastValue)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetLastIndexOf(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetLastIndexOf(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(2 * i + 1));
     }
@@ -289,8 +289,8 @@ HWTEST_F_L0(ContainersVectorTest, GetFirstValueAndGetLastValue)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetFirstElement(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetFirstElement(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(0));
     }
@@ -300,8 +300,8 @@ HWTEST_F_L0(ContainersVectorTest, GetFirstValueAndGetLastValue)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetLastElement(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetLastElement(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(7));
     }
@@ -319,8 +319,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -333,8 +333,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(0));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::RemoveByIndex(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::RemoveByIndex(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(0));
         EXPECT_EQ(vector->GetSize(), 7);
@@ -346,8 +346,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(0));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Remove(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Remove(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsFalse());
         EXPECT_EQ(vector->GetSize(), 7);
@@ -359,8 +359,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(1));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Remove(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Remove(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), 6);
@@ -373,8 +373,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetCallArg(0, JSTaggedValue(2));
         callInfo->SetCallArg(1, JSTaggedValue(6));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::RemoveByRange(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::RemoveByRange(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(vector->GetSize(), 2);
     }
@@ -384,8 +384,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::IsEmpty(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::IsEmpty(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsFalse());
     }
@@ -395,8 +395,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::Clear(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::Clear(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(vector->GetSize(), 0);
     }
@@ -406,8 +406,8 @@ HWTEST_F_L0(ContainersVectorTest, RemoveByIndexAndRemoveAndRemoveRangeAndClear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::IsEmpty(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::IsEmpty(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
     }
@@ -424,8 +424,8 @@ HWTEST_F_L0(ContainersVectorTest, ReplaceAllElementsAndForEach)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -444,8 +444,8 @@ HWTEST_F_L0(ContainersVectorTest, ReplaceAllElementsAndForEach)
         callInfo->SetCallArg(0, func.GetTaggedValue());
         callInfo->SetCallArg(1, vec.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::ForEach(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::ForEach(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         for (int32_t i = 0; i < ELEMENT_NUMS; i++) {
             auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -453,8 +453,8 @@ HWTEST_F_L0(ContainersVectorTest, ReplaceAllElementsAndForEach)
             callInfo1->SetThis(vector.GetTaggedValue());
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-            JSTaggedValue result = ContainersVector::Get(callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+            JSTaggedValue result = ContainersVector::Get(callInfo1);
             TestHelper::TearDownFrame(thread, prev1);
             EXPECT_EQ(result, JSTaggedValue(i));
         }
@@ -470,8 +470,8 @@ HWTEST_F_L0(ContainersVectorTest, ReplaceAllElementsAndForEach)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, func.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::ReplaceAllElements(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::ReplaceAllElements(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         for (int32_t i = 0; i < ELEMENT_NUMS; i++) {
             auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -479,8 +479,8 @@ HWTEST_F_L0(ContainersVectorTest, ReplaceAllElementsAndForEach)
             callInfo1->SetThis(vector.GetTaggedValue());
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-            JSTaggedValue result = ContainersVector::Get(callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+            JSTaggedValue result = ContainersVector::Get(callInfo1);
             TestHelper::TearDownFrame(thread, prev1);
             EXPECT_EQ(result, JSTaggedValue(i * 2));
         }
@@ -498,8 +498,8 @@ HWTEST_F_L0(ContainersVectorTest, Sort)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
     }
@@ -512,8 +512,8 @@ HWTEST_F_L0(ContainersVectorTest, Sort)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::Sort(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::Sort(callInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         for (int32_t i = 0; i < ELEMENT_NUMS; i++) {
@@ -522,8 +522,8 @@ HWTEST_F_L0(ContainersVectorTest, Sort)
             callInfo1->SetThis(vector.GetTaggedValue());
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-            JSTaggedValue result = ContainersVector::Get(callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+            JSTaggedValue result = ContainersVector::Get(callInfo1);
             TestHelper::TearDownFrame(thread, prev1);
             EXPECT_EQ(result, JSTaggedValue(i));
         }
@@ -541,8 +541,8 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -554,8 +554,8 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue vec = ContainersVector::Clone(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue vec = ContainersVector::Clone(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPIVector> handleVec(thread, vec);
         EXPECT_EQ(handleVec->GetSize(), vector->GetSize());
@@ -566,8 +566,8 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
             callInfo1->SetThis(vec);
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-            JSTaggedValue result = ContainersVector::Get(callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+            JSTaggedValue result = ContainersVector::Get(callInfo1);
             TestHelper::TearDownFrame(thread, prev1);
             EXPECT_EQ(result, JSTaggedValue(i));
         }
@@ -578,8 +578,8 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue arr = ContainersVector::ConvertToArray(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue arr = ContainersVector::ConvertToArray(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(arr.IsJSArray());
         JSHandle<JSTaggedValue> handleArr(thread, arr);
@@ -597,8 +597,8 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, array.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::CopyToArray(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::CopyToArray(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(array->IsJSArray());
         for (int32_t i = 0; i < ELEMENT_NUMS; i++) {
@@ -607,7 +607,7 @@ HWTEST_F_L0(ContainersVectorTest, CloneAndConvertToArrayAndCopyToArray)
             callInfo1->SetThis(array.GetTaggedValue());
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
             int result = JSArray::GetProperty(thread, JSHandle<JSTaggedValue>(array), i).GetValue()->GetInt();
             TestHelper::TearDownFrame(thread, prev1);
             EXPECT_EQ(result, i);
@@ -626,8 +626,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -640,8 +640,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        int32_t capacity = ContainersVector::GetCapacity(callInfo.get()).GetInt();
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        int32_t capacity = ContainersVector::GetCapacity(callInfo).GetInt();
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(capacity, 10);
     }
@@ -652,8 +652,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(20));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::IncreaseCapacityTo(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::IncreaseCapacityTo(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
     // getCapacity
@@ -662,8 +662,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        int32_t newCapacity1 = ContainersVector::GetCapacity(callInfo.get()).GetInt();
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        int32_t newCapacity1 = ContainersVector::GetCapacity(callInfo).GetInt();
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(newCapacity1, 20);
     }
@@ -673,8 +673,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersVector::TrimToCurrentLength(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersVector::TrimToCurrentLength(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
     // getCapacity
@@ -683,8 +683,8 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        int32_t newCapacity2 = ContainersVector::GetCapacity(callInfo.get()).GetInt();
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        int32_t newCapacity2 = ContainersVector::GetCapacity(callInfo).GetInt();
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(newCapacity2, 8);
     }
@@ -696,16 +696,16 @@ HWTEST_F_L0(ContainersVectorTest, SubVectorAndGetCapacityAndTrimToCurrentLengthA
         callInfo->SetCallArg(0, JSTaggedValue(0));
         callInfo->SetCallArg(1, JSTaggedValue(2));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue vec = ContainersVector::SubVector(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue vec = ContainersVector::SubVector(callInfo);
         for (int32_t i = 0; i < 2; i++) {
             auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
             callInfo1->SetFunction(JSTaggedValue::Undefined());
             callInfo1->SetThis(vec);
             callInfo1->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-            JSTaggedValue result = ContainersVector::Get(callInfo1.get());
+            [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+            JSTaggedValue result = ContainersVector::Get(callInfo1);
             TestHelper::TearDownFrame(thread, prev);
             EXPECT_EQ(result, JSTaggedValue(i));
         }
@@ -723,8 +723,8 @@ HWTEST_F_L0(ContainersVectorTest, ToStringAndGetLastIndexFromAndGetIndexFrom)
         callInfo->SetThis(vector.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::Add(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::Add(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsTrue());
         EXPECT_EQ(vector->GetSize(), i + 1);
@@ -735,8 +735,8 @@ HWTEST_F_L0(ContainersVectorTest, ToStringAndGetLastIndexFromAndGetIndexFrom)
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(vector.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::ToString(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::ToString(callInfo);
         
         EXPECT_TRUE(result.IsString());
     }
@@ -748,8 +748,8 @@ HWTEST_F_L0(ContainersVectorTest, ToStringAndGetLastIndexFromAndGetIndexFrom)
         callInfo->SetCallArg(0, JSTaggedValue(1));
         callInfo->SetCallArg(1, JSTaggedValue(3));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetLastIndexFrom(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetLastIndexFrom(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(result, JSTaggedValue(1)));
     }
@@ -761,8 +761,8 @@ HWTEST_F_L0(ContainersVectorTest, ToStringAndGetLastIndexFromAndGetIndexFrom)
         callInfo->SetCallArg(0, JSTaggedValue(1));
         callInfo->SetCallArg(1, JSTaggedValue(3));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetIndexFrom(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetIndexFrom(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(result, JSTaggedValue(-1)));
     }
@@ -774,8 +774,8 @@ HWTEST_F_L0(ContainersVectorTest, ToStringAndGetLastIndexFromAndGetIndexFrom)
         callInfo->SetCallArg(0, JSTaggedValue(10));
         callInfo->SetCallArg(1, JSTaggedValue(0));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersVector::GetIndexFrom(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersVector::GetIndexFrom(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(result, JSTaggedValue(-1)));
     }

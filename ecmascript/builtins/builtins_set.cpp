@@ -82,13 +82,14 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, adder, setHandle, undefined, 1);
-        info.SetCallArg(nextValue.GetTaggedValue());
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, adder, setHandle, undefined, 1);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
+        info->SetCallArg(nextValue.GetTaggedValue());
         if (nextValue->IsArray(thread)) {
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-            info.SetCallArg(prop.GetTaggedValue());
+            info->SetCallArg(prop.GetTaggedValue());
         }
-        JSFunction::Call(&info);
+        JSFunction::Call(info);
         // Let status be Call(adder, set, «nextValue.[[value]]»).
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);
@@ -199,7 +200,7 @@ JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
 
     // 6.Let entries be the List that is the value of S’s [[SetData]] internal slot.
     JSMutableHandle<LinkedHashSet> hashSet(thread, set->GetLinkedSet());
-    const size_t argsLength = 3;
+    const int32_t argsLength = 3;
     int index = 0;
     int totalElements = hashSet->NumberOfElements() + hashSet->NumberOfDeletedElements();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
@@ -208,11 +209,12 @@ JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> key(thread, hashSet->GetKey(index++));
         // a. If e is not empty, then
         if (!key->IsHole()) {
-            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(
+            EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(
                 thread, func, thisArg, undefined, argsLength);
-            info.SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), set.GetTaggedValue());
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            info->SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), set.GetTaggedValue());
             // i. Let funcResult be Call(callbackfn, T, «e, e, S»).
-            JSTaggedValue ret = JSFunction::Call(&info);  // 3: three args
+            JSTaggedValue ret = JSFunction::Call(info);  // 3: three args
             // ii. ReturnIfAbrupt(funcResult).
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
             // Maybe add or delete

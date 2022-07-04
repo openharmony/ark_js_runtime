@@ -75,8 +75,8 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
     (reinterpret_cast<AsmInterpretedFrame *>(CurrentSp) - 1) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 #define GET_ENTRY_FRAME(sp) \
     (reinterpret_cast<InterpretedEntryFrame *>(sp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#define GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs) \
-    (static_cast<uint32_t>(INTERPRETER_ENTRY_FRAME_STATE_SIZE + 1 + (actualNumArgs) + RESERVED_CALL_ARGCOUNT))
+#define GET_BUILTIN_FRAME(sp) \
+    (reinterpret_cast<InterpretedBuiltinFrame *>(sp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SAVE_PC() (GET_ASM_FRAME(sp)->pc = pc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -198,12 +198,6 @@ void InterpreterAssembly::InitStackFrame(JSThread *thread)
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
     entryState->base.prev = nullptr;
     entryState->pc = nullptr;
-
-    JSTaggedType *newSp = prevSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE;
-    *(--newSp) = JSTaggedValue(static_cast<int32_t>(0)).GetRawData();
-    *(--newSp) = JSTaggedValue::Undefined().GetRawData();
-    *(--newSp) = JSTaggedValue::Undefined().GetRawData();
-    *(--newSp) = JSTaggedValue::Undefined().GetRawData();
 }
 
 JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
@@ -215,7 +209,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
     thread->CheckSafepoint();
-    size_t argc = info->GetArgsNumber();
+    int32_t argc = info->GetArgsNumber();
     uintptr_t argv = reinterpret_cast<uintptr_t>(info->GetArgs());
     auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_AsmInterpreterEntry);
 
@@ -433,9 +427,9 @@ void InterpreterAssembly::HandleCallArg0DynPrefV8(
     // slow path
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, undefined, undefined, actualNumArgs);
-    JSFunction::Call(&info);
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
@@ -451,10 +445,11 @@ void InterpreterAssembly::HandleCallArg1DynPrefV8V8(
     // slow path
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, undefined, undefined, actualNumArgs);
-    info.SetCallArg(GET_VREG_VALUE(a0));
-    JSFunction::Call(&info);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(GET_VREG_VALUE(a0));
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_V8_V8);
 }
 
@@ -471,10 +466,11 @@ void InterpreterAssembly::HandleCallArgs2DynPrefV8V8V8(
     // slow path
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, undefined, undefined, actualNumArgs);
-    info.SetCallArg(GET_VREG_VALUE(a0), GET_VREG_VALUE(a1));
-    JSFunction::Call(&info);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(GET_VREG_VALUE(a0), GET_VREG_VALUE(a1));
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_V8_V8_V8);
 }
 
@@ -492,10 +488,11 @@ void InterpreterAssembly::HandleCallArgs3DynPrefV8V8V8V8(
     // slow path
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, undefined, undefined, actualNumArgs);
-    info.SetCallArg(GET_VREG_VALUE(a0), GET_VREG_VALUE(a1), GET_VREG_VALUE(a2));
-    JSFunction::Call(&info);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(GET_VREG_VALUE(a0), GET_VREG_VALUE(a1), GET_VREG_VALUE(a2));
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_V8_V8_V8_V8);
 }
 
@@ -510,12 +507,13 @@ void InterpreterAssembly::HandleCallIThisRangeDynPrefImm16V8(
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> thisHandle(thread, GET_VREG_VALUE(funcReg + 1));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, thisHandle, undefined, actualNumArgs);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
     for (uint32_t i = 0; i < actualNumArgs; i++) {
-        info.SetCallArg(i, GET_VREG_VALUE(funcReg + i + 2));  // 2: start index of the first arg
+        info->SetCallArg(i, GET_VREG_VALUE(funcReg + i + 2));  // 2: start index of the first arg
     }
-    JSFunction::Call(&info);
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
 }
 
@@ -549,12 +547,13 @@ void InterpreterAssembly::HandleCallIRangeDynPrefImm16V8(
     // slow path
     JSHandle<JSTaggedValue> funcHandle(thread, GET_VREG_VALUE(funcReg));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, funcHandle, undefined, undefined, actualNumArgs);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
     for (uint32_t i = 0; i < actualNumArgs; i++) {
-        info.SetCallArg(i, GET_VREG_VALUE(funcReg + i + 1));  // 1: start index of the first arg
+        info->SetCallArg(i, GET_VREG_VALUE(funcReg + i + 1));  // 1: start index of the first arg
     }
-    JSFunction::Call(&info);
+    JSFunction::Call(info);
     DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
 }
 
@@ -3561,9 +3560,7 @@ JSTaggedValue InterpreterAssembly::GetNewTarget(JSTaggedType *sp)
 
 JSTaggedType *InterpreterAssembly::GetAsmInterpreterFramePointer(AsmInterpretedFrame *state)
 {
-    JSTaggedType *fp = nullptr;
-    fp = state->GetCurrentFramePointer();
-    return fp;
+    return state->GetCurrentFramePointer();
 }
 
 uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx)
@@ -3645,7 +3642,6 @@ inline JSTaggedValue InterpreterAssembly::UpdateHotnessCounter(JSThread* thread,
 #undef DISPATCH_OFFSET
 #undef GET_ASM_FRAME
 #undef GET_ENTRY_FRAME
-#undef GET_ENTRY_FRAME_WITH_ARGS_SIZE
 #undef SAVE_PC
 #undef SAVE_ACC
 #undef RESTORE_ACC

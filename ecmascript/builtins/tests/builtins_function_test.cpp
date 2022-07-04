@@ -68,7 +68,7 @@ JSTaggedValue TestFunctionApplyAndCall(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     int result = 0;
-    for (uint32_t index = 0; index < argv->GetArgsNumber(); ++index) {
+    for (int32_t index = 0; index < argv->GetArgsNumber(); ++index) {
         result += BuiltinsBase::GetCallArg(argv, index)->GetInt();
     }
     JSHandle<JSTaggedValue> thisValue(BuiltinsBase::GetThis(argv));
@@ -111,8 +111,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply)
     ecmaRuntimeCallInfo->SetThis(func.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, (thisArg.GetTaggedValue()));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeApply(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeApply(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(3).GetRawData());
 
@@ -155,8 +155,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply1)
     ecmaRuntimeCallInfo->SetCallArg(0, (thisArg.GetTaggedValue()));
     ecmaRuntimeCallInfo->SetCallArg(1, array.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeApply(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeApply(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(100).GetRawData());
 
@@ -186,8 +186,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind)
     ecmaRuntimeCallInfo->SetThis(target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, (thisArg.GetTaggedValue()));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
 
@@ -235,8 +235,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind1)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(123)));
     ecmaRuntimeCallInfo->SetCallArg(2, str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
 
@@ -291,8 +291,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(123)));
     ecmaRuntimeCallInfo->SetCallArg(2, str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeBind(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
 
@@ -348,8 +348,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall)
     ecmaRuntimeCallInfo->SetThis(func.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, (thisArg.GetTaggedValue()));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeCall(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeCall(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(3).GetRawData());
 
@@ -387,8 +387,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall1)
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<int32_t>(456)));
     ecmaRuntimeCallInfo->SetCallArg(3, JSTaggedValue(static_cast<int32_t>(789)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeCall(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsFunction::FunctionPrototypeCall(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1371).GetRawData());
 
@@ -409,8 +409,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeHasInstance)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(123)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSObject> booleanInstance(thread, result);
@@ -420,8 +420,8 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeHasInstance)
     ecmaRuntimeCallInfo2->SetThis(booleanCtor.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, booleanInstance.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    EXPECT_TRUE(BuiltinsFunction::FunctionPrototypeHasInstance(ecmaRuntimeCallInfo2.get()).GetRawData());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    EXPECT_TRUE(BuiltinsFunction::FunctionPrototypeHasInstance(ecmaRuntimeCallInfo2).GetRawData());
     TestHelper::TearDownFrame(thread, prev);
 }
 }  // namespace panda::test

@@ -633,6 +633,7 @@ private:
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
+    GlueData glueData_;
     std::atomic<ThreadId> id_;
     EcmaVM *vm_ {nullptr};
 
@@ -656,7 +657,6 @@ private:
     VmThreadControl *vmThreadControl_ {nullptr};
     bool enablePrintBCOffset_ {false};
     bool stableArrayElementsGuardians_ {true};
-    GlueData glueData_;
 
     bool finalizationCheckState_ {false};
 

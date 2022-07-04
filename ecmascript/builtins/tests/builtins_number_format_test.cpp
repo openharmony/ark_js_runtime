@@ -75,8 +75,8 @@ HWTEST_F_L0(BuiltinsNumberFormatTest, NumberFormatConstructor)
     // option tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSNumberFormat());
@@ -95,8 +95,8 @@ static JSTaggedValue BuiltinsFormatTest(JSThread *thread, JSHandle<JSObject> &op
     ecmaRuntimeCallInfo1->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(1, options.GetTaggedValue());
     // construct numberformat
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue numberFormat = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue numberFormat = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo1);
     JSHandle<JSTaggedValue> numberFormatVal(thread, numberFormat);
     TestHelper::TearDownFrame(thread, prev);
     // get function by calling Format function
@@ -104,8 +104,8 @@ static JSTaggedValue BuiltinsFormatTest(JSThread *thread, JSHandle<JSObject> &op
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(numberFormatVal.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue resultFunc = BuiltinsNumberFormat::Format(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue resultFunc = BuiltinsNumberFormat::Format(ecmaRuntimeCallInfo2);
     JSHandle<JSFunction> jsFunction(thread, resultFunc);
     TestHelper::TearDownFrame(thread, prev);
     JSArray *jsArray =
@@ -120,8 +120,8 @@ static JSTaggedValue BuiltinsFormatTest(JSThread *thread, JSHandle<JSObject> &op
     ecmaRuntimeCallInfo3->SetThis(jsObject.GetTaggedValue());
     ecmaRuntimeCallInfo3->SetCallArg(0, number.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result = BuiltinsArray::ToString(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result = BuiltinsArray::ToString(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
     return result;
 }
@@ -261,8 +261,8 @@ static JSTaggedValue NumberFormatCreateTest(JSThread *thread, JSHandle<JSObject>
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, options.GetTaggedValue());
     // construct numberformat
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue numberFormat = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue numberFormat = BuiltinsNumberFormat::NumberFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     return numberFormat;
 }
@@ -297,8 +297,8 @@ HWTEST_F_L0(BuiltinsNumberFormatTest, FormatToParts)
     ecmaRuntimeCallInfo->SetThis(numberFormatVal.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberVal.GetTaggedValue());
     // format currency to part
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumberFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumberFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     
     JSHandle<JSArray> resultHandle(thread, result);
@@ -330,8 +330,8 @@ HWTEST_F_L0(BuiltinsNumberFormatTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(numberFormatVal.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumberFormat::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumberFormat::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =

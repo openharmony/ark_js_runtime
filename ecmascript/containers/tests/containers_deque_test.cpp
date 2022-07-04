@@ -88,8 +88,8 @@ protected:
         objCallInfo->SetFunction(JSTaggedValue::Undefined());
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(ContainerTag::Deque)));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         return result;
@@ -105,8 +105,8 @@ protected:
         objCallInfo->SetThis(JSTaggedValue::Undefined());
         objCallInfo->SetCallArg(0, compareHandle.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersDeque::DequeConstructor(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersDeque::DequeConstructor(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPIDeque> deque(thread, result);
         return deque;
@@ -123,8 +123,8 @@ HWTEST_F_L0(ContainersDequeTest, DequeConstructor)
     objCallInfo->SetNewTarget(newTarget.GetTaggedValue());
     objCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-    JSTaggedValue result = ContainersDeque::DequeConstructor(objCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+    JSTaggedValue result = ContainersDeque::DequeConstructor(objCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsJSAPIDeque());
@@ -144,11 +144,11 @@ HWTEST_F_L0(ContainersDequeTest, InsertFrontAndGetFirst)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersDeque::InsertFront(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersDeque::InsertFront(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
-        EXPECT_EQ(ContainersDeque::GetFirst(callInfo.get()), JSTaggedValue(i));
+        EXPECT_EQ(ContainersDeque::GetFirst(callInfo), JSTaggedValue(i));
     }
 }
 
@@ -162,11 +162,11 @@ HWTEST_F_L0(ContainersDequeTest, InsertEndAndGetLast)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersDeque::InsertEnd(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersDeque::InsertEnd(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
-        EXPECT_EQ(ContainersDeque::GetLast(callInfo.get()), JSTaggedValue(i));
+        EXPECT_EQ(ContainersDeque::GetLast(callInfo), JSTaggedValue(i));
     }
 }
 
@@ -180,8 +180,8 @@ HWTEST_F_L0(ContainersDequeTest, Has)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersDeque::InsertEnd(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersDeque::InsertEnd(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
 
@@ -192,8 +192,8 @@ HWTEST_F_L0(ContainersDequeTest, Has)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersDeque::Has(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersDeque::Has(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
     }
@@ -204,8 +204,8 @@ HWTEST_F_L0(ContainersDequeTest, Has)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i + 8));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersDeque::Has(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersDeque::Has(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::False());
     }
@@ -221,10 +221,10 @@ HWTEST_F_L0(ContainersDequeTest, PopFirst)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersDeque::InsertFront(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersDeque::InsertFront(callInfo);
         TestHelper::TearDownFrame(thread, prev);
-        EXPECT_EQ(ContainersDeque::PopFirst(callInfo.get()), JSTaggedValue(i));
+        EXPECT_EQ(ContainersDeque::PopFirst(callInfo), JSTaggedValue(i));
     }
 }
 
@@ -238,10 +238,10 @@ HWTEST_F_L0(ContainersDequeTest, PopLast)
         callInfo->SetThis(deque.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersDeque::InsertEnd(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersDeque::InsertEnd(callInfo);
         TestHelper::TearDownFrame(thread, prev);
-        EXPECT_EQ(ContainersDeque::PopLast(callInfo.get()), JSTaggedValue(i));
+        EXPECT_EQ(ContainersDeque::PopLast(callInfo), JSTaggedValue(i));
     }
 }
 
@@ -255,8 +255,8 @@ HWTEST_F_L0(ContainersDequeTest, ForEach)
             callInfo->SetThis(deque.GetTaggedValue());
             callInfo->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            ContainersDeque::InsertEnd(callInfo.get());
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            ContainersDeque::InsertEnd(callInfo);
             TestHelper::TearDownFrame(thread, prev);
     }
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -270,8 +270,8 @@ HWTEST_F_L0(ContainersDequeTest, ForEach)
         callInfo->SetCallArg(0, func.GetTaggedValue());
         callInfo->SetCallArg(1, dlist.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersDeque::ForEach(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersDeque::ForEach(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
 }

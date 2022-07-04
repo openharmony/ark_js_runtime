@@ -77,9 +77,9 @@ static JSHandle<JSTaggedValue> CreateFinalizationRegistry(JSThread *thread)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, callbackFunc.GetTaggedValue());
 
-    auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     JSTaggedValue finalizationRegistry =
-        BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo.get());
+        BuiltinsFinalizationRegistry::FinalizationRegistryConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> finalizationRegistryHandle(thread, finalizationRegistry);
     TestHelper::TearDownFrame(thread, prev);
     return finalizationRegistryHandle;

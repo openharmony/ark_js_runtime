@@ -87,8 +87,9 @@ JSMap *CreateBuiltinsMap(JSThread *thread)
     ecmaRuntimeCallInfo->SetFunction(newTarget.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMap::MapConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMap::MapConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsECMAObject());
     JSMap *jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -108,8 +109,9 @@ HWTEST_F_L0(BuiltinsMapTest, CreateAndGetSize)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
     {
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = BuiltinsMap::GetSize(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = BuiltinsMap::GetSize(ecmaRuntimeCallInfo);
+        TestHelper::TearDownFrame(thread, prev);
 
         EXPECT_EQ(result.GetRawData(), JSTaggedValue(0).GetRawData());
     }
@@ -128,8 +130,9 @@ HWTEST_F_L0(BuiltinsMapTest, CreateAndGetSize)
     ecmaRuntimeCallInfo1->SetCallArg(0, values.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetNewTarget(newTarget.GetTaggedValue());
     {
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        JSTaggedValue result1 = BuiltinsMap::MapConstructor(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        JSTaggedValue result1 = BuiltinsMap::MapConstructor(ecmaRuntimeCallInfo1);
+        TestHelper::TearDownFrame(thread, prev);
 
         EXPECT_EQ(JSMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()))->GetSize(), 5);
     }
@@ -150,13 +153,13 @@ HWTEST_F_L0(BuiltinsMapTest, SetAndHas)
 
     JSMap *jsMap;
     {
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result1 = BuiltinsMap::Has(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result1 = BuiltinsMap::Has(ecmaRuntimeCallInfo);
 
         EXPECT_EQ(result1.GetRawData(), JSTaggedValue::False().GetRawData());
 
         // test Set()
-        JSTaggedValue result2 = BuiltinsMap::Set(ecmaRuntimeCallInfo.get());
+        JSTaggedValue result2 = BuiltinsMap::Set(ecmaRuntimeCallInfo);
 
         EXPECT_TRUE(result2.IsECMAObject());
         jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result2.GetRawData()));
@@ -170,8 +173,8 @@ HWTEST_F_L0(BuiltinsMapTest, SetAndHas)
     ecmaRuntimeCallInfo1->SetCallArg(0, key.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     {
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        JSTaggedValue result3 = BuiltinsMap::Has(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        JSTaggedValue result3 = BuiltinsMap::Has(ecmaRuntimeCallInfo1);
 
         EXPECT_EQ(result3.GetRawData(), JSTaggedValue::True().GetRawData());
     }
@@ -193,8 +196,9 @@ HWTEST_F_L0(BuiltinsMapTest, ForEach)
         ecmaRuntimeCallInfo->SetCallArg(0, key.GetTaggedValue());
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(i)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result1 = BuiltinsMap::Set(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result1 = BuiltinsMap::Set(ecmaRuntimeCallInfo);
+        TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result1.IsECMAObject());
         JSMap *jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
         EXPECT_EQ(jsMap->GetSize(), static_cast<int>(i) + 1);
@@ -209,8 +213,9 @@ HWTEST_F_L0(BuiltinsMapTest, ForEach)
     ecmaRuntimeCallInfo1->SetCallArg(0, func.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(1, jsArray.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result2 = BuiltinsMap::ForEach(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result2 = BuiltinsMap::ForEach(ecmaRuntimeCallInfo1);
+    TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(result2.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
     EXPECT_EQ(jsArray->GetArrayLength(), 10U);
@@ -233,8 +238,9 @@ HWTEST_F_L0(BuiltinsMapTest, DeleteAndRemove)
         ecmaRuntimeCallInfo->SetCallArg(0, key.GetTaggedValue());
         ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(i)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result1 = BuiltinsMap::Set(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result1 = BuiltinsMap::Set(ecmaRuntimeCallInfo);
+        TestHelper::TearDownFrame(thread, prev);
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSMap *jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
@@ -249,26 +255,27 @@ HWTEST_F_L0(BuiltinsMapTest, DeleteAndRemove)
     ecmaRuntimeCallInfo1->SetThis(map.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, deleteKey.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result2 = BuiltinsMap::Has(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result2 = BuiltinsMap::Has(ecmaRuntimeCallInfo1);
+    TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(result2.GetRawData(), JSTaggedValue::True().GetRawData());
 
     // delete
-    JSTaggedValue result3 = BuiltinsMap::Delete(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result3 = BuiltinsMap::Delete(ecmaRuntimeCallInfo1);
 
     EXPECT_EQ(result3.GetRawData(), JSTaggedValue::True().GetRawData());
 
     // check deleteKey is deleted
-    JSTaggedValue result4 = BuiltinsMap::Has(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result4 = BuiltinsMap::Has(ecmaRuntimeCallInfo1);
 
     EXPECT_EQ(result4.GetRawData(), JSTaggedValue::False().GetRawData());
-    JSTaggedValue result5 = BuiltinsMap::GetSize(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result5 = BuiltinsMap::GetSize(ecmaRuntimeCallInfo1);
 
     EXPECT_EQ(result5.GetRawData(), JSTaggedValue(39).GetRawData());
 
     // clear
-    JSTaggedValue result6 = BuiltinsMap::Clear(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result6 = BuiltinsMap::Clear(ecmaRuntimeCallInfo1);
     EXPECT_EQ(result6.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
     EXPECT_EQ(map->GetSize(), 0);
 }
@@ -335,25 +342,26 @@ HWTEST_F_L0(BuiltinsMapTest, GetIterator)
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(map.GetTaggedValue());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
 
     // test Values()
-    JSTaggedValue result = BuiltinsMap::Values(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsMap::Values(ecmaRuntimeCallInfo);
     JSHandle<JSMapIterator> iter(thread, result);
     EXPECT_TRUE(iter->IsJSMapIterator());
     EXPECT_EQ(IterationKind::VALUE, iter->GetIterationKind());
     EXPECT_EQ(JSMap::Cast(map.GetTaggedValue().GetTaggedObject())->GetLinkedMap(), iter->GetIteratedMap());
 
     // test Keys()
-    JSTaggedValue result1 = BuiltinsMap::Keys(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result1 = BuiltinsMap::Keys(ecmaRuntimeCallInfo);
     JSHandle<JSMapIterator> iter1(thread, result1);
     EXPECT_TRUE(iter1->IsJSMapIterator());
     EXPECT_EQ(IterationKind::KEY, iter1->GetIterationKind());
 
     // test entries()
-    JSTaggedValue result2 = BuiltinsMap::Entries(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result2 = BuiltinsMap::Entries(ecmaRuntimeCallInfo);
     JSHandle<JSMapIterator> iter2(thread, result2);
     EXPECT_TRUE(iter2->IsJSMapIterator());
     EXPECT_EQ(IterationKind::KEY_AND_VALUE, iter2->GetIterationKind());
+    TestHelper::TearDownFrame(thread, prev);
 }
 }  // namespace panda::test

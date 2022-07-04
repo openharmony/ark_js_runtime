@@ -34,19 +34,20 @@ JSTaggedValue SlowRuntimeHelper::CallBoundFunction(EcmaRuntimeCallInfo *info)
     }
 
     JSHandle<TaggedArray> boundArgs(thread, boundFunc->GetBoundArguments());
-    const size_t boundLength = boundArgs->GetLength();
-    const size_t argsLength = info->GetArgsNumber() + boundLength;
+    const int32_t boundLength = boundArgs->GetLength();
+    const int32_t argsLength = info->GetArgsNumber() + boundLength;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo = EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(targetFunc),
+    EcmaRuntimeCallInfo *runtimeInfo = EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(targetFunc),
         info->GetThis(), undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (boundLength == 0) {
-        runtimeInfo.SetCallArg(argsLength, 0, info, 0);
+        runtimeInfo->SetCallArg(argsLength, 0, info, 0);
     } else {
         // 0 ~ boundLength is boundArgs; boundLength ~ argsLength is args of EcmaRuntimeCallInfo.
-        runtimeInfo.SetCallArg(boundLength, boundArgs);
-        runtimeInfo.SetCallArg(argsLength, boundLength, info, 0);
+        runtimeInfo->SetCallArg(boundLength, boundArgs);
+        runtimeInfo->SetCallArg(argsLength, boundLength, info, 0);
     }
-    return EcmaInterpreter::Execute(&runtimeInfo);
+    return EcmaInterpreter::Execute(runtimeInfo);
 }
 
 JSTaggedValue SlowRuntimeHelper::NewObject(EcmaRuntimeCallInfo *info)
@@ -138,10 +139,11 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
             values.emplace_back(value.GetRawData());
         }
     }
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(ctor), obj, newTgt, size);
-    info.SetCallArg(size, values.data());
-    JSTaggedValue resultValue = EcmaInterpreter::Execute(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(size, values.data());
+    JSTaggedValue resultValue = EcmaInterpreter::Execute(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9.3.2 [[Construct]] (argumentsList, newTarget)
     if (resultValue.IsECMAObject()) {
@@ -221,11 +223,12 @@ JSTaggedValue ConstructProxy(JSThread *thread, JSHandle<JSProxy> ctor, JSHandle<
     }
 
     // step 8 ~ 9 Call(trap, handler, «target, argArray, newTarget »).
-    const size_t argsLength = 3;  // 3: «target, argArray, newTarget »
+    const int32_t argsLength = 3;  // 3: «target, argArray, newTarget »
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, handler, undefined, argsLength);
-    info.SetCallArg(target.GetTaggedValue(), args.GetTaggedValue(), newTgt.GetTaggedValue());
-    JSTaggedValue newObjValue = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, handler, undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(target.GetTaggedValue(), args.GetTaggedValue(), newTgt.GetTaggedValue());
+    JSTaggedValue newObjValue = JSFunction::Call(info);
     // 10.ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 11.If Type(newObj) is not Object, throw a TypeError exception.

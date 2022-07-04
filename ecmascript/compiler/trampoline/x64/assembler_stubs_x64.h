@@ -98,9 +98,6 @@ private:
     static void PopAsmInterpBridgeFrame(ExtendedAssembler *assembler);
     static void CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
         Register callTargetRegister, Register methodRegister, Register pcRegister);
-    static void GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister);
-    static void ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register threadRegister,
-        Register numArgsRegister, Register stackArgsRegister);
     static void GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
         Register declaredNumArgsRegister);
     static void GetNumVregsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
@@ -115,8 +112,7 @@ private:
     static void DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister);
     static void CallNativeEntry(ExtendedAssembler *assemblSer);
     static void CallNativeWithArgv(ExtendedAssembler *assembler, bool callNew);
-    static void CallNativeInternal(ExtendedAssembler *assembler,
-        Register glue, Register numArgs, Register stackArgs, Register nativeCode);
+    static void CallNativeInternal(ExtendedAssembler *assembler, Register nativeCode);
     static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type);
     static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode);
     static void JSCallCommonFastPath(ExtendedAssembler *assembler, JSCallMode mode);

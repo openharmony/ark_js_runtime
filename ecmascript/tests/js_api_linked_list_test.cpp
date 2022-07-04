@@ -78,9 +78,9 @@ protected:
         // 6 : 6 value is 6.
         objCallInfo->SetCallArg(0, JSTaggedValue(6));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
         JSHandle<JSTaggedValue> contianer =
-            JSHandle<JSTaggedValue>(thread, ContainersPrivate::Load(objCallInfo.get()));
+            JSHandle<JSTaggedValue>(thread, ContainersPrivate::Load(objCallInfo));
         JSHandle<JSAPILinkedList> linkedList =
             JSHandle<JSAPILinkedList>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(contianer),
                                                                               contianer));

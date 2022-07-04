@@ -81,7 +81,7 @@ HWTEST_F_L0(IcCompareOPTest, EqualWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
 
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::EqDyn(thread, arg1Handle.GetTaggedValue(),
@@ -141,7 +141,7 @@ HWTEST_F_L0(IcCompareOPTest, NotEqualWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(123)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::NotEqDyn(thread, arg1Handle.GetTaggedValue(),
                                                              arg2Handle.GetTaggedValue());
@@ -208,7 +208,7 @@ HWTEST_F_L0(IcCompareOPTest, LessDynWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(123)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
 
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::LessDyn(thread, arg1Handle.GetTaggedValue(),
@@ -274,7 +274,7 @@ HWTEST_F_L0(IcCompareOPTest, LessEqDynWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(123)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::LessEqDyn(thread, arg1Handle.GetTaggedValue(),
                                                               arg2Handle.GetTaggedValue());
@@ -343,7 +343,7 @@ HWTEST_F_L0(IcCompareOPTest, GreaterDynWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::GreaterDyn(thread, arg1Handle.GetTaggedValue(),
                                                                arg2Handle.GetTaggedValue());
@@ -413,7 +413,7 @@ HWTEST_F_L0(IcCompareOPTest, GreaterEqDynWithIC)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    JSTaggedValue booleanObj = builtins::BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> booleanObjHandle(thread, booleanObj);
     JSTaggedValue resInSlowPath1 = SlowRuntimeStub::GreaterEqDyn(thread, arg1Handle.GetTaggedValue(),
                                                                  arg2Handle.GetTaggedValue());

@@ -93,8 +93,8 @@ HWTEST_F_L0(JSAPIDequeIteratorTest, Next)
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(dequeIterator.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = JSAPIDequeIterator::Next(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = JSAPIDequeIterator::Next(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSObject> resultObj(thread, result);

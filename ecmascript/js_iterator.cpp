@@ -57,8 +57,8 @@ JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, obj);
     // 3.Let iterator be Call(method,obj).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
-    JSTaggedValue ret = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(info);
     JSHandle<JSTaggedValue> iter(thread, ret);
     // 4.ReturnIfAbrupt(iterator).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, iter);
@@ -77,8 +77,8 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     JSHandle<JSTaggedValue> key(globalConst->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 0);
-    JSTaggedValue ret = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(info);
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -97,9 +97,10 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     JSHandle<JSTaggedValue> key(globalConst->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 1);
-    info.SetCallArg(value.GetTaggedValue());
-    JSTaggedValue ret = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 1);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, thread->GetEcmaVM()->GetFactory()->NewEmptyJSObject());
+    info->SetCallArg(value.GetTaggedValue());
+    JSTaggedValue ret = JSFunction::Call(info);
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -173,8 +174,8 @@ JSHandle<JSTaggedValue> JSIterator::IteratorClose(JSThread *thread, const JSHand
     }
     // 6.Let innerResult be Call(return, iterator, «‍ »).
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, returnFunc, iter, undefined, 0);
-    JSTaggedValue ret = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, returnFunc, iter, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(info);
     if (!exceptionOnThread.IsEmpty()) {
         thread->SetException(exceptionOnThread.GetTaggedValue());
     }
