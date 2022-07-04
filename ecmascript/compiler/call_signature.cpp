@@ -644,12 +644,14 @@ DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
 
 DEF_CALL_SIGNATURE(ResumeRspAndReturn)
 {
-    // 1 : 1 input parameters
-    CallSignature resumeRspAndReturn("ResumeRspAndReturn", 0, 1,
+    // 3 : 3 input parameters
+    CallSignature resumeRspAndReturn("ResumeRspAndReturn", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = resumeRspAndReturn;
-    std::array<VariableType, 1> params = { // 1 : 1 input parameters
+    std::array<VariableType, 3> params = { // 3 : 3 input parameters
         VariableType::JS_ANY(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
@@ -678,11 +680,12 @@ DEF_CALL_SIGNATURE(ResumeCaughtFrameAndDispatch)
 
 DEF_CALL_SIGNATURE(ResumeUncaughtFrameAndReturn)
 {
-    // 2 : 2 input parameters
-    CallSignature resumeUncaughtFrameAndReturn("ResumeUncaughtFrameAndReturn", 0, 2,
+    // 3 : 3 input parameters
+    CallSignature resumeUncaughtFrameAndReturn("ResumeUncaughtFrameAndReturn", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = resumeUncaughtFrameAndReturn;
-    std::array<VariableType, 2> params = { // 2 : 2 input parameters
+    std::array<VariableType, 3> params = { // 3 : 3 input parameters
+        VariableType::NATIVE_POINTER(),
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),
     };

@@ -53,7 +53,7 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
         return ecmaRuntimeCallInfo;
     }
 
-    thread->SetCurrentSPFrame(newSp);
+    JSTaggedType *currentSp = newSp;
     // create entry frame.
     InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(newSp);
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
@@ -66,6 +66,7 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     *(--newSp) = thisObj.GetTaggedType();
     *(--newSp) = newTarget.GetTaggedType();
     *(--newSp) = func.GetTaggedType();
+    thread->SetCurrentSPFrame(currentSp);
     EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs, newSp);
     return ecmaRuntimeCallInfo;
 }
