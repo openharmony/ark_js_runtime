@@ -604,23 +604,6 @@ DEF_CALL_SIGNATURE(JSFunctionEntry)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
-DEF_CALL_SIGNATURE(CallBuiltinTrampoline)
-{
-    /* 3 : 3 input parameters */
-    CallSignature CallBuiltinTrampoline("CallBuiltinTrampoline", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = CallBuiltinTrampoline;
-    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
-        VariableType::NATIVE_POINTER(),   // glue
-        VariableType::NATIVE_POINTER(),   // codeAddress
-        VariableType::INT32(),            // argc
-    };
-    callSign->SetVariadicArgs(true);
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
 DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
 {
     // 8 : 8 input parameters
@@ -806,27 +789,6 @@ DEF_CALL_SIGNATURE(CallGetter)
 DEF_CALL_SIGNATURE(CallSetter)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallSetter)
-}
-
-DEF_CALL_SIGNATURE(CallOptimizedJSFunction)
-{
-    // 6 : 6 input parameters
-    CallSignature CallOptimizedJSFunction("CallOptimizedJSFunction", 0, 6,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = CallOptimizedJSFunction;
-    // 6 : 6 input parameters
-    std::array<VariableType, 6> params = {
-        VariableType::NATIVE_POINTER(),   // glue
-        VariableType::NATIVE_POINTER(),   // prevFp
-        VariableType::JS_ANY(),           // jsfunc
-        VariableType::INT32(),            // actualNumArgs
-        VariableType::JS_ANY(),           // this
-        VariableType::JS_ANY(),           // new_target
-    };
-    callSign->SetVariadicArgs(true);
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(JSCallWithArgV)

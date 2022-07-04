@@ -328,7 +328,6 @@ private:
     V(PushCallNewAndDispatch)               \
     V(CallGetter)                           \
     V(CallSetter)                           \
-    V(CallOptimizedJSFunction)              \
     V(JSCallWithArgV)                       \
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
@@ -351,7 +350,6 @@ private:
     V(CallIRangeDyn)                        \
     V(JSCall)                               \
     V(JSFunctionEntry)                      \
-    V(CallBuiltinTrampoline)                \
     V(JSProxyCallInternalWithArgV)          \
     V(CreateArrayFromList)                  \
     V(JSObjectGetMethod)                    \

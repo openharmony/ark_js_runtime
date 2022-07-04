@@ -82,8 +82,6 @@ public:
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 
-    static void CallOptimizedJSFunction(ExtendedAssembler *assembler);
-
     static void JSCallWithArgV(ExtendedAssembler *assembler);
 
 private:
