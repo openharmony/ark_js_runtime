@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-6
-parent child
-PASS
-10
+import("//ark/js_runtime/test/test_helper.gni")
+
+host_moduletest_action("objoperate") {
+  deps = []
+}
