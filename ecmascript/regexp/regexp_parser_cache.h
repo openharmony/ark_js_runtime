@@ -19,6 +19,7 @@
 #include <array>
 
 #include "ecmascript/ecma_string.h"
+#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda::ecmascript {
@@ -29,8 +30,10 @@ public:
     static constexpr size_t CACHE_SIZE = 128;
 
     bool IsInCache(EcmaString *pattern, const uint32_t flags);
-    std::pair<JSTaggedValue, size_t> GetCache(EcmaString *pattern, const uint32_t flags);
-    void SetCache(EcmaString *pattern, const uint32_t flags, const JSTaggedValue codeBuffer, const size_t bufferSize);
+    std::pair<JSTaggedValue, size_t> GetCache(EcmaString *pattern, const uint32_t flags,
+                                              CVector<CString> &groupName);
+    void SetCache(EcmaString *pattern, const uint32_t flags, const JSTaggedValue codeBuffer,
+                  const size_t bufferSize, CVector<CString> groupName);
     void Clear();
 
 private:
@@ -41,6 +44,7 @@ private:
         uint32_t flags_{UINT32_MAX};
         JSTaggedValue codeBuffer_{JSTaggedValue::Hole()};
         size_t bufferSize_{0};
+        CVector<CString> newGroupNames_;
     };
 
     std::array<ParserKey, CACHE_SIZE> info_{};

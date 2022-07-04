@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdint>
 #include "ecmascript/mem/chunk.h"
+#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/dyn_chunk.h"
 #include "ecmascript/regexp/regexp_opcode.h"
@@ -112,7 +113,7 @@ public:
     int RecountCaptures();
     int IsIdentFirst(uint32_t c);
 
-    inline std::vector<CString> GetGroupNames() const
+    inline CVector<CString> GetGroupNames() const
     {
         return newGroupNames_;
     }
@@ -247,7 +248,7 @@ private:
     int totalCaptureCount_ = -1;
     DynChunk buffer_;
     DynChunk groupNames_;
-    std::vector<CString> newGroupNames_;
+    CVector<CString> newGroupNames_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_REGEXP_PARSER_H

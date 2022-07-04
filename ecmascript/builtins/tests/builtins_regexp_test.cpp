@@ -648,10 +648,12 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpParseCache)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> string1 = factory->NewFromASCII("abc");
     JSHandle<EcmaString> string2 = factory->NewFromASCII("abcd");
-    regExpParserCache->SetCache(*string1, 0, JSTaggedValue::True(), 2);
-    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0).first == JSTaggedValue::True());
-    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0).second == 2U);
-    ASSERT_TRUE(regExpParserCache->GetCache(*string1, RegExpParserCache::CACHE_SIZE).first == JSTaggedValue::Hole());
-    ASSERT_TRUE(regExpParserCache->GetCache(*string2, 0).first == JSTaggedValue::Hole());
+    CVector<CString> vec;
+    regExpParserCache->SetCache(*string1, 0, JSTaggedValue::True(), 2, vec);
+    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0, vec).first == JSTaggedValue::True());
+    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0, vec).second == 2U);
+    ASSERT_TRUE(regExpParserCache->GetCache(*string1,
+                                            RegExpParserCache::CACHE_SIZE, vec).first == JSTaggedValue::Hole());
+    ASSERT_TRUE(regExpParserCache->GetCache(*string2, 0, vec).first == JSTaggedValue::Hole());
 }
 }  // namespace panda::test

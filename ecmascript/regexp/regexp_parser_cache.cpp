@@ -41,18 +41,21 @@ size_t RegExpParserCache::GetHash(EcmaString *pattern, const uint32_t flags)
     return (pattern->GetHashcode() ^ flags) % CACHE_SIZE;
 }
 
-std::pair<JSTaggedValue, size_t> RegExpParserCache::GetCache(EcmaString *pattern, const uint32_t flags)
+std::pair<JSTaggedValue, size_t> RegExpParserCache::GetCache(EcmaString *pattern, const uint32_t flags,
+                                                             CVector<CString> &groupName)
 {
     size_t hash = GetHash(pattern, flags);
     ParserKey &info = info_[hash];
     if (info.flags_ != flags || !EcmaString::StringsAreEqual(info.pattern_, pattern)) {
         return std::pair<JSTaggedValue, size_t>(JSTaggedValue::Hole(), 0);
     }
+    groupName = info.newGroupNames_;
     return std::pair<JSTaggedValue, size_t>(info.codeBuffer_, info.bufferSize_);
 }
 
 void RegExpParserCache::SetCache(EcmaString *pattern, const uint32_t flags,
-                                 const JSTaggedValue codeBuffer, const size_t bufferSize)
+                                 const JSTaggedValue codeBuffer, const size_t bufferSize,
+                                 CVector<CString> groupName)
 {
     size_t hash = GetHash(pattern, flags);
     ParserKey &info = info_[hash];
@@ -60,5 +63,6 @@ void RegExpParserCache::SetCache(EcmaString *pattern, const uint32_t flags,
     info.flags_ = flags;
     info.codeBuffer_ = codeBuffer;
     info.bufferSize_ = bufferSize;
+    info.newGroupNames_ = groupName;
 }
 }  // namespace panda::ecmascript
