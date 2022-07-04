@@ -100,6 +100,8 @@ void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
         // replace normal depend
         } else if ((acc.GetOpCode(*useIt) == OpCode::JS_BYTECODE) && useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);
+        } else if ((acc.GetOpCode(*useIt) == OpCode::RUNTIME_CALL) && useIt.GetIndex() == 0) {
+            acc.ReplaceIn(useIt, successControl[1]);
         // if no catch block, just throw exception(RETURN)
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
