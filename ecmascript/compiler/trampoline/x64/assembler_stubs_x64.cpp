@@ -591,37 +591,36 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
 // uint64_t JSCall(uintptr_t glue, JSTaggedType env, uint32_t argc, JSTaggedType calltarget, JSTaggedType new,
 //                 JSTaggedType this, ...)
 // webkit_jscc calling convention call js function()
-// Input: %rax - glue
-//        stack layout:
-//        sp + N*8 argvN
-//        ........
-//        sp + 24: argc
-//        sp + 16: this
-//        sp + 8:  new
-// sp:    jsfunc
-//        +--------------------------+
-//        |       ...                |
-//        +--------------------------+
-//        |       arg0               |
-//        +--------------------------+
-//        |       this               |
-//        +--------------------------+
-//        |       new                |
-//        +--------------------------+ ---
-//        |       jsfunction         |   ^
-//        |--------------------------|  Fixed
-//        |       argc               | OptimizedJSFunctionFrame
-//        |--------------------------|   |
-//        |       lexEnv             |   |
-//        |--------------------------|   |
-//        |       returnAddr         |   |
-//        |--------------------------|   |
-//        |       callsiteFp         |   |
-//        |--------------------------|   |
-//        |       frameType          |   |
-//        |--------------------------|   |
-//        |       lexEnv             |   v
-//        +--------------------------+ ---
+// Input:        %rax - glue
+// stack layout: sp + N*8 argvN
+//               ........
+//               sp + 24: argc
+//               sp + 16: this
+//               sp + 8:  new
+// sp:           jsfunc
+//               +--------------------------+
+//               |       ...                |
+//               +--------------------------+
+//               |       arg0               |
+//               +--------------------------+
+//               |       this               |
+//               +--------------------------+
+//               |       new                |
+//               +--------------------------+ ---
+//               |       jsfunction         |   ^
+//               |--------------------------|  Fixed
+//               |       argc               | OptimizedJSFunctionFrame
+//               |--------------------------|   |
+//               |       lexEnv             |   |
+//               |--------------------------|   |
+//               |       returnAddr         |   |
+//               |--------------------------|   |
+//               |       callsiteFp         |   |
+//               |--------------------------|   |
+//               |       frameType          |   |
+//               |--------------------------|   |
+//               |       lexEnv             |   v
+//               +--------------------------+ ---
 void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(JSCall));
@@ -1585,8 +1584,7 @@ void AssemblerStubsX64::DispatchCall(ExtendedAssembler *assembler, Register pcRe
     __ Movzbq(Operand(pcRegister, 0), bcIndexRegister);
     // callTargetRegister may rsi
     __ Movq(JSTaggedValue::Hole().GetRawData(), rsi);                                   // acc: rsi
-    __ Movq(Operand(r13, bcIndexRegister, Times8,
-            JSThread::GlueData::GetBCStubEntriesOffset(false)), tempRegister);
+    __ Movq(Operand(r13, bcIndexRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)), tempRegister);
     __ Jmp(tempRegister);
 }
 
