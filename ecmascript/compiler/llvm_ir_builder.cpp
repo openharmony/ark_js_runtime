@@ -19,8 +19,8 @@
 #include <set>
 #include <string>
 
+#include "ecmascript/compiler/argument_accessor.h"
 #include "ecmascript/compiler/bc_call_signature.h"
-#include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/common_stubs.h"
@@ -1077,7 +1077,7 @@ void LLVMIRBuilder::VisitParameter(GateRef gate)
     // add env slot for optimized jsfunction frame
     auto frameType = circuit_->GetFrameType();
     if (frameType == panda::ecmascript::FrameType::OPTIMIZED_JS_FUNCTION_FRAME) {
-        if (argth == CommonArgIdx::LEXENV) {
+        if (argth == static_cast<int>(CommonArgIdx::LEXENV)) {
             SaveLexicalEnvOnFrame(value);
         }
     }
@@ -1953,29 +1953,27 @@ LLVMTypeRef LLVMModule::ConvertLLVMTypeFromVariableType(VariableType type)
 
 LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
 {
-    VariableType retType(MachineType::I64, GateType::TaggedValue()); // possibly get it for circuit
-    LLVMTypeRef returnType = ConvertLLVMTypeFromVariableType(retType);
-    std::vector<LLVMTypeRef> paramTys;
-    auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
-    VariableType glueParamType(MachineType::I64, GateType::NJSValue());
-    paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
-    VariableType lexEnv(MachineType::I64, GateType::TaggedValue());
-    paramTys.push_back(ConvertLLVMTypeFromVariableType(lexEnv));
-    VariableType actualArgc(MachineType::I32, GateType::NJSValue());
-    paramTys.push_back(ConvertLLVMTypeFromVariableType(actualArgc));
-    for (uint32_t i = CommonArgIdx::FUNC; i < CommonArgIdx::NUM_OF_ARGS; i++) {
-        VariableType paramsType(MachineType::I64, GateType::TaggedValue());
-        paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
-    }
-    for (uint32_t j = CommonArgIdx::NUM_OF_ARGS; j < paramCount; j++) {
-        VariableType paramsType(MachineType::I64, GateType::TaggedValue());
-        paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
-    }
+    LLVMTypeRef returnType = NewLType(MachineType::I64, GateType::TaggedValue());  // possibly get it for circuit
+    LLVMTypeRef glue = NewLType(MachineType::I64, GateType::NJSValue());
+    LLVMTypeRef lexEnv = NewLType(MachineType::I64, GateType::TaggedValue());
+    LLVMTypeRef actualArgc = NewLType(MachineType::I32, GateType::NJSValue());
+    std::vector<LLVMTypeRef> paramTys = { glue, lexEnv, actualArgc };
+    auto funcIndex = static_cast<uint32_t>(CommonArgIdx::FUNC);
+    auto numOfComArgs = static_cast<uint32_t>(CommonArgIdx::NUM_OF_ARGS);
+    auto paramCount = method->GetNumArgs() + numOfComArgs;
+    auto numOfRestArgs = paramCount - funcIndex;
+    paramTys.insert(paramTys.end(), numOfRestArgs, NewLType(MachineType::I64, GateType::TaggedValue()));
     auto funcType = LLVMFunctionType(returnType, paramTys.data(), paramCount, false); // not variable args
     CString name = method->GetMethodName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
     auto offsetInPandaFile = method->GetMethodId().GetOffset();
     SetFunction(offsetInPandaFile, function);
     return function;
+}
+
+LLVMTypeRef LLVMModule::NewLType(MachineType machineType, GateType gateType)
+{
+    VariableType vType(machineType, gateType);
+    return ConvertLLVMTypeFromVariableType(vType);
 }
 }  // namespace panda::ecmascript::kungfu

@@ -690,8 +690,8 @@ void EcmaVM::LoadAOTFiles()
     fileLoader_->TryLoadSnapshotFile();
 }
 
-void EcmaVM::SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
+void EcmaVM::SaveAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
 {
-    fileLoader_->SetAOTFuncEntry(hash, methodId, funcEntry);
+    fileLoader_->SaveAOTFuncEntry(hash, methodId, funcEntry);
 }
 }  // namespace panda::ecmascript

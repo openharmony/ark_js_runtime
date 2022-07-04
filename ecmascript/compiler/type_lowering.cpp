@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "type_lowering.h"
+#include "ecmascript/compiler/type_lowering.h"
 
 namespace panda::ecmascript::kungfu {
 void TypeLowering::RunTypeLowering()
@@ -34,7 +34,8 @@ void TypeLowering::RunTypeLowering()
 
 void TypeLowering::Lower(GateRef gate)
 {
-    GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    ArgumentAccessor argAcc(circuit_);
+    auto glue = argAcc.GetCommonArgGate(CommonArgIdx::GLUE);
 
     auto pc = bcBuilder_->GetJSBytecode(gate);
     EcmaOpcode op = static_cast<EcmaOpcode>(*pc);

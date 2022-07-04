@@ -180,4 +180,4 @@ void GateAccessor::NewIn(GateRef gate, size_t idx, GateRef in)
 {
     circuit_->NewIn(gate, idx, in);
 }
-}
+}  // namespace panda::ecmascript::kungfu

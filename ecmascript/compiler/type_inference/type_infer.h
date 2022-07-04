@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_TYPE_INFERENCE_TYPE_INFER_H
 #define ECMASCRIPT_COMPILER_TYPE_INFERENCE_TYPE_INFER_H
 
+#include "ecmascript/compiler/argument_accessor.h"
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate_accessor.h"
