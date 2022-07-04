@@ -41,3 +41,29 @@ class Child extends Parent {
 var c = new Child(2, 3);
 print(c.value());
 print(Child.toString());
+
+try {
+    class C {
+        a = 1;
+    }
+    class D extends C {
+        constructo() {
+            delete super.a;
+        }
+    }
+    d = new D();
+} catch (err) {
+    print("PASS");
+}
+
+class A {
+    a = 10;
+}
+class B extends A {
+    constructor() {
+        let a = "a";
+        super[a]  = 1;
+    }
+}
+var par = new A;
+print(par.a);
