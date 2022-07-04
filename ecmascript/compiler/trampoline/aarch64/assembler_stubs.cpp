@@ -139,7 +139,6 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Mov(fp, sp);
 
-
     Register frameType(X19);
     // construct frame
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
@@ -324,17 +323,19 @@ void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
 // %x0 - glue
 // stack layout: sp + N*8 argvN
 //               ........
-//               sp + 24: argv1
-//               sp + 16: argv0
-//               sp + 8:  actualArgc
+//               sp + 24: argv0
+//               sp + 16: actualArgc
+//               sp + 8:  env
 //               sp:      codeAddress
 // construct Native Leave Frame
 //               +--------------------------+
 //               |       argv0              | calltarget , newtARGET, this, ....
 //               +--------------------------+ ---
 //               |       argc               |   ^
+//               |--------------------------|   |
+//               |       env | thread       |   |
 //               |--------------------------|  Fixed
-//               |       codeAddress        | OptimizedLeaveFrame
+//               |       codeAddress        | OptimizedBuiltinLeaveFrame
 //               |--------------------------|   |
 //               |       returnAddr         |   |
 //               |--------------------------|   |
@@ -366,28 +367,11 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Stp(nativeFuncAddr, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
 
     // load runtime trampoline address
-    __ Ldr(nativeFuncAddr, MemoryOperand(fp, GetStackArgOffSetToFp(0)));
+    __ Ldr(nativeFuncAddr, MemoryOperand(fp, GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::CODE_ADDRESS)));
+    __ Str(glue, MemoryOperand(fp, GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ENV))); // thread (instead of env)
 
-    // construct ecma_runtime_call_info
-    __ Sub(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
-    Register glueToThread(X1);
-    Register thread(X0);
-    __ Mov(glueToThread, JSThread::GetGlueDataOffset());
-    __ Sub(thread, glue, glueToThread);   // thread
-    __ Str(thread, MemoryOperand(sp, 0));
-    Register argC(X0);
-    __ Ldr(argC, MemoryOperand(fp, GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ARGC)));  // load argc
-    __ Sub(argC, argC, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
-    __ Str(argC, MemoryOperand(sp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
-    Register argV(X0);
-    __ Add(argV, fp, Immediate(GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ARGV)));    // argV
-    __ Str(argV, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
-
-    Register callInfo(X0);
-    __ Mov(callInfo, sp);
+    __ Add(Register(X0), fp, Immediate(GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ENV)));
     __ Blr(nativeFuncAddr);
-
-    __ Add(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
 
     // descontruct leave frame and callee save register
     __ Ldp(nativeFuncAddr, frameType, MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
@@ -760,7 +744,7 @@ void AssemblerStubs::JSCallDispatch(ExtendedAssembler *assembler)
         __ Tbnz(callFieldRegister, JSMethod::IsNativeBit::START_BIT, &callNativeEntry);
         // fast path
         __ PushFpAndLr();
-        __ Add(argvRegister, argvRegister, Immediate(BuiltinFrame::RESERVED_CALL_ARGCOUNT * JSTaggedValue::TaggedTypeSize()));
+        __ Add(argvRegister, argvRegister, Immediate(NUM_MANDATORY_JSFUNC_ARGS * JSTaggedValue::TaggedTypeSize()));
         JSCallCommonEntry(assembler, JSCallMode::CALL_ENTRY);
     }
     __ Bind(&notCallable);
@@ -1093,40 +1077,35 @@ void AssemblerStubs::CallNativeWithArgv(ExtendedAssembler *assembler, bool callN
     __ Str(callTarget, MemoryOperand(fpRegister, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Add(temp, fpRegister, Immediate(40));  // 40: skip frame type, numArgs, func, newTarget and this
     __ Add(Register(FP), temp, Operand(argc, LSL, 3));  // 3: argc * 8
+
+    __ Add(temp, argc, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
+    // 2: thread & argc
+    __ Stp(glue, temp, MemoryOperand(fpRegister, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Add(Register(X0), fpRegister, Immediate(0));
+
+    __ Align16(fpRegister);
     __ Mov(spRegister, fpRegister);
 
-    Label call;
-    Label notAligned;
-    __ Tst(fpRegister, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
-    __ B(Condition::NE, &notAligned);
-    // 16: xzr & stackArgs
-    __ Stp(fpRegister, Register(Zero), MemoryOperand(spRegister, -16, AddrMode::PREINDEX));
-    __ B(&call);
-    __ Bind(&notAligned);
-    // push stackArgs
-    __ Stur(fpRegister, MemoryOperand(fpRegister, -FRAME_SLOT_SIZE));
-    __ Sub(Register(SP), Register(SP), Immediate(FRAME_SLOT_SIZE));
-    __ Bind(&call);
-    CallNativeInternal(assembler, glue, argc, nativeCode);
+    CallNativeInternal(assembler, nativeCode);
     __ Ret();
 }
 
-// uint64_t PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
+// uint64_t PushCallArgsAndDispatchNative(uintptr_t codeAddress, uintptr_t glue, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
-// Input: X0 - glue
+// Input: X0 - codeAddress
 // stack layout: sp + N*8 argvN
 //               ........
 //               sp + 24: argv1
 //               sp + 16: argv0
 //               sp + 8:  actualArgc
-// sp:           codeAddress
+//               sp:      thread
 // construct Native Leave Frame
 //               +--------------------------+
 //               |       argv0              | calltarget , newTarget, this, ....
 //               +--------------------------+ ---
 //               |       argc               |   ^
 //               |--------------------------|  Fixed
-//               |       codeAddress        | BuiltinFrame
+//               |       thread             | BuiltinFrame
 //               |--------------------------|   |
 //               |       returnAddr         |   |
 //               |--------------------------|   |
@@ -1138,19 +1117,20 @@ void AssemblerStubs::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallArgsAndDispatchNative));
 
-    Register glue(X0);
-    Register nativeCode = __ AvailableRegister1();
-    Register argc(X4);
+    Register nativeCode(X0);
+    Register glue(X1);
     Register argv(X5);
     Register temp(X6);
-    Register fp(FP);
+    Register sp(SP);
+    Register nativeCodeTemp(X2);
 
+    __ Mov(nativeCodeTemp, nativeCode);
+
+    __ Ldr(glue, MemoryOperand(sp, 0));
+    __ Add(Register(X0), sp, Immediate(0));
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME, temp, argv);
 
-    __ Ldr(nativeCode, MemoryOperand(fp, BuiltinFrame::GetNativeCodeToFpDelta(false)));
-    __ Ldr(argc, MemoryOperand(fp, BuiltinFrame::GetNumArgsToFpDelta(false)));
-
-    CallNativeInternal(assembler, glue, argc, nativeCode);
+    CallNativeInternal(assembler, nativeCodeTemp);
     __ Ret();
 }
 
@@ -1178,15 +1158,8 @@ void AssemblerStubs::PushBuiltinFrame(ExtendedAssembler *assembler, Register glu
     }
 }
 
-void AssemblerStubs::CallNativeInternal(ExtendedAssembler *assembler, Register glue,
-    Register numArgs, Register nativeCode)
+void AssemblerStubs::CallNativeInternal(ExtendedAssembler *assembler, Register nativeCode)
 {
-    GlueToThread(assembler, glue, glue);
-    __ And(numArgs, numArgs, LogicalImmediate::Create(0x00000000FFFFFFFF, RegXSize));
-    // 16: numArgs & glue
-    __ Stp(glue, numArgs, MemoryOperand(Register(SP), -16, AddrMode::PREINDEX));
-    // rsp is ecma callinfo base
-    __ Mov(Register(X0), Register(SP));
     __ Blr(nativeCode);
     // resume rsp
     __ Mov(Register(SP), Register(FP));
@@ -1641,11 +1614,6 @@ void AssemblerStubs::PushUndefinedWithArgc(ExtendedAssembler *assembler, Registe
     __ Cbnz(argc.W(), &loopBeginning);
 }
 
-void AssemblerStubs::GlueToThread(ExtendedAssembler *assembler, Register glue, Register thread)
-{
-    __ Sub(thread, glue, Immediate(JSThread::GetGlueDataOffset()));
-}
-
 void AssemblerStubs::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler)
 {
 }
@@ -1761,7 +1729,6 @@ void AssemblerStubs::CallBCStub(ExtendedAssembler *assembler, Register &newSp, R
 void AssemblerStubs::CallNativeEntry(ExtendedAssembler *assembler)
 {
     Register glue(X0);
-    Register argc(X4);
     Register argv(X5);
     Register method(X2);
     Register function(X1);
@@ -1769,17 +1736,19 @@ void AssemblerStubs::CallNativeEntry(ExtendedAssembler *assembler)
     Register temp(X9);
 
     Register sp(SP);
-    // 16: function & align
-    __ Stp(function, Register(Zero), MemoryOperand(sp, -16, AddrMode::PREINDEX));
-    // 16: skip nativeCode & argc
-    __ Sub(sp, sp, Immediate(16));
+    // 2: function & align
+    __ Stp(function, Register(Zero), MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    // 2: skip argc & thread
+    __ Sub(sp, sp, Immediate(2 * FRAME_SLOT_SIZE));
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_ENTRY_FRAME, temp, argv);
     // get native pointer
     __ Ldr(nativeCode, MemoryOperand(method, JSMethod::GetBytecodeArrayOffset(false)));
-    CallNativeInternal(assembler, glue, argc, nativeCode);
+    __ Mov(temp, argv);
+    __ Sub(Register(X0), temp, Immediate(2 * FRAME_SLOT_SIZE));  // 2: skip argc & thread
+    CallNativeInternal(assembler, nativeCode);
 
-    // 32: skip function
-    __ Add(sp, sp, Immediate(32));
+    // 4: skip function
+    __ Add(sp, sp, Immediate(4 * FRAME_SLOT_SIZE));
     __ Ret();
 }
 

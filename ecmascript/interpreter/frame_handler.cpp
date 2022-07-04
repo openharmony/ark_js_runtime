@@ -171,6 +171,7 @@ JSTaggedValue FrameHandler::GetFunction() const
             case FrameType::INTERPRETER_ENTRY_FRAME:
             case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
             case FrameType::ASM_INTERPRETER_BRIDGE_FRAME:
+            case FrameType::INTERPRETER_BUILTIN_FRAME:
             case FrameType::OPTIMIZED_FRAME:
             case FrameType::LEAVE_FRAME:
             case FrameType::LEAVE_FRAME_WITH_ARGV:
@@ -182,9 +183,14 @@ JSTaggedValue FrameHandler::GetFunction() const
             }
         }
     } else {
-        FrameIterator it(sp_, thread_);
-        auto *frame = it.GetFrame<InterpretedFrame>();
-        return frame->function;
+        FrameType type = GetFrameType();
+        if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+            auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+            return frame->function;
+        } else {
+            auto *frame = InterpretedBuiltinFrame::GetFrameFromSp(sp_);
+            return frame->function;
+        }
     }
 }
 
@@ -260,9 +266,16 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
             end = ToUintPtr(frame);
             break;
         }
-        case FrameType::INTERPRETER_ENTRY_FRAME:
-            end = ToUintPtr(GetInterpretedEntryFrameStart(prevSp));
+        case FrameType::INTERPRETER_ENTRY_FRAME: {
+            auto frame = it.GetFrame<InterpretedEntryFrame>();
+            end = ToUintPtr(frame);
             break;
+        }
+        case FrameType::INTERPRETER_BUILTIN_FRAME: {
+            auto frame = it.GetFrame<InterpretedBuiltinFrame>();
+            end = ToUintPtr(frame);
+            break;
+        }
         case FrameType::BUILTIN_FRAME_WITH_ARGV:
         case FrameType::BUILTIN_ENTRY_FRAME:
         case FrameType::BUILTIN_FRAME:
@@ -279,14 +292,6 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         }
     }
     return end;
-}
-
-ARK_INLINE JSTaggedType *FrameHandler::GetInterpretedEntryFrameStart(const JSTaggedType *sp)
-{
-    ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_ENTRY_FRAME);
-    JSTaggedType *argcSp = const_cast<JSTaggedType *>(sp) - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1;
-    uint32_t argc = argcSp[0];
-    return argcSp - argc - RESERVED_CALL_ARGCOUNT;
 }
 
 void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -355,6 +360,11 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
             case FrameType::INTERPRETER_FRAME:
             case FrameType::INTERPRETER_FAST_NEW_FRAME: {
                 auto frame = it.GetFrame<InterpretedFrame>();
+                frame->GCIterate(it, v0, v1);
+                break;
+            }
+            case FrameType::INTERPRETER_BUILTIN_FRAME: {
+                auto frame = it.GetFrame<InterpretedBuiltinFrame>();
                 frame->GCIterate(it, v0, v1);
                 break;
             }

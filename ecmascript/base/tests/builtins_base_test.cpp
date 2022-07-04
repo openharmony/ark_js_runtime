@@ -65,8 +65,8 @@ HWTEST_F_L0(BuiltinsBaseTest, GetArgsArray)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(2));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(3));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSHandle<TaggedArray> resultArray = BuiltinsBase::GetArgsArray(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSHandle<TaggedArray> resultArray = BuiltinsBase::GetArgsArray(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(resultArray->GetLength(), 3U);
@@ -95,24 +95,24 @@ HWTEST_F_L0(BuiltinsBaseTest, BuiltinsBase_info_Get)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(ArgsPosition::FIRST));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(ArgsPosition::SECOND));
     ecmaRuntimeCallInfo1->SetCallArg(2, JSTaggedValue(ArgsPosition::FOURTH));
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
 
-    EXPECT_TRUE(BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo1.get())->IsUndefined());
-    EXPECT_TRUE(BuiltinsBase::GetNewTarget(ecmaRuntimeCallInfo1.get())->IsUndefined());
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 0)->GetInt(), 0);
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 1)->GetInt(), 1);
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 2)->GetInt(), 3);
+    EXPECT_TRUE(BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo1)->IsUndefined());
+    EXPECT_TRUE(BuiltinsBase::GetNewTarget(ecmaRuntimeCallInfo1)->IsUndefined());
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1, 0)->GetInt(), 0);
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1, 1)->GetInt(), 1);
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1, 2)->GetInt(), 3);
     TestHelper::TearDownFrame(thread, prev1);
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*handleNewTarget), 6);
     ecmaRuntimeCallInfo2->SetFunction(handleFunction.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetThis(handleNewTarget.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, JSTaggedValue::Undefined());
-    [[maybe_unused]] auto prev2 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prev2 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
 
-    EXPECT_TRUE(BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo2.get())->IsJSFunction());
-    EXPECT_TRUE(BuiltinsBase::GetNewTarget(ecmaRuntimeCallInfo2.get())->IsJSGlobalObject());
-    EXPECT_TRUE(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo2.get(), 0)->IsUndefined());
+    EXPECT_TRUE(BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo2)->IsJSFunction());
+    EXPECT_TRUE(BuiltinsBase::GetNewTarget(ecmaRuntimeCallInfo2)->IsJSGlobalObject());
+    EXPECT_TRUE(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo2, 0)->IsUndefined());
     TestHelper::TearDownFrame(thread, prev2);
 }
 

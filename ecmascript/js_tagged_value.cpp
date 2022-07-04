@@ -341,10 +341,11 @@ JSTaggedValue JSTaggedValue::ToPrimitive(JSThread *thread, const JSHandle<JSTagg
         if (!exoticToprim->IsUndefined()) {
             JSTaggedValue value = GetTypeString(thread, type).GetTaggedValue();
             JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, exoticToprim, tagged, undefined, 1);
-            info.SetCallArg(value);
-            JSTaggedValue valueResult = JSFunction::Call(&info);
+            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+            info->SetCallArg(value);
+            JSTaggedValue valueResult = JSFunction::Call(info);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;
@@ -374,9 +375,9 @@ JSTaggedValue JSTaggedValue::OrdinaryToPrimitive(JSThread *thread, const JSHandl
         JSHandle<JSTaggedValue> entryfunc = GetProperty(thread, tagged, keyString).GetValue();
         if (entryfunc->IsCallable()) {
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, entryfunc, tagged, undefined, 0);
-            JSTaggedValue valueResult = JSFunction::Call(&info);
+            JSTaggedValue valueResult = JSFunction::Call(info);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;

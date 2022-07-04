@@ -177,7 +177,7 @@ JSTaggedValue BuiltinsMap::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 1);
 
     JSMutableHandle<LinkedHashMap> hashMap(thread, map->GetLinkedMap());
-    const size_t argsLength = 3;
+    const int32_t argsLength = 3;
     int index = 0;
     int totalElements = hashMap->NumberOfElements() + hashMap->NumberOfDeletedElements();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
@@ -187,11 +187,12 @@ JSTaggedValue BuiltinsMap::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
         // a. If e is not empty, then
         if (!key->IsHole()) {
             JSHandle<JSTaggedValue> value(thread, hashMap->GetValue(index - 1));
-            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(
+            EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(
                 thread, func, thisArg, undefined, argsLength);
-            info.SetCallArg(value.GetTaggedValue(), key.GetTaggedValue(), map.GetTaggedValue());
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            info->SetCallArg(value.GetTaggedValue(), key.GetTaggedValue(), map.GetTaggedValue());
             // i. Let funcResult be Call(callbackfn, T, «e, e, S»).
-            JSTaggedValue ret = JSFunction::Call(&info);  // 3: three args
+            JSTaggedValue ret = JSFunction::Call(info);  // 3: three args
             // ii. ReturnIfAbrupt(funcResult).
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
             // Maybe add or delete
@@ -306,12 +307,13 @@ JSTaggedValue BuiltinsMap::AddEntriesFromIterable(JSThread *thread, const JSHand
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);
         }
-        const size_t argsLength = 2;  // 2: key and value pair
+        const int32_t argsLength = 2;  // 2: key and value pair
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, adder, JSHandle<JSTaggedValue>(target), undefined, argsLength);
-        info.SetCallArg(key.GetTaggedValue(), value.GetTaggedValue());
-        JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
+        info->SetCallArg(key.GetTaggedValue(), value.GetTaggedValue());
+        JSFunction::Call(info);
         // If status is an abrupt completion, return IteratorClose(iter, status).
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);

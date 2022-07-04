@@ -249,7 +249,7 @@ bool JSFunction::MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &f
 
 JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -272,7 +272,7 @@ JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -299,7 +299,7 @@ JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -307,6 +307,7 @@ JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTag
     JSThread *thread = info->GetThread();
     JSHandle<JSTaggedValue> thisArg = info->GetThis();
     JSHandle<JSTaggedValue> func(JSTaggedValue::GetProperty(thread, thisArg, key).GetValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     info->SetFunction(func.GetTaggedValue());
     return JSFunction::Call(info);
 }
@@ -314,7 +315,7 @@ JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTag
 // [[Construct]]
 JSTaggedValue JSFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -438,19 +439,20 @@ JSTaggedValue JSBoundFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
     }
 
     JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
-    const size_t boundLength = boundArgs->GetLength();
-    const size_t argsLength = info->GetArgsNumber() + boundLength;
+    const int32_t boundLength = boundArgs->GetLength();
+    const int32_t argsLength = info->GetArgsNumber() + boundLength;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo =
-            EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTargetMutable, argsLength);
+    EcmaRuntimeCallInfo *runtimeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTargetMutable, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (boundLength == 0) {
-        runtimeInfo.SetCallArg(argsLength, 0, info, 0);
+        runtimeInfo->SetCallArg(argsLength, 0, info, 0);
     } else {
         // 0 ~ boundLength is boundArgs; boundLength ~ argsLength is args of EcmaRuntimeCallInfo.
-        runtimeInfo.SetCallArg(boundLength, boundArgs);
-        runtimeInfo.SetCallArg(argsLength, boundLength, info, 0);
+        runtimeInfo->SetCallArg(boundLength, boundArgs);
+        runtimeInfo->SetCallArg(argsLength, boundLength, info, 0);
     }
-    return JSFunction::Construct(&runtimeInfo);
+    return JSFunction::Construct(runtimeInfo);
 }
 
 void JSProxyRevocFunction::ProxyRevocFunctions(const JSThread *thread, const JSHandle<JSProxyRevocFunction> &revoker)

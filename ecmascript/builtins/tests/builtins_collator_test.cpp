@@ -97,8 +97,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, CollatorConstructor)
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue()); // set option tag
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSCollator());
@@ -117,9 +117,10 @@ static JSTaggedValue JSCollatorCreateWithLocaleTest(JSThread *thread, JSHandle<J
     // set no options
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsJSCollator());
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -146,9 +147,10 @@ static JSTaggedValue JSCollatorCreateWithLocaleAndOptionsTest(JSThread *thread, 
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsCollator::CollatorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsJSCollator());
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -163,8 +165,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_001)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsCollator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSFunction> jsFunction(thread, result1);
 
@@ -190,8 +192,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_001)
     ecmaRuntimeCallInfo2->SetThis(jsObject.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, jsFunction.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsArray::Sort(ecmaRuntimeCallInfo2.get()); // sort in language(de)
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsArray::Sort(ecmaRuntimeCallInfo2); // sort in language(de)
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultArr =
@@ -212,8 +214,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsCollator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSFunction> jsFunction(thread, result1);
@@ -239,8 +241,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
     ecmaRuntimeCallInfo2->SetThis(jsObject.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, jsFunction.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsArray::Sort(ecmaRuntimeCallInfo2.get()); // sort in language(sv)
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsArray::Sort(ecmaRuntimeCallInfo2); // sort in language(sv)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSObject> resultObj(thread, result2);
 
@@ -249,8 +251,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo3->SetThis(resultObj.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result = BuiltinsArray::Join(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result = BuiltinsArray::Join(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_EQ(resultHandle->Compare(*str), 0);
@@ -268,8 +270,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_003)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsCollator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsCollator::Compare(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSFunction> jsFunction(thread, result1);
@@ -289,8 +291,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_003)
     ecmaRuntimeCallInfo2->SetCallArg(0, value0.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, value1.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2.get()); // search in language(sv)
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2); // search in language(sv)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSTaggedValue> resultHandle(thread, result2);
     EXPECT_EQ(resultHandle->GetInt(), 0); // Congrès and congres is matching
@@ -307,8 +309,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsCollator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsCollator::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsCollator::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =
@@ -344,8 +346,8 @@ HWTEST_F_L0(BuiltinsCollatorTest, SupportedLocalesOf)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsCollator::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsCollator::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);

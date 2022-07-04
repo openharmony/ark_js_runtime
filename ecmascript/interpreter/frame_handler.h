@@ -161,9 +161,6 @@ public:
         DumpPC(std::cout, pc);
     }
 
-    // for InterpretedEntryFrame.
-    static JSTaggedType* GetInterpretedEntryFrameStart(const JSTaggedType *sp);
-
     // for Frame GC.
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
     void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const;

@@ -71,9 +71,10 @@ JSTaggedValue JSProxy::GetPrototype(JSThread *thread, const JSHandle<JSProxy> &p
     }
     // 8. Let handlerProto be Call(trap, handler, «target»).
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handler, undefined, 1);
-    info.SetCallArg(targetHandle.GetTaggedValue());
-    JSTaggedValue handlerProto = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handler, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(targetHandle.GetTaggedValue());
+    JSTaggedValue handlerProto = JSFunction::Call(info);
 
     // 9. ReturnIfAbrupt(handlerProto).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -130,11 +131,12 @@ bool JSProxy::SetPrototype(JSThread *thread, const JSHandle<JSProxy> &proxy, con
         return JSTaggedValue::SetPrototype(thread, targetHandle, proto);
     }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 2;  // 2: target and proto
+    const int32_t argsLength = 2;  // 2: target and proto
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), proto.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue(), proto.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, V»)).
     // If booleanTrapResult is false, return false
@@ -192,9 +194,10 @@ bool JSProxy::IsExtensible(JSThread *thread, const JSHandle<JSProxy> &proxy)
     JSHandle<JSTaggedValue> newTgt(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, 1);
-    info.SetCallArg(targetHandle.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, 1);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 9. ReturnIfAbrupt(booleanTrapResult).
@@ -241,9 +244,10 @@ bool JSProxy::PreventExtensions(JSThread *thread, const JSHandle<JSProxy> &proxy
     }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, 1);
-    info.SetCallArg(targetHandle.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, 1);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 9. ReturnIfAbrupt(booleanTrapResult).
@@ -292,11 +296,12 @@ bool JSProxy::GetOwnProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, c
         return JSTaggedValue::GetOwnProperty(thread, targetHandle, key, desc);
     }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 2;  // 2: target and key
+    const int32_t argsLength = 2;  // 2: target and key
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
-    JSTaggedValue trapResultObj = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
+    JSTaggedValue trapResultObj = JSFunction::Call(info);
 
     JSHandle<JSTaggedValue> resultHandle(thread, trapResultObj);
 
@@ -389,11 +394,12 @@ bool JSProxy::DefineOwnProperty(JSThread *thread, const JSHandle<JSProxy> &proxy
     // 9. Let descObj be FromPropertyDescriptor(Desc).
     JSHandle<JSTaggedValue> descObj = JSObject::FromPropertyDescriptor(thread, desc);
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 3;  // 3: target, key and desc
+    const int32_t argsLength = 3;  // 3: target, key and desc
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue(), descObj.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue(), descObj.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -476,11 +482,12 @@ bool JSProxy::HasProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, cons
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P»)).
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
 
-    const size_t argsLength = 2;  // 2: target and key
+    const int32_t argsLength = 2;  // 2: target and key
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 10. ReturnIfAbrupt(booleanTrapResult).
@@ -536,11 +543,13 @@ OperationResult JSProxy::GetProperty(JSThread *thread, const JSHandle<JSProxy> &
     }
     // 9. Let trapResult be Call(trap, handler, «target, P, Receiver»).
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 3;  // 3: «target, P, Receiver»
+    const int32_t argsLength = 3;  // 3: «target, P, Receiver»
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue(), receiver.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(
+        thread, OperationResult(thread, exceptionHandle.GetTaggedValue(), PropertyMetaData(false)));
+    info->SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue(), receiver.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
     JSHandle<JSTaggedValue> resultHandle(thread, trapResult);
 
     // 10. ReturnIfAbrupt(trapResult).
@@ -605,12 +614,13 @@ bool JSProxy::SetProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, cons
 
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P, V, Receiver»))
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 4;  // 4: «target, P, V, Receiver»
+    const int32_t argsLength = 4;  // 4: «target, P, V, Receiver»
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(
         targetHandle.GetTaggedValue(), key.GetTaggedValue(), value.GetTaggedValue(), receiver.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -664,11 +674,12 @@ bool JSProxy::DeleteProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, c
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P»)).
     JSHandle<JSTaggedValue> newTgt(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    const size_t argsLength = 2;  // 2: target and key
+    const int32_t argsLength = 2;  // 2: target and key
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
-    info.SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
-    JSTaggedValue trapResult = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerTag, undefined, argsLength);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    info->SetCallArg(targetHandle.GetTaggedValue(), key.GetTaggedValue());
+    JSTaggedValue trapResult = JSFunction::Call(info);
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -728,9 +739,10 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
     // 8.Let trapResultArray be Call(trap, handler, «target»).
     JSHandle<JSFunction> tagFunc(targetHandle);
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerHandle, undefined, 1);
-    info.SetCallArg(targetHandle.GetTaggedValue());
-    JSTaggedValue res = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, trap, handlerHandle, undefined, 1);
+    RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
+    info->SetCallArg(targetHandle.GetTaggedValue());
+    JSTaggedValue res = JSFunction::Call(info);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
     JSHandle<JSTaggedValue> trap_res_arr(thread, res);
 
@@ -846,7 +858,7 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
 // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)
 JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -867,37 +879,39 @@ JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
 
     // 6.ReturnIfAbrupt(trap).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    size_t argc = info->GetArgsNumber();
+    int32_t argc = info->GetArgsNumber();
     JSHandle<JSTaggedValue> thisArg = info->GetThis();
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     // 7.If trap is undefined, then
     //   a.Return Call(target, thisArgument, argumentsList).
     if (method->IsUndefined()) {
-        EcmaRuntimeCallInfo runtimeInfo =
+        EcmaRuntimeCallInfo *runtimeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, target, thisArg, undefined, argc);
-        runtimeInfo.SetCallArg(argc, 0, info, 0);
-        return JSFunction::Call(&runtimeInfo);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        runtimeInfo->SetCallArg(argc, 0, info, 0);
+        return JSFunction::Call(runtimeInfo);
     }
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(static_cast<uint32_t>(argc));
-    for (size_t index = 0; index < argc; ++index) {
+    for (int32_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, info->GetCallArg(index));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
 
     // 9.Return Call(trap, handler, «target, thisArgument, argArray»).
-    const size_t argsLength = 3;  // 3: «target, thisArgument, argArray»
-    EcmaRuntimeCallInfo runtimeInfo =
+    const int32_t argsLength = 3;  // 3: «target, thisArgument, argArray»
+    EcmaRuntimeCallInfo *runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, method, handler, undefined, argsLength);
-    runtimeInfo.SetCallArg(target.GetTaggedValue(), thisArg.GetTaggedValue(), arrHandle.GetTaggedValue());
-    return JSFunction::Call(&runtimeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    runtimeInfo->SetCallArg(target.GetTaggedValue(), thisArg.GetTaggedValue(), arrHandle.GetTaggedValue());
+    return JSFunction::Call(runtimeInfo);
 }
 
 // ES6 9.5.14 [[Construct]] ( argumentsList, newTarget)
 JSTaggedValue JSProxy::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
-    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+    if (info == nullptr) {
         return JSTaggedValue::Exception();
     }
 
@@ -929,21 +943,22 @@ JSTaggedValue JSProxy::ConstructInternal(EcmaRuntimeCallInfo *info)
 
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    size_t argc = info->GetArgsNumber();
+    int32_t argc = info->GetArgsNumber();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(static_cast<uint32_t>(argc));
-    for (size_t index = 0; index < argc; ++index) {
+    for (int32_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, info->GetCallArg(index));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
 
     // step 8 ~ 9 Call(trap, handler, «target, argArray, newTarget »).
     JSHandle<JSTaggedValue> newTarget(info->GetNewTarget());
-    const size_t argsLength = 3;  // 3: «target, argArray, newTarget »
+    const int32_t argsLength = 3;  // 3: «target, argArray, newTarget »
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo =
+    EcmaRuntimeCallInfo *runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, method, handler, undefined, argsLength);
-    runtimeInfo.SetCallArg(target.GetTaggedValue(), arrHandle.GetTaggedValue(), newTarget.GetTaggedValue());
-    JSTaggedValue newObj = JSFunction::Call(&runtimeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    runtimeInfo->SetCallArg(target.GetTaggedValue(), arrHandle.GetTaggedValue(), newTarget.GetTaggedValue());
+    JSTaggedValue newObj = JSFunction::Call(runtimeInfo);
 
     // 10.ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);

@@ -21,7 +21,6 @@
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {
-class EcmaRuntimeCallInfo;
 class SlowRuntimeHelper {
 public:
     static JSTaggedValue NewObject(EcmaRuntimeCallInfo *info);

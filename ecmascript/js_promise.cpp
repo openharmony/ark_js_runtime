@@ -99,9 +99,10 @@ JSHandle<PromiseCapability> JSPromise::NewPromiseCapability(JSThread *thread, co
     // 6. Let promise be Construct(C, «executor»).
     // 7. ReturnIfAbrupt(promise).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, obj, undefined, undefined, 1);
-    info.SetCallArg(executor.GetTaggedValue());
-    JSTaggedValue result = JSFunction::Construct(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, obj, undefined, undefined, 1);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, factory->NewPromiseCapability());
+    info->SetCallArg(executor.GetTaggedValue());
+    JSTaggedValue result = JSFunction::Construct(info);
     JSHandle<JSPromise> promise(thread, result);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, factory->NewPromiseCapability());
     // 8. If IsCallable(promiseCapability.[[Resolve]]) is false, throw a TypeError exception.

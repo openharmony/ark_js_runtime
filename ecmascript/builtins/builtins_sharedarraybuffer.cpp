@@ -219,10 +219,11 @@ JSTaggedValue BuiltinsSharedArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 15. Let new be Construct(ctor, «newLen»).
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 1);
-    info.SetCallArg(JSTaggedValue(newLen));
-    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(JSTaggedValue(newLen));
+    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(info);
     JSHandle<JSTaggedValue> newArrBuf(thread, taggedNewArrBuf);
     // 16. ReturnIfAbrupt(new).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);

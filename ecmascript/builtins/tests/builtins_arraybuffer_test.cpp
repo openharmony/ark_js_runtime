@@ -65,8 +65,9 @@ JSTaggedValue CreateBuiltinsArrayBuffer(JSThread *thread, int32_t length)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(length));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -81,9 +82,10 @@ HWTEST_F_L0(BuiltinsArrayBufferTest, Constructor1)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(8)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // (new ArrayBuffer(5)).byteLength
@@ -95,9 +97,10 @@ HWTEST_F_L0(BuiltinsArrayBufferTest, byteLength1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(arrBuf.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsArrayBuffer::GetByteLength(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsArrayBuffer::GetByteLength(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(5).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // (new ArrayBuffer(10)).slice(1, 5).bytelength
@@ -111,17 +114,18 @@ HWTEST_F_L0(BuiltinsArrayBufferTest, slice1)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(5)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsArrayBuffer::Slice(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsArrayBuffer::Slice(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSArrayBuffer> arrBuf1(thread,
                                      JSArrayBuffer::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData())));
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(arrBuf1.GetTaggedValue());
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result2 = BuiltinsArrayBuffer::GetByteLength(ecmaRuntimeCallInfo1.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result2 = BuiltinsArrayBuffer::GetByteLength(ecmaRuntimeCallInfo1);
 
     ASSERT_EQ(result2.GetRawData(), JSTaggedValue(4).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 }  // namespace panda::test

@@ -80,11 +80,12 @@ HWTEST_F_L0(BuiltinsProxyTest, ProxyConstructor)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, handler.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsProxy::ProxyConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsProxy::ProxyConstructor(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSTaggedValue> resultHandle(thread, result);
     EXPECT_TRUE(resultHandle->IsJSProxy());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // 26.2.2.1 Proxy.revocable ( target, handler )
@@ -107,8 +108,8 @@ HWTEST_F_L0(BuiltinsProxyTest, Revocable)
     ecmaRuntimeCallInfo->SetCallArg(1, handler.GetTaggedValue());
     ecmaRuntimeCallInfo->SetNewTarget(JSTaggedValue(*proxyFun));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsProxy::Revocable(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsProxy::Revocable(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSObject> resultHandle(thread, result);
 
@@ -133,5 +134,6 @@ HWTEST_F_L0(BuiltinsProxyTest, Revocable)
     PropertyDescriptor descRes(thread);
     JSObject::GetOwnProperty(thread, resultHandle, revokeKey, descRes);
     EXPECT_TRUE(descRes.GetValue()->IsProxyRevocFunction());
+    TestHelper::TearDownFrame(thread, prev);
 }
 }  // namespace panda::test

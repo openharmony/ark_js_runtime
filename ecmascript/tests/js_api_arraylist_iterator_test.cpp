@@ -69,8 +69,8 @@ protected:
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::ArrayList)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSTaggedValue> constructor(thread, result);
@@ -104,8 +104,8 @@ HWTEST_F_L0(JSAPIArrayListIteratorTest, Next)
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(arrayListIterator.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = JSAPIArrayListIterator::Next(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = JSAPIArrayListIterator::Next(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSObject> resultObj(thread, result);

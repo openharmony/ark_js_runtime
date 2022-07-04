@@ -201,8 +201,9 @@ JSTypedArray *CreateTypedArrayFromList(JSThread *thread, const JSHandle<TaggedAr
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue(*globalObject));
     ecmaRuntimeCallInfo1->SetCallArg(0, jsarray.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = TypedArray::Int8ArrayConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = TypedArray::Int8ArrayConstructor(ecmaRuntimeCallInfo1);
+    TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsECMAObject());
     JSTypedArray *int8arr = JSTypedArray::Cast(reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -221,8 +222,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Species)
     ecmaRuntimeCallInfo1->SetFunction(array.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetThis(globalObject.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = TypedArray::Species(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = TypedArray::Species(ecmaRuntimeCallInfo1);
     ASSERT_TRUE(result.IsECMAObject());
 }
 
@@ -242,8 +243,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
     ecmaRuntimeCallInfo1->SetThis(obj.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    [[maybe_unused]] JSTaggedValue result = TypedArray::Includes(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    [[maybe_unused]] JSTaggedValue result = TypedArray::Includes(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2)
@@ -253,8 +254,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
     ecmaRuntimeCallInfo2->SetThis(obj.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    result = TypedArray::Includes(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    result = TypedArray::Includes(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(1)
@@ -265,8 +266,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
     ecmaRuntimeCallInfo3->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(3)));
     ecmaRuntimeCallInfo3->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    result = TypedArray::Includes(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    result = TypedArray::Includes(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(3, 1)
@@ -277,8 +278,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
     ecmaRuntimeCallInfo4->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
     ecmaRuntimeCallInfo4->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(5)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    result = Array::Includes(ecmaRuntimeCallInfo4.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    result = Array::Includes(ecmaRuntimeCallInfo4);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2, 5)
@@ -289,8 +290,8 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
     ecmaRuntimeCallInfo5->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
     ecmaRuntimeCallInfo5->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(-2)));
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5.get());
-    result = Array::Includes(ecmaRuntimeCallInfo5.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5);
+    result = Array::Includes(ecmaRuntimeCallInfo5);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2, -2)

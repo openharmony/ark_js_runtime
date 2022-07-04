@@ -142,12 +142,13 @@ public:
 
         JSHandle<JSTaggedValue> compareFn(thread, fn);
         JSHandle<JSTaggedValue> thisArgHandle = thread->GlobalConstants()->GetHandledUndefined();
-        const size_t argsLength = 2;
+        const int32_t argsLength = 2;
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, compareFn, thisArgHandle, undefined, argsLength);
-        info.SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
-        JSTaggedValue callResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
+        info->SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
         int compareResult = 0;
         if (callResult.IsInt()) {

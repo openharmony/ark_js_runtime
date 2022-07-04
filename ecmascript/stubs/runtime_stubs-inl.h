@@ -188,12 +188,13 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCallSpread(JSThread *thread, const JSHan
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, RuntimeGetCallSpreadArgs(thread, array.GetTaggedValue()));
-    const size_t argsLength = argv->GetLength();
+    const int32_t argsLength = argv->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTarget, argsLength);
-    info.SetCallArg(argsLength, argv);
-    JSTaggedValue result = JSFunction::Construct(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, argv);
+    JSTaggedValue result = JSFunction::Construct(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return result;
@@ -228,9 +229,10 @@ JSTaggedValue RuntimeStubs::RuntimeNewObjSpreadDyn(JSThread *thread, const JSHan
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, undefined, newTarget, length);
-    info.SetCallArg(length, argsArray);
-    return SlowRuntimeHelper::NewObject(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, undefined, newTarget, length);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(length, argsArray);
+    return SlowRuntimeHelper::NewObject(info);
 }
 
 JSTaggedValue RuntimeStubs::RuntimeCreateIterResultObj(JSThread *thread, const JSHandle<JSTaggedValue> &value,
@@ -272,9 +274,10 @@ JSTaggedValue RuntimeStubs::RuntimeAsyncFunctionResolveOrReject(JSThread *thread
         activeFunc = JSHandle<JSTaggedValue>(thread, reactions->GetRejectFunction());
     }
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, activeFunc, thisArg, undefined, 1);
-    info.SetCallArg(value.GetTaggedValue());
-    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, activeFunc, thisArg, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(value.GetTaggedValue());
+    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(info);
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return promise.GetTaggedValue();
@@ -364,8 +367,9 @@ JSTaggedValue RuntimeStubs::RuntimeGetIteratorNext(JSThread *thread, const JSHan
 {
     ASSERT(method->IsCallable());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
-    JSTaggedValue ret = JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue ret = JSFunction::Call(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (!ret.IsECMAObject()) {
         return RuntimeThrowTypeError(thread, "the Iterator is not an ecmaobject.");
@@ -870,8 +874,8 @@ JSTaggedValue RuntimeStubs::RuntimeGetIterator(JSThread *thread, const JSHandle<
         return valuesFunc.GetTaggedValue();
     }
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, valuesFunc, obj, undefined, 0);
-    return EcmaInterpreter::Execute(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, valuesFunc, obj, undefined, 0);
+    return EcmaInterpreter::Execute(info);
 }
 
 void RuntimeStubs::RuntimeThrowDyn(JSThread *thread, JSTaggedValue value)
@@ -1441,9 +1445,10 @@ JSTaggedValue RuntimeStubs::RuntimeCallSpreadDyn(JSThread *thread, const JSHandl
     JSHandle<TaggedArray> coretypesArray(thread, RuntimeGetCallSpreadArgs(thread, array.GetTaggedValue()));
     uint32_t length = coretypesArray->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, obj, undefined, length);
-    info.SetCallArg(length, coretypesArray);
-    return EcmaInterpreter::Execute(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, obj, undefined, length);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(length, coretypesArray);
+    return EcmaInterpreter::Execute(info);
 }
 
 JSTaggedValue RuntimeStubs::RuntimeDefineGetterSetterByValue(JSThread *thread, const JSHandle<JSObject> &obj,
@@ -1513,9 +1518,10 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCall(JSThread *thread, const JSHandle<JS
     }
 
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTarget, length);
-    info.SetCallArg(length, argv);
-    JSTaggedValue result = JSFunction::Construct(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTarget, length);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(length, argv);
+    JSTaggedValue result = JSFunction::Construct(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return result;
@@ -1723,13 +1729,14 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t
     JSHandle<JSTaggedValue> thisObj = thread->GlobalConstants()->GetHandledUndefined();
     const size_t numCtorAndNewTgt = 2;
     STACK_ASSERT_SCOPE(thread);
-    EcmaRuntimeCallInfo info =
-        ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, ctor, thisObj, newTgt, argc - numCtorAndNewTgt);
+    EcmaRuntimeCallInfo *info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, ctor, thisObj, newTgt, argc - numCtorAndNewTgt);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     for (size_t i = 0; i < argc - numCtorAndNewTgt; ++i) {
-        info.SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
+        info->SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
     }
 
-    JSTaggedValue object = JSFunction::Construct(&info);
+    JSTaggedValue object = JSFunction::Construct(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return object;
 }
@@ -1754,13 +1761,14 @@ JSTaggedValue RuntimeStubs::RuntimeAotNewObjWithIHClass(JSThread *thread, uintpt
 
     const size_t numCtorAndNewTgt = 2;
     const size_t numCtorNewTgtAndIHCIndex = 3;
-    EcmaRuntimeCallInfo info = ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(ctor),
+    EcmaRuntimeCallInfo *info = ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(ctor),
         thisObj, newTgt, argc - numCtorNewTgtAndIHCIndex);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     for (size_t i = 0; i < argc - numCtorNewTgtAndIHCIndex; ++i) {
-        info.SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
+        info->SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
     }
 
-    JSTaggedValue object = JSFunction::Construct(&info);
+    JSTaggedValue object = JSFunction::Construct(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return object;

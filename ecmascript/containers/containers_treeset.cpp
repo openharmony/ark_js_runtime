@@ -287,7 +287,7 @@ JSTaggedValue ContainersTreeSet::ForEach(EcmaRuntimeCallInfo *argv)
 
     int index = 0;
     size_t length = entries->GetLength();
-    const size_t argsLength = 3;
+    const int32_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     while (index < elements) {
@@ -295,9 +295,10 @@ JSTaggedValue ContainersTreeSet::ForEach(EcmaRuntimeCallInfo *argv)
         key.Update(iteratedSet->GetKey(entriesIndex));
 
         // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-        info.SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), self.GetTaggedValue());
-        JSTaggedValue ret = JSFunction::Call(&info);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), self.GetTaggedValue());
+        JSTaggedValue ret = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
 
         // check entries should be update, size will be update by set add and remove.

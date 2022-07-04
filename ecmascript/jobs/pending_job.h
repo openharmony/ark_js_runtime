@@ -45,11 +45,12 @@ public:
         JSHandle<JSTaggedValue> job(thread, pendingJob->GetJob());
         ASSERT(job->IsCallable());
         JSHandle<TaggedArray> argv(thread, pendingJob->GetArguments());
-        const size_t argsLength = argv->GetLength();
+        const int32_t argsLength = argv->GetLength();
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, job, undefined, undefined, argsLength);
-        info.SetCallArg(argsLength, argv);
-        return JSFunction::Call(&info);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, job, undefined, undefined, argsLength);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(argsLength, argv);
+        return JSFunction::Call(info);
     }
 
     static constexpr size_t JOB_OFFSET = Record::SIZE;

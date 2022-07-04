@@ -87,8 +87,8 @@ protected:
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::ArrayList)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = containers::ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSTaggedValue> constructor(thread, result);
@@ -397,7 +397,7 @@ HWTEST_F_L0(JSAPIArrayListTest, ReplaceAllElements)
     callInfo->SetThis(arrayList.GetTaggedValue());
     callInfo->SetCallArg(0, func.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
     JSHandle<JSTaggedValue> result(thread, JSAPIArrayList::ReplaceAllElements(thread,
         callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetCallArg(0)));
     EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());
@@ -456,7 +456,7 @@ HWTEST_F_L0(JSAPIArrayListTest, ForEach)
     callInfo->SetThis(arrayList.GetTaggedValue());
     callInfo->SetCallArg(0, func.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
     JSHandle<JSTaggedValue> result(thread,
         JSAPIArrayList::ForEach(thread, callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetCallArg(0)));
     EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());

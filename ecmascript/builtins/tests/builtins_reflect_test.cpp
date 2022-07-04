@@ -74,7 +74,7 @@ JSTaggedValue TestReflectApply(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     int result = 0;
-    for (uint32_t index = 0; index < argv->GetArgsNumber(); ++index) {
+    for (int32_t index = 0; index < argv->GetArgsNumber(); ++index) {
         result += BuiltinsBase::GetCallArg(argv, index).GetTaggedValue().GetInt();
     }
     JSHandle<JSTaggedValue> thisValue = BuiltinsBase::GetThis(argv);
@@ -127,14 +127,15 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectApply)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(*thisArgument));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(*argumentsList));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectApply(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectApply(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(110).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArgument),
                              JSHandle<JSTaggedValue>(factory->NewFromASCII("test_reflect_apply_a")));
     JSObject::DeleteProperty(thread, (thisArgument),
                              JSHandle<JSTaggedValue>(factory->NewFromASCII("test_reflect_apply_b")));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.construct (target, argumentsList [ , newTarget])
@@ -158,14 +159,15 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectConstruct)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(*argumentsList));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectConstruct(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectConstruct(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSTaggedValue> taggedResult(thread, result);
     JSHandle<JSPrimitiveRef> refResult = JSHandle<JSPrimitiveRef>::Cast(taggedResult);
     JSHandle<EcmaString> ruler = factory->NewFromASCII("ReflectConstruct");
     ASSERT_EQ(EcmaString::Cast(refResult->GetValue().GetTaggedObject())->Compare(*ruler), 0);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.defineProperty (target, propertyKey, attributes)
@@ -206,8 +208,8 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectDefineProperty)
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(*attributes));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectDefineProperty(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectDefineProperty(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 
     PropertyDescriptor descRuler(thread);
@@ -216,6 +218,7 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectDefineProperty)
     ASSERT_EQ(descRuler.IsWritable(), true);
     ASSERT_EQ(descRuler.IsEnumerable(), false);
     ASSERT_EQ(descRuler.IsConfigurable(), true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.deleteProperty (target, propertyKey)
@@ -240,10 +243,11 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectDeleteProperty)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectDeleteProperty(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectDeleteProperty(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
     ASSERT_EQ(JSObject::GetOwnProperty(thread, target, key, desc), false);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.get (target, propertyKey [ , receiver])
@@ -266,11 +270,12 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGet)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectGet(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectGet(ecmaRuntimeCallInfo);
 
     JSHandle<JSTaggedValue> resultValue(thread, result);
     ASSERT_EQ(resultValue->GetDouble(), 101.5);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.getOwnPropertyDescriptor ( target, propertyKey )
@@ -292,8 +297,8 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGetOwnPropertyDescriptor)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectGetOwnPropertyDescriptor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectGetOwnPropertyDescriptor(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
 
@@ -315,6 +320,7 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGetOwnPropertyDescriptor)
     JSHandle<JSTaggedValue> configurableKey = globalConst->GetHandledConfigurableString();
     JSHandle<JSTaggedValue> resultConfigurable = JSObject::GetProperty(thread, resultObj, configurableKey).GetValue();
     ASSERT_EQ(resultConfigurable->ToBoolean(), true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.getPrototypeOf (target)
@@ -334,11 +340,12 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGetPrototypeOf)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectGetPrototypeOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectGetPrototypeOf(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSTaggedValue> resultObj(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(result.GetRawData())));
     ASSERT_EQ(JSTaggedValue::SameValue(resultObj.GetTaggedValue(), proto.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.has (target, propertyKey)
@@ -360,10 +367,11 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectHas)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectHas(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectHas(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.isExtensible (target)
@@ -381,10 +389,11 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectIsExtensible)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectIsExtensible(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectIsExtensible(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.ownKeys (target)
@@ -407,8 +416,8 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectOwnKeys)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectOwnKeys(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectOwnKeys(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSTaggedValue> resultTaggedValue(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -432,6 +441,7 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectOwnKeys)
     ASSERT_EQ(reinterpret_cast<EcmaString *>(resultValue1.GetTaggedValue().GetTaggedObject())
                   ->Compare(reinterpret_cast<EcmaString *>(key1.GetTaggedValue().GetTaggedObject())),
               0);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.preventExtensions (target)
@@ -449,11 +459,12 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectPreventExtensions)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectPreventExtensions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectPreventExtensions(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
     ASSERT_EQ(target->IsExtensible(), false);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.set (target, propertyKey, V [ , receiver])
@@ -476,13 +487,14 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectSet)
     ecmaRuntimeCallInfo->SetCallArg(1, key.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectSet(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectSet(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
 
     JSHandle<JSTaggedValue> ruler = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(target), key).GetValue();
     ASSERT_EQ(JSTaggedValue::ToInt32(thread, ruler), 106);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Reflect.setPrototypeOf (target, proto)
@@ -501,11 +513,12 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectSetPrototypeOf)
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, proto.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsReflect::ReflectSetPrototypeOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsReflect::ReflectSetPrototypeOf(ecmaRuntimeCallInfo);
 
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
     JSHandle<JSTaggedValue> resultObj(thread, target->GetJSHClass()->GetPrototype());
     ASSERT_EQ(JSTaggedValue::SameValue(resultObj.GetTaggedValue(), proto.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 }  // namespace panda::test

@@ -104,9 +104,9 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
 
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
-    info.SetCallArg(JSTaggedValue(33));
-    JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
+    info->SetCallArg(JSTaggedValue(33));
+    JSFunction::Call(info);
     EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(33)), true);
 }
@@ -123,9 +123,9 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
 
     JSHandle<JSTaggedValue> reject(thread, capbility->GetReject());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
-    info.SetCallArg(JSTaggedValue(44));
-    JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
+    info->SetCallArg(JSTaggedValue(44));
+    JSFunction::Call(info);
     EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(44)), true);
 }

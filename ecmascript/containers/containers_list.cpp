@@ -239,10 +239,11 @@ JSTaggedValue ContainersList::ForEach(EcmaRuntimeCallInfo *argv)
     const uint32_t argsLength = 3; // 3: «kValue, k, O»
     while (index < length) {
         JSTaggedValue value = singleList->Get(index);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, argsLength);
-        info.SetCallArg(value, JSTaggedValue(index), thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(value, JSTaggedValue(index), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         index++;
     }

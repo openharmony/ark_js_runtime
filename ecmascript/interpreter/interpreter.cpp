@@ -20,15 +20,9 @@
 namespace panda::ecmascript {
 // make EcmaRuntimeCallInfo in stack pointer as fallows:
 //   +----------------------+   —
-//   |      base.type       |   ^
+//   |        args...       |   ^
 //   |----------------------|   |
-//   |      base.prev       | InterpretedEntryFrame
-//   |----------------------|   |
-//   |          pc          |   v
-//   |----------------------|   —
-//   |       numArgs        |   ^
-//   |----------------------|   |
-//   |        args...       |   |
+//   |        numArgs       |   |
 //   |----------------------|   |
 //   |        this          |   |
 //   |----------------------| EcmaRuntimeCallInfo
@@ -36,38 +30,49 @@ namespace panda::ecmascript {
 //   |----------------------|   |
 //   |        func          |   v
 //   +----------------------+   —
-EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
+//   |      base.type       |   ^
+//   |----------------------|   |
+//   |      base.prev       | InterpretedEntryFrame
+//   |----------------------|   |
+//   |          pc          |   v
+//   +--------------------------+
+EcmaRuntimeCallInfo* EcmaInterpreter::NewRuntimeCallInfo(
     JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj, JSHandle<JSTaggedValue> newTarget,
-    size_t numArgs)
+    int32_t numArgs)
 {
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *newSp;
+    JSTaggedType *newSp = nullptr;
     JSTaggedType *prevSp = sp;
     if (thread->IsAsmInterpreter()) {
-        newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
+        newSp = sp - InterpretedEntryFrame::NumOfMembers();
     } else {
-        newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        if (FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FRAME ||
+            FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+            newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        } else {
+            newSp =
+                sp - InterpretedEntryFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        }
     }
-    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {
-        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, INVALID_ARGS_NUMBER, nullptr);
-        return ecmaRuntimeCallInfo;
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - NUM_MANDATORY_JSFUNC_ARGS))) {
+        return nullptr;
     }
 
-    JSTaggedType *currentSp = newSp;
+    newSp -= numArgs;
+    *(--newSp) = thisObj.GetTaggedType();
+    *(--newSp) = newTarget.GetTaggedType();
+    *(--newSp) = func.GetTaggedType();
+    *(--newSp) = numArgs + NUM_MANDATORY_JSFUNC_ARGS;
+    *(--newSp) = ToUintPtr(thread);
+    EcmaRuntimeCallInfo *ecmaRuntimeCallInfo = reinterpret_cast<EcmaRuntimeCallInfo *>(newSp);
+
     // create entry frame.
     InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(newSp);
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
     entryState->base.prev = prevSp;
     entryState->pc = nullptr;
 
-    newSp -= INTERPRETER_ENTRY_FRAME_STATE_SIZE;   // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    *(--newSp) = JSTaggedValue(static_cast<int32_t>(numArgs)).GetRawData();
-    newSp -= numArgs;   // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    *(--newSp) = thisObj.GetTaggedType();
-    *(--newSp) = newTarget.GetTaggedType();
-    *(--newSp) = func.GetTaggedType();
-    thread->SetCurrentSPFrame(currentSp);
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs, newSp);
+    thread->SetCurrentSPFrame(newSp);
     return ecmaRuntimeCallInfo;
 }
 }  // namespace panda::ecmascript

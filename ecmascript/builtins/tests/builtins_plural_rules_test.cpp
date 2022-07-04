@@ -74,8 +74,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, PluralRulesConstructor)
     // option tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::PluralRulesConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::PluralRulesConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSPluralRules());
@@ -100,8 +100,8 @@ static JSTaggedValue JSPluralRulesCreateWithLocaleTest(JSThread *thread, JSHandl
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::PluralRulesConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::PluralRulesConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSPluralRules());
@@ -123,8 +123,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_001)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -147,8 +147,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_002)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -171,8 +171,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_003)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -195,8 +195,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_004)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -219,8 +219,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_005)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -243,8 +243,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_006)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -267,8 +267,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_007)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::Select(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -288,8 +288,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, SupportedLocalesOf)
     // set the tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsPluralRules::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsPluralRules::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -312,8 +312,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPluralRules::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPluralRules::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =

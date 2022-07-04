@@ -67,8 +67,9 @@ JSTaggedValue CreateBuiltinsDataviewArrayBuffer(JSThread *thread, int32_t length
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(length));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsArrayBuffer::ArrayBufferConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -86,8 +87,9 @@ JSTaggedValue CreateBuiltinsDataView(JSThread *thread, int32_t length, int32_t b
     ecmaRuntimeCallInfo->SetCallArg(0, arrBuf.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(byte_offset));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::DataViewConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::DataViewConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -99,8 +101,9 @@ void SetUint8(JSThread *thread, const JSHandle<JSDataView> &view, int32_t offset
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(offset));
     ecmaRuntimeCallInfo->SetCallArg(1, value);
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    BuiltinsDataView::SetUint8(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    BuiltinsDataView::SetUint8(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(10), 1)
@@ -117,9 +120,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, Constructor)
     ecmaRuntimeCallInfo->SetCallArg(0, arrBuf.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(1));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::DataViewConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::DataViewConstructor(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsECMAObject());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(10), 1).byteOffset
@@ -131,9 +135,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, byteOffset)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetOffset(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetOffset(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(10), 2).byteLength
@@ -145,9 +150,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, byteLength)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetByteLength(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetByteLength(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(8).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(10), 1).buffer
@@ -159,9 +165,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, buffer)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetBuffer(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetBuffer(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.IsArrayBuffer(), true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint16/GetUint16
@@ -176,9 +183,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, getUint16)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-1870724872));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetUint16(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetUint16(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -186,8 +194,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, getUint16)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::True());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetUint16(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetUint16(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(63488).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetInt16/GetInt16
@@ -202,9 +212,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, getInt16)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-1870724872));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetInt16(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetInt16(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -212,8 +223,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, getInt16)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::True());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetInt16(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetInt16(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(-2048).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint8/GetUint32
@@ -232,9 +245,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetUint32)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetUint32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetUint32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(2147483647).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint8/GetInt32
@@ -253,9 +267,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetInt32)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetInt32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetInt32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(2147483647).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint8/GetInt8
@@ -270,9 +285,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetInt8)
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetInt8(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetInt8(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(-1).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint8/GetUint8
@@ -287,9 +303,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetUint8)
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetUint8(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetUint8(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(127).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 4).SetUint8/GetFloat32
@@ -308,9 +325,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetFloat32)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(4));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetFloat32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetFloat32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(static_cast<double>(13323083)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(12), 4).SetUint8/GetFloat64
@@ -333,9 +351,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, GetFloat64)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(4));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::GetFloat64(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::GetFloat64(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(static_cast<double>(10846169068898440)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetUint32/GetUint32
@@ -350,9 +369,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetUint32)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(0x907f00f8));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetUint32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetUint32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -360,8 +380,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetUint32)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::False());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetUint32(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetUint32(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(0xf8007f90)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetInt32/GetInt32
@@ -376,9 +398,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetInt32)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-1870724872));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetInt32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetInt32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -386,8 +409,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetInt32)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::False());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetInt32(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetInt32(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(-134185072).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetInt8/GetUint8
@@ -400,16 +425,20 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetInt8)
     ecmaRuntimeCallInfo->SetThis(view.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-1));
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetInt8(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetInt8(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(view.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
-    JSTaggedValue result1 = BuiltinsDataView::GetUint8(ecmaRuntimeCallInfo1.get());
+
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetUint8(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(255).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(4), 0).SetFloat32/GetFloat32
@@ -424,9 +453,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetFloat32)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(42));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetFloat32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetFloat32(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -434,8 +464,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetFloat32)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::False());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetFloat32(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetFloat32(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(1.4441781973331565e-41)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 // new DataView(new ArrayBuffer(8), 0).SetFloat64/GetFloat64
@@ -450,9 +482,10 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetFloat64)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(42));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDataView::SetFloat64(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDataView::SetFloat64(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
+    TestHelper::TearDownFrame(thread, prev);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -460,7 +493,9 @@ HWTEST_F_L0(BuiltinsDataViewTest, SetFloat64)
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(0));
     ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue::False());
 
-    JSTaggedValue result1 = BuiltinsDataView::GetFloat64(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDataView::GetFloat64(ecmaRuntimeCallInfo1);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(8.759e-320)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev1);
 }
 }  // namespace panda::test
