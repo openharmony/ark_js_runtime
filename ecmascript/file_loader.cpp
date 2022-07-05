@@ -14,6 +14,10 @@
  */
 #include "ecmascript/file_loader.h"
 
+#ifdef PANDA_TARGET_WINDOWS
+#include "shlwapi.h"
+#endif
+
 #include "ecmascript/base/config.h"
 #include "ecmascript/compiler/bc_call_signature.h"
 #include "ecmascript/compiler/common_stubs.h"
@@ -373,6 +377,29 @@ FileLoader::FileLoader(EcmaVM *vm) : vm_(vm), factory_(vm->GetFactory())
 {
     bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
     stackMapParser_ = new kungfu::LLVMStackMapParser(enableLog);
+}
+
+bool FileLoader::GetAbsolutePath(const std::string &relativePath, std::string &absPath)
+{
+    if (relativePath.size() >= PATH_MAX) {
+        return false;
+    }
+    char buffer[PATH_MAX] = {0};
+#ifndef PANDA_TARGET_WINDOWS
+    auto path = realpath(relativePath.c_str(), buffer);
+    if (path == nullptr) {
+        return false;
+    }
+    absPath = std::string(path);
+    return true;
+#else
+    auto path = _fullpath(buffer, relativePath.c_str(), sizeof(buffer) - 1);
+    if (path == nullptr) {
+        return false;
+    }
+    absPath = std::string(buffer);
+    return true;
+#endif
 }
 
 kungfu::LLVMStackMapParser* FileLoader::GetStackMapParser()

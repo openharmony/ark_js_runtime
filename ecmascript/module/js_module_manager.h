@@ -32,7 +32,6 @@ public:
     JSHandle<SourceTextModule> HostResolveImportedModule(const CString &referencingModule);
     JSTaggedValue GetModuleNamespace(JSTaggedValue localName);
     void AddResolveImportedModule(const JSPandaFile *jsPandaFile, const CString &referencingModule);
-    void AddResolveImportedModule(const CString &referencingModule, JSHandle<JSTaggedValue> moduleRecord);
     void Iterate(const RootVisitor &v);
 
 private:

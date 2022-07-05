@@ -264,6 +264,7 @@ public:
     void SetAOTFuncEntryForLiteral(const JSPandaFile *jsPandaFile, const JSHandle<TaggedArray> &obj);
     void TryLoadSnapshotFile();
     kungfu::LLVMStackMapParser* GetStackMapParser();
+    static bool GetAbsolutePath(const std::string &relativePath, std::string &absPath);
 private:
     EcmaVM *vm_ {nullptr};
     ObjectFactory *factory_ {nullptr};
