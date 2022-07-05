@@ -16,7 +16,6 @@
 #include "ecmascript/builtins.h"
 
 #ifdef PANDA_TARGET_WINDOWS
-#include "shlwapi.h"
 #ifdef ERROR
 #undef ERROR
 #endif
@@ -75,6 +74,7 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
+#include "ecmascript/file_loader.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_array_iterator.h"
@@ -176,33 +176,6 @@ using CjsRequire = builtins::BuiltinsCjsRequire;
 
 using ContainersPrivate = containers::ContainersPrivate;
 using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
-
-bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
-{
-    if (relativePath.size() >= PATH_MAX) {
-        return false;
-    }
-    char buffer[PATH_MAX] = {0};
-#ifndef PANDA_TARGET_WINDOWS
-    auto path = realpath(relativePath.c_str(), buffer);
-    if (path == nullptr) {
-        return false;
-    }
-    absPath = std::string(path);
-    return true;
-#else
-    auto path = _fullpath(buffer, relativePath.c_str(), sizeof(buffer) - 1);
-    if (path == nullptr) {
-        return false;
-    }
-    bool valid = PathCanonicalizeA(buffer, path);
-    if (!valid) {
-        return false;
-    }
-    absPath = std::string(buffer);
-    return true;
-#endif
-}
 
 void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 {
@@ -3414,7 +3387,7 @@ void Builtins::InitializeIcuData()
         }
     } else {
         std::string absPath;
-        if (GetAbsolutePath(icuPath, absPath)) {
+        if (FileLoader::GetAbsolutePath(icuPath, absPath)) {
             u_setDataDirectory(absPath.c_str());
         }
     }

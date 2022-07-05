@@ -35,6 +35,7 @@ group("ark_js_moduletest") {
     "lexicalenv:lexicalenvAction",
     "loadicbyvalue:loadicbyvalueAction",
     "module:moduleAction",
+    "moduleUseCjs:moduleUseCjsAction",
     "multiargs:multiargsAction",
     "newobjdynrange:newobjdynrangeAction",
     "objectcloneproperties:objectclonepropertiesAction",
