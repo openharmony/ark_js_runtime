@@ -107,14 +107,14 @@ void AssemblerStubs::IncreaseStackForArguments(ExtendedAssembler *assembler, Reg
     Register sp(SP);
     __ Mov(fp, sp);
     __ Add(argc, argc, Immediate(2));       // 2 : 2 means numArgs + env
-    __ Sub(fp, fp, Operand(argc, UXTW, 3));
+    __ Sub(fp, fp, Operand(argc, UXTW, 3));  // 3 : 3 means argc * 8
     Label aligned;
     __ Tst(fp, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
     __ B(Condition::EQ, &aligned);
     __ Sub(fp, fp, Immediate(FRAME_SLOT_SIZE));
     __ Bind(&aligned);
     __ Mov(sp, fp);
-    __ Add(fp, fp, Operand(argc, UXTW, 3));
+    __ Add(fp, fp, Operand(argc, UXTW, 3));  // 3 : 3 means argc * 8
 }
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
@@ -181,7 +181,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
         TempRegister1Scope scope1(assembler);
         Register env = __ TempRegister1();
         __ Mov(Register(X19), expectedNumArgs);
-        __ Ldr(env, MemoryOperand(argV, actualNumArgs, UXTW, 3));
+        __ Ldr(env, MemoryOperand(argV, actualNumArgs, UXTW, 3));  // 3 : 3 means argc * 8
         __ Str(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
         __ Str(env, MemoryOperand(sp, 0));
         __ Blr(codeAddr);
@@ -300,12 +300,14 @@ void AssemblerStubs::PushLeaveFrame(ExtendedAssembler *assembler, Register glue,
         // current sp is not 16bytes aligned because native code address has pushed.
         __ Mov(fp, sp);
         __ Sub(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));   // 3 : 3 for 16bytes align
+        // 2 : 2 means pairs
         __ Stp(prevfp, Register(X30), MemoryOperand(fp, -2 * FRAME_SLOT_SIZE, PREINDEX));
         __ Str(frameType, MemoryOperand(fp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
         __ Add(prevfp, sp, Immediate(FRAME_SLOT_SIZE));
     } else {
         __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
         __ SaveFpAndLr();
+        // 2 : 2 means pairs
         __ Stp(Register(X19), frameType, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     }
     // save to thread currentLeaveFrame_;
@@ -321,9 +323,11 @@ void AssemblerStubs::PopLeaveFrame(ExtendedAssembler *assembler, bool isBuiltin)
     Register frameType = __ TempRegister2();
     if (isBuiltin) {
         __ Add(fp, sp, Immediate(FRAME_SLOT_SIZE));  // skip frame type
-        __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));
+        __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));  // 3 : 3 means for 16bytes align
+        // 2 : 2 means pairs
         __ Ldp(Register(X29), Register(X30), MemoryOperand(fp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     } else {
+        // 2 : 2 means pairs
         __ Ldp(Register(X19), frameType, MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
         __ RestoreFpAndLr();
     }
