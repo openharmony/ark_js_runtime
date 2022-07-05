@@ -32,12 +32,14 @@ void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
     TSLoader *tsLoader = vm->GetTSLoader();
     ObjectFactory *factory = vm->GetFactory();
 
-    JSHandle<TSTypeTable> tsTypetable = GenerateTypeTable(thread, jsPandaFile, recordImportModules);
+    JSHandle<TSTypeTable> tsTypeTable = GenerateTypeTable(thread, jsPandaFile, recordImportModules);
 
     // Set TStypeTable -> GlobleModuleTable
     JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
-    tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypetable), fileName);
-    tsLoader->GenerateStaticHClass(tsTypetable);
+    tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypeTable), fileName);
+
+    TSTypeTable::LinkClassType(thread, tsTypeTable);
+    tsLoader->GenerateStaticHClass(tsTypeTable);
 
     // management dependency module
     while (recordImportModules.size() > 0) {
@@ -88,7 +90,7 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
     TSTypeKind kind = static_cast<TSTypeKind>(literal->Get(TYPE_KIND_INDEX_IN_LITERAL).GetInt());
     switch (kind) {
         case TSTypeKind::CLASS: {
-            JSHandle<TSClassType> classType = ParseClassType(thread, table, literal);
+            JSHandle<TSClassType> classType = ParseClassType(thread, literal);
             return JSHandle<JSTaggedValue>(classType);
         }
         case TSTypeKind::CLASS_INSTANCE: {
@@ -251,16 +253,25 @@ JSHandle<TSImportType> TSTypeTable::ParseImportType(JSThread *thread, const JSHa
     return importType;
 }
 
-JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                  const JSHandle<TaggedArray> &literal)
+JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, const JSHandle<TaggedArray> &literal)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TSClassType> classType = factory->NewTSClassType();
     int32_t index = 0;
     ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::CLASS);
 
-    index = index + 2;  // 2: ignore accessFlag and readonly
-    int32_t extendsTypeId = literal->Get(index++).GetInt();
+    const int32_t ignoreLength = 2;  // 2: ignore accessFlag and readonly
+    index += ignoreLength;
+    int extendsTypeId = literal->Get(index++).GetInt();
+    if (TSClassType::IsBaseClassType(extendsTypeId)) {
+        classType->SetExtensionGT(GlobalTSTypeRef::Default());
+        classType->SetHasLinked(true);
+    } else {
+        int moduleId = thread->GetEcmaVM()->GetTSLoader()->GetNextModuleId();
+        GlobalTSTypeRef extensionGT = GlobalTSTypeRef(moduleId, extendsTypeId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT,
+                                                      TSTypeKind::CLASS);
+        classType->SetExtensionGT(extensionGT);
+    }
 
     // ignore implement
     int32_t numImplement = literal->Get(index++).GetInt();
@@ -270,27 +281,17 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     JSMutableHandle<JSTaggedValue> typeId(thread, JSTaggedValue::Undefined());
 
     // resolve instance type
-    uint32_t numBaseFields = 0;
     uint32_t numFields = static_cast<uint32_t>(literal->Get(index++).GetInt());
 
-    JSHandle<TSObjectType> instanceType;
-    if (extendsTypeId) { // base class is 0
-        uint32_t realExtendsTypeId = static_cast<uint32_t>(extendsTypeId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
-        JSHandle<TSClassType> extensionType(thread, typeTable->Get(realExtendsTypeId));
-        ASSERT(extensionType.GetTaggedValue().IsTSClassType());
-        classType->SetExtensionType(thread, extensionType);
-        instanceType = LinkSuper(thread, extensionType, &numBaseFields, numFields);
-    } else {
-        instanceType = factory->NewTSObjectType(numFields);
-    }
-
+    JSHandle<TSObjectType> instanceType = factory->NewTSObjectType(numFields);
     JSHandle<TSObjLayoutInfo> instanceTypeInfo(thread, instanceType->GetObjLayoutInfo());
-    ASSERT(instanceTypeInfo->GetPropertiesCapacity() == numBaseFields + numFields);
+    ASSERT(instanceTypeInfo->GetPropertiesCapacity() == numFields);
+
     for (uint32_t fieldIndex = 0; fieldIndex < numFields; ++fieldIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         index += 2;  // 2: ignore accessFlag and readonly
-        instanceTypeInfo->SetKey(thread, numBaseFields + fieldIndex, key.GetTaggedValue(), typeId.GetTaggedValue());
+        instanceTypeInfo->SetKey(thread, fieldIndex, key.GetTaggedValue(), typeId.GetTaggedValue());
     }
     classType->SetInstanceType(thread, instanceType);
 
@@ -372,30 +373,6 @@ JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, cons
     interfaceType->SetFields(thread, fieldsType);
 
     return interfaceType;
-}
-
-JSHandle<TSObjectType> TSTypeTable::LinkSuper(JSThread *thread, JSHandle<TSClassType> &baseClassType,
-                                              uint32_t *numBaseFields, uint32_t numDerivedFields)
-{
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
-    JSHandle<TSObjectType> baseInstanceType(thread, baseClassType->GetInstanceType());
-    JSHandle<TSObjLayoutInfo> baseInstanceTypeInfo(thread, baseInstanceType->GetObjLayoutInfo());
-
-    *numBaseFields = baseInstanceTypeInfo->NumberOfElements();
-
-    JSHandle<TSObjectType> derivedInstanceType = factory->NewTSObjectType(*numBaseFields + numDerivedFields);
-    JSHandle<TSObjLayoutInfo> derivedInstanceTypeInfo(thread, derivedInstanceType->GetObjLayoutInfo());
-
-    JSMutableHandle<JSTaggedValue> baseInstanceKey(thread, JSTaggedValue::Undefined());
-    JSMutableHandle<JSTaggedValue> baseInstanceTypeId(thread, JSTaggedValue::Undefined());
-    for (uint32_t index = 0; index < baseInstanceTypeInfo->NumberOfElements(); ++index) {
-        baseInstanceKey.Update(baseInstanceTypeInfo->GetKey(index));
-        baseInstanceTypeId.Update(baseInstanceTypeInfo->GetTypeId(index));
-        derivedInstanceTypeInfo->SetKey(thread, index, baseInstanceKey.GetTaggedValue(),
-                                        baseInstanceTypeId.GetTaggedValue());
-    }
-    return derivedInstanceType;
 }
 
 JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSPandaFile *jsPandaFile,
@@ -569,5 +546,69 @@ JSHandle<TSTypeTable> TSTypeTable::PushBackTypeToInferTable(JSThread *thread, JS
     table->SetNumberOfTypes(thread, numberOfTypes + 1);
 
     return table;
+}
+
+void TSTypeTable::LinkClassType(JSThread *thread, JSHandle<TSTypeTable> table)
+{
+    int numTypes = table->GetNumberOfTypes();
+    JSMutableHandle<JSTaggedValue> type(thread, JSTaggedValue::Undefined());
+    for (int i = 1; i <= numTypes; ++i) {
+        type.Update(table->Get(i));
+        if (!type->IsTSClassType()) {
+            continue;
+        }
+
+        JSHandle<TSClassType> classType(type);
+        if (classType->GetHasLinked()) {  // has linked
+            continue;
+        }
+
+        JSHandle<TSClassType> extendClassType = classType->GetExtendClassType(thread);
+        MergeClassFiled(thread, classType, extendClassType);
+    }
+}
+
+void TSTypeTable::MergeClassFiled(JSThread *thread, JSHandle<TSClassType> classType,
+                                  JSHandle<TSClassType> extendClassType)
+{
+    ASSERT(!classType->GetHasLinked());
+
+    if (!extendClassType->GetHasLinked()) {
+        MergeClassFiled(thread, extendClassType, extendClassType->GetExtendClassType(thread));
+    }
+
+    ASSERT(extendClassType->GetHasLinked());
+
+    JSHandle<TSObjectType> field(thread, classType->GetInstanceType());
+    JSHandle<TSObjLayoutInfo> layout(thread, field->GetObjLayoutInfo());
+    uint32_t numSelfTypes = layout->NumberOfElements();
+
+    JSHandle<TSObjectType> extendField(thread, extendClassType->GetInstanceType());
+    JSHandle<TSObjLayoutInfo> extendLayout(thread, extendField->GetObjLayoutInfo());
+    uint32_t numExtendTypes = extendLayout->NumberOfElements();
+
+    uint32_t numTypes = numSelfTypes + numExtendTypes;
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TSObjLayoutInfo> newLayout = factory->CreateTSObjLayoutInfo(numTypes);
+
+    uint32_t index = 0;
+    while (index < numExtendTypes) {
+        JSTaggedValue key = extendLayout->GetKey(index);
+        JSTaggedValue type = extendLayout->GetTypeId(index);
+        newLayout->SetKey(thread, index, key, type);
+        index++;
+    }
+
+    index = 0;
+    while (index < numSelfTypes) {
+        JSTaggedValue key = layout->GetKey(index);
+        JSTaggedValue type = layout->GetTypeId(index);
+        newLayout->SetKey(thread, numExtendTypes + index, key, type);
+        index++;
+    }
+
+    field->SetObjLayoutInfo(thread, newLayout);
+    classType->SetHasLinked(true);
 }
 } // namespace panda::ecmascript

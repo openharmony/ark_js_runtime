@@ -79,25 +79,21 @@ public:
 
 private:
     static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const JSPandaFile *jsPandaFile,
-                                                    CVector<JSHandle<EcmaString>> &recordImportModules);
+                                                   CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TaggedArray> GetExportTableFromPandFile(JSThread *thread, const panda_file::File &pf);
 
     static panda_file::File::EntityId GetFileId(const panda_file::File &pf);
 
-    static JSHandle<TSClassType> ParseClassType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                const JSHandle<TaggedArray> &literal);
+    static JSHandle<TSClassType> ParseClassType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSInterfaceType> ParseInterfaceType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, const JSPandaFile *jsPandaFile,
                                                 const JSHandle<TaggedArray> &literal);
 
-    static JSHandle<TSObjectType> LinkSuper(JSThread *thread, JSHandle<TSClassType> &baseClassType,
-                                            uint32_t *numBaseFields, uint32_t numDerivedFields);
-
     static void CheckModule(JSThread *thread, const TSLoader* tsLoader, const JSHandle<EcmaString> target,
-                             CVector<JSHandle<EcmaString>> &recordImportModules);
+                            CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<EcmaString> GenerateVarNameAndPath(JSThread *thread, JSHandle<EcmaString> importPath,
                                                        JSHandle<EcmaString> fileName,
@@ -110,6 +106,11 @@ private:
     static JSHandle<TSObjectType> ParseObjectType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static int GetTypeKindFromFileByLocalId(JSThread *thread, const JSPandaFile *jsPandaFile, int localId);
+
+    static void LinkClassType(JSThread *thread, JSHandle<TSTypeTable> table);
+
+    static void MergeClassFiled(JSThread *thread, JSHandle<TSClassType> classType,
+                                JSHandle<TSClassType> extendClassType);
 };
 }  // namespace panda::ecmascript
 
