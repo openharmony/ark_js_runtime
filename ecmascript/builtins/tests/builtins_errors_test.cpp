@@ -145,8 +145,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Error::ErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Error::ErrorConstructor(ecmaRuntimeCallInfo);
 
     EXPECT_TRUE(result.IsECMAObject());
 
@@ -185,8 +185,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Error::ErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Error::ErrorConstructor(ecmaRuntimeCallInfo);
 
     EXPECT_TRUE(result.IsECMAObject());
 
@@ -224,8 +224,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo);
 
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
@@ -257,8 +257,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo);
 
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
@@ -284,8 +284,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = RangeError::RangeErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = RangeError::RangeErrorConstructor(ecmaRuntimeCallInfo);
 
     EXPECT_TRUE(result.IsECMAObject());
 
@@ -323,8 +323,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = RangeError::RangeErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = RangeError::RangeErrorConstructor(ecmaRuntimeCallInfo);
 
     EXPECT_TRUE(result.IsECMAObject());
 
@@ -362,8 +362,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = RangeError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = RangeError::ToString(ecmaRuntimeCallInfo);
     JSHandle<JSTaggedValue> resultHandle(thread, result);
 
     EXPECT_TRUE(result.IsString());
@@ -395,8 +395,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = RangeError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = RangeError::ToString(ecmaRuntimeCallInfo);
 
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
@@ -420,8 +420,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = ReferenceError::ReferenceErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = ReferenceError::ReferenceErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -459,8 +459,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = ReferenceError::ReferenceErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = ReferenceError::ReferenceErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -496,8 +496,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = ReferenceError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = ReferenceError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
@@ -527,8 +527,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = ReferenceError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = ReferenceError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(factory->NewFromASCII("ReferenceError: This is ReferenceError!")->Compare(*resultHandle),
@@ -551,8 +551,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = TypeError::TypeErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = TypeError::TypeErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -589,8 +589,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = TypeError::TypeErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = TypeError::TypeErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -627,8 +627,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
@@ -658,8 +658,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(factory->NewFromASCII("TypeError: This is TypeError!")->Compare(*resultHandle), 0);
@@ -681,8 +681,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = URIError::URIErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = URIError::URIErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -720,8 +720,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = URIError::URIErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = URIError::URIErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -758,8 +758,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
@@ -791,8 +791,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
@@ -819,8 +819,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = SyntaxError::SyntaxErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = SyntaxError::SyntaxErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -858,8 +858,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = SyntaxError::SyntaxErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = SyntaxError::SyntaxErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -896,8 +896,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = SyntaxError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = SyntaxError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
@@ -928,8 +928,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = SyntaxError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = SyntaxError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
@@ -952,8 +952,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = EvalError::EvalErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = EvalError::EvalErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -991,8 +991,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = EvalError::EvalErrorConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = EvalError::EvalErrorConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
@@ -1028,8 +1028,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
@@ -1060,8 +1060,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(factory->NewFromASCII("EvalError: This is EvalError!")->Compare(*resultHandle), 0);

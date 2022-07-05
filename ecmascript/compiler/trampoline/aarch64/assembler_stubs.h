@@ -120,8 +120,7 @@ private:
 
     static void DispatchCall(ExtendedAssembler *assembler, Register pc, Register newSp);
 
-    static void CallNativeInternal(ExtendedAssembler *assembler, Register glue, Register numArgs,
-        Register nativeCode);
+    static void CallNativeInternal(ExtendedAssembler *assembler, Register nativeCode);
 
     static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue,
         FrameType type, Register op, Register next);
@@ -143,8 +142,6 @@ private:
         Register fp, panda::ecmascript::Label *next);
 
     static void SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate jumpSize);
-
-    static void GlueToThread(ExtendedAssembler *assembler, Register glue, Register thread);
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 

@@ -89,8 +89,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, LocaleConstructor)
     ecmaRuntimeCallInfo->SetCallArg(0, localeString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSLocale());
@@ -142,8 +142,9 @@ static JSTaggedValue JSLocaleCreateWithOptionTest(JSThread *thread)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -156,8 +157,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, ToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::ToString(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -175,8 +176,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetBaseName)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -192,8 +193,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetHourCycle)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetHourCycle(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetHourCycle(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -209,8 +210,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetCalendar)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetCalendar(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetCalendar(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -226,8 +227,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetCaseFirst)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetCaseFirst(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetCaseFirst(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -243,8 +244,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetCollation)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetCollation(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetCollation(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -260,8 +261,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetNumeric)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetNumeric(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetNumeric(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
@@ -275,8 +276,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetNumberingSystem)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetNumberingSystem(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetNumberingSystem(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -292,8 +293,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetLanguage)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetLanguage(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetLanguage(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -309,8 +310,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetScript)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetScript(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetScript(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -326,8 +327,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, GetRegion)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsLocale.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::GetRegion(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::GetRegion(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -355,9 +356,10 @@ static JSTaggedValue JSLocaleCreateWithOptionsTagsTest(JSThread *thread, JSHandl
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsJSLocale());
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -372,8 +374,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_001)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsLocale.GetTaggedValue());
     // test "zh" to "zh-Hans-CN"
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue resultObj = BuiltinsLocale::Maximize(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue resultObj = BuiltinsLocale::Maximize(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSLocale> resultLocale(thread, resultObj);
 
@@ -381,8 +383,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_001)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(resultLocale.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -399,8 +401,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_002)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsLocale.GetTaggedValue());
     // test "en-Latn-US" to "en-Latn-US"
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue resultObj = BuiltinsLocale::Maximize(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue resultObj = BuiltinsLocale::Maximize(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSLocale> resultLocale(thread, resultObj);
 
@@ -408,8 +410,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_002)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(resultLocale.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -426,8 +428,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_001)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsLocale.GetTaggedValue());
     // test "en-Latn-US" to "en"
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue resultObj = BuiltinsLocale::Minimize(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue resultObj = BuiltinsLocale::Minimize(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSLocale> resultLocale(thread, resultObj);
 
@@ -435,8 +437,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_001)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(resultLocale.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result = BuiltinsLocale::GetBaseName(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -455,8 +457,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_002)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsLocale.GetTaggedValue());
     // test "zh" to "zh"
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue resultObj = BuiltinsLocale::Minimize(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue resultObj = BuiltinsLocale::Minimize(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSLocale> resultLocale(thread, resultObj);
 
@@ -464,8 +466,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_002)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(resultLocale.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result = BuiltinsLocale::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result = BuiltinsLocale::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -494,8 +496,9 @@ HWTEST_F_L0(BuiltinsLocaleTest, NormalizeKeywordValue)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSLocale> jsInitLocale(thread, result);
     JSHandle<EcmaString> keyWords = JSLocale::NormalizeKeywordValue(thread, jsInitLocale, "kf");

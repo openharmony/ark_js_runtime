@@ -361,10 +361,11 @@ JSTaggedValue TaggedSingleList::ReplaceAllElements(JSThread *thread, const JSHan
     for (int k = 0; k < length; k++) {
         JSTaggedValue kValue = taggedList->Get(k);
         JSTaggedValue key = JSTaggedValue(k);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, 3); // 3:three args
-        info.SetCallArg(kValue, key, thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(kValue, key, thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         JSHandle<JSTaggedValue> funcResultValue = JSHandle<JSTaggedValue>(thread, funcResult);
         TaggedSingleList::Set(thread, taggedList, k, funcResultValue);

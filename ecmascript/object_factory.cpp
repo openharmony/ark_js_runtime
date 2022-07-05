@@ -870,10 +870,10 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
     JSHandle<JSTaggedValue> nativePrototype(thread_, nativeFunc->GetFunctionPrototype());
     JSHandle<JSTaggedValue> ctorKey = globalConst->GetHandledConstructorString();
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread_, undefined, nativePrototype, undefined, 1);
-    info.SetCallArg(message.GetTaggedValue());
-    JSTaggedValue obj = JSFunction::Invoke(&info, ctorKey);
+    info->SetCallArg(message.GetTaggedValue());
+    JSTaggedValue obj = JSFunction::Invoke(info, ctorKey);
     JSHandle<JSObject> handleNativeInstanceObj(thread_, obj);
     return handleNativeInstanceObj;
 }

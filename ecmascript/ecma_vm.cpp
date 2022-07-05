@@ -408,11 +408,11 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
             CJSExecution(func, jsPandaFile);
         } else {
             JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
             EcmaRuntimeStatScope runtimeStatScope(this);
             CpuProfilingScope profilingScope(this);
-            EcmaInterpreter::Execute(&info);
+            EcmaInterpreter::Execute(info);
         }
     }
     if (!thread_->HasPendingException()) {
@@ -454,18 +454,22 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPanda
     // Execute main function
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread_,
                                             JSHandle<JSTaggedValue>(func),
                                             global, undefined, 5); // 5 : argument numbers
-    info.SetCallArg(cjsInfo.exportsHdl.GetTaggedValue(),
-                    cjsInfo.requireHdl.GetTaggedValue(),
-                    cjsInfo.moduleHdl.GetTaggedValue(),
-                    cjsInfo.filenameHdl.GetTaggedValue(),
-                    cjsInfo.dirnameHdl.GetTaggedValue());
+    if (info == nullptr) {
+        LOG(ERROR, RUNTIME) << "CJSExecution Stack overflow!";
+        return;
+    }
+    info->SetCallArg(cjsInfo.exportsHdl.GetTaggedValue(),
+                     cjsInfo.requireHdl.GetTaggedValue(),
+                     cjsInfo.moduleHdl.GetTaggedValue(),
+                     cjsInfo.filenameHdl.GetTaggedValue(),
+                     cjsInfo.dirnameHdl.GetTaggedValue());
     EcmaRuntimeStatScope runtimeStatScope(this);
     CpuProfilingScope profilingScope(this);
-    EcmaInterpreter::Execute(&info);
+    EcmaInterpreter::Execute(info);
 
     // Collecting module.exports : exports ---> module.exports --->Module._cache
     JSRequireManager::CollectExecutedExp(thread_, cjsInfo);

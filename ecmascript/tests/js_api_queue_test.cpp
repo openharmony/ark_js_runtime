@@ -63,8 +63,8 @@ protected:
         ecmaRuntimeCallInfo->SetThis(value.GetTaggedValue());
         ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(containers::ContainerTag::Queue)));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-        JSTaggedValue result = containers::ContainersPrivate::Load(ecmaRuntimeCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+        JSTaggedValue result = containers::ContainersPrivate::Load(ecmaRuntimeCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         JSHandle<JSTaggedValue> constructor(thread, result);

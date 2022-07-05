@@ -39,12 +39,13 @@ JSTaggedValue BuiltinsReflect::ReflectApply(EcmaRuntimeCallInfo *argv)
 
     // 3. Perform PrepareForTailCall().
     // 4. Return ? Call(target, thisArgument, args).
-    const size_t argsLength = args->GetLength();
+    const int32_t argsLength = args->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, target, thisArgument, undefined, argsLength);
-    info.SetCallArg(argsLength, args);
-    return JSFunction::Call(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, args);
+    return JSFunction::Call(info);
 }
 
 // ecma 26.1.2 Reflect.construct (target, argumentsList [ , newTarget])
@@ -73,11 +74,12 @@ JSTaggedValue BuiltinsReflect::ReflectConstruct(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<TaggedArray> args = JSHandle<TaggedArray>::Cast(argOrAbrupt);
     // 5. Return ? Construct(target, args, newTarget).
-    const size_t argsLength = args->GetLength();
+    const int32_t argsLength = args->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTarget, argsLength);
-    info.SetCallArg(argsLength, args);
-    return JSFunction::Construct(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTarget, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, args);
+    return JSFunction::Construct(info);
 }
 
 // ecma 26.1.3 Reflect.defineProperty (target, propertyKey, attributes)

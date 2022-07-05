@@ -77,8 +77,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, DateTimeFormatConstructor)
     // option tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::DateTimeFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::DateTimeFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsJSDateTimeFormat());
 }
@@ -136,9 +136,10 @@ static JSTaggedValue JSDateTimeFormatCreateWithLocaleTest(JSThread *thread, JSHa
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::DateTimeFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::DateTimeFormatConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsJSDateTimeFormat());
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -163,8 +164,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_001)
     ecmaRuntimeCallInfo1->SetThis(jsDateTimeFormat.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsDateTimeFormat::Format(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDateTimeFormat::Format(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     // jsDate supports zero to eleven, the month should be added with one
     JSHandle<JSFunction> jsFunction(thread, result1);
@@ -183,8 +184,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_001)
     ecmaRuntimeCallInfo2->SetThis(jsObject.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, value.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultStr(thread, result2);
     EXPECT_STREQ("Sun, 11/1/2020, 24:00:00", CString(resultStr->GetCString().get()).c_str());
@@ -203,8 +204,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
     ecmaRuntimeCallInfo1->SetThis(jsDateTimeFormat.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsDateTimeFormat::Format(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsDateTimeFormat::Format(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSFunction> jsFunction(thread, result1);
@@ -223,8 +224,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
     ecmaRuntimeCallInfo2->SetThis(jsObject.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, value.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultStr(thread, result2);
     CString resStr = resultStr->GetCString().get();
@@ -246,8 +247,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatToParts)
     ecmaRuntimeCallInfo->SetThis(jsDateTimeFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, result);
@@ -271,8 +272,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(days1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(days2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleStr(thread, result);
@@ -296,8 +297,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_002)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(days1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(days2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleStr(thread, result);
@@ -320,8 +321,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRangeToParts)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(days1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(days2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRangeToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::FormatRangeToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, result);
@@ -341,8 +342,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDateTimeFormat.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDateTimeFormat::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDateTimeFormat::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =
@@ -371,8 +372,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_001)
     // set the tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsDateTimeFormat::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsDateTimeFormat::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -403,8 +404,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_002)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsDateTimeFormat::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsDateTimeFormat::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);

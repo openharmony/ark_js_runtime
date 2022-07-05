@@ -69,8 +69,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(123)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     ASSERT_EQ(JSPrimitiveRef::Cast(result.GetTaggedObject())->GetValue().IsTrue(), 1);
@@ -89,8 +89,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor1)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
     ASSERT_EQ(JSPrimitiveRef::Cast(result.GetTaggedObject())->GetValue().IsFalse(), 1);
@@ -110,8 +110,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor2)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, str.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanConstructor(ecmaRuntimeCallInfo);
 
     JSTaggedValue ruler = BuiltinsBase::GetTaggedBoolean(true);
     ASSERT_EQ(result.GetRawData(), ruler.GetRawData());
@@ -124,8 +124,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromASCII("false");
@@ -146,8 +146,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(boolean.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromASCII("true");
@@ -161,8 +161,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeValueOf)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeValueOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeValueOf(ecmaRuntimeCallInfo);
 
     JSTaggedValue ruler = BuiltinsBase::GetTaggedBoolean(true);
     ASSERT_EQ(result.GetRawData(), ruler.GetRawData());
@@ -182,8 +182,8 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeValueOf1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(boolean.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeValueOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeValueOf(ecmaRuntimeCallInfo);
 
     JSTaggedValue ruler = BuiltinsBase::GetTaggedBoolean(false);
     ASSERT_EQ(result.GetRawData(), ruler.GetRawData());

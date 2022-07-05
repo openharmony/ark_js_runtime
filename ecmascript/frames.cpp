@@ -104,6 +104,13 @@ void FrameIterator::Advance()
             current_ = frame->GetPrevFrameFp();
             break;
         }
+        case FrameType::INTERPRETER_BUILTIN_FRAME: {
+            auto frame = GetFrame<InterpretedBuiltinFrame>();
+            optimizedReturnAddr_ = 0;
+            optimizedCallSiteSp_ = 0;
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
         case FrameType::INTERPRETER_CONSTRUCTOR_FRAME:
         case FrameType::ASM_INTERPRETER_FRAME : {
             auto frame = GetFrame<AsmInterpretedFrame>();
@@ -211,8 +218,37 @@ uintptr_t FrameIterator::GetPrevFrameCallSiteSp(uintptr_t curPc) const
     }
 }
 
-bool FrameIterator::CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey,
-                                   uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
+uintptr_t FrameIterator::GetPrevFrame() const
+{
+    FrameType type = GetFrameType();
+    uintptr_t end = 0U;
+    switch (type) {
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME: {
+            auto prevFrame = GetFrame<InterpretedFrame>();
+            end = ToUintPtr(prevFrame);
+            break;
+        }
+        case FrameType::INTERPRETER_ENTRY_FRAME: {
+            auto prevFrame = GetFrame<InterpretedEntryFrame>();
+            end = ToUintPtr(prevFrame);
+            break;
+        }
+        case FrameType::INTERPRETER_BUILTIN_FRAME: {
+            auto prevFrame = GetFrame<InterpretedBuiltinFrame>();
+            end = ToUintPtr(prevFrame);
+            break;
+        }
+        default: {
+            LOG_ECMA(FATAL) << "frame type error!";
+            UNREACHABLE();
+        }
+    }
+    return end;
+}
+
+bool FrameIterator::CollectGCSlots(std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
+                                   [[maybe_unused]] bool isVerifying) const
 {
     return stackmapParser_->CollectGCSlots(optimizedReturnAddr_, reinterpret_cast<uintptr_t>(current_),
                                            baseSet, data, isVerifying, optimizedCallSiteSp_);
@@ -329,18 +365,10 @@ ARK_INLINE void InterpretedFrame::GCIterate(const FrameIterator &it,
 
     JSTaggedType *prevSp = frame->GetPrevFrameFp();
     uintptr_t start = ToUintPtr(sp);
-    uintptr_t end = 0U;
     const JSThread *thread = it.GetThread();
     FrameIterator prevIt(prevSp, thread);
-    FrameType type = prevIt.GetFrameType();
-    if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
-        auto prevFrame = InterpretedFrame::GetFrameFromSp(prevSp);
-        end = ToUintPtr(prevFrame);
-    } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
-        end = ToUintPtr(FrameHandler::GetInterpretedEntryFrameStart(prevSp));
-    } else {
-        LOG_ECMA(FATAL) << "frame type error!";
-    }
+    uintptr_t end = prevIt.GetPrevFrame();
+
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
 
@@ -351,6 +379,22 @@ ARK_INLINE void InterpretedFrame::GCIterate(const FrameIterator &it,
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
     }
+}
+
+ARK_INLINE void InterpretedBuiltinFrame::GCIterate(const FrameIterator &it,
+                                                   const RootVisitor &v0,
+                                                   const RootRangeVisitor &v1) const
+{
+    auto sp = it.GetSp();
+    InterpretedBuiltinFrame *frame = InterpretedBuiltinFrame::GetFrameFromSp(sp);
+    JSTaggedType *prevSp = frame->GetPrevFrameFp();
+    const JSThread *thread = it.GetThread();
+    FrameIterator prevIt(prevSp, thread);
+
+    uintptr_t start = ToUintPtr(sp + 2); // 2: numArgs & thread.
+    uintptr_t end = prevIt.GetPrevFrame();
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
 }
 
 ARK_INLINE void OptimizedLeaveFrame::GCIterate(const FrameIterator &it,
@@ -410,7 +454,7 @@ ARK_INLINE void BuiltinWithArgvFrame::GCIterate(const FrameIterator &it,
 {
     const JSTaggedType *sp = it.GetSp();
     auto frame = BuiltinWithArgvFrame::GetFrameFromSp(sp);
-    auto argc = frame->GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
+    auto argc = frame->GetNumArgs() + NUM_MANDATORY_JSFUNC_ARGS;
     JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(frame->GetStackArgsAddress());
     uintptr_t start = ToUintPtr(argv);
     uintptr_t end = ToUintPtr(argv + argc);
@@ -432,7 +476,7 @@ ARK_INLINE void BuiltinFrame::GCIterate(const FrameIterator &it,
         return;
     }
     JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(frame->GetStackArgsAddress());
-    auto argc = frame->GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
+    auto argc = frame->GetNumArgs();
     uintptr_t start = ToUintPtr(argv);
     uintptr_t end = ToUintPtr(argv + argc);
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
@@ -443,8 +487,22 @@ ARK_INLINE void InterpretedEntryFrame::GCIterate(const FrameIterator &it,
     const RootRangeVisitor &v1) const
 {
     const JSTaggedType* sp = it.GetSp();
-    uintptr_t start = ToUintPtr(FrameHandler::GetInterpretedEntryFrameStart(sp));
-    uintptr_t end = ToUintPtr(sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE);
+    InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(sp);
+    JSTaggedType *prevSp = frame->GetPrevFrameFp();
+    if (prevSp == nullptr) {
+        return;
+    }
+
+    const JSThread *thread = it.GetThread();
+    FrameIterator prevIt(prevSp, thread);
+    uintptr_t start = ToUintPtr(sp + 2); // 2: numArgs & thread.
+    uintptr_t end = prevIt.GetPrevFrame();
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+}
+
+ARK_INLINE uintptr_t InterpretedEntryFrame::GetInterpretedEntryFrameEnd(const JSTaggedType *sp)
+{
+    ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_ENTRY_FRAME);
+    return ToUintPtr(sp + 2 + NUM_MANDATORY_JSFUNC_ARGS + sp[1]); // 2: numArgs & thread.
 }
 }  // namespace panda::ecmascript

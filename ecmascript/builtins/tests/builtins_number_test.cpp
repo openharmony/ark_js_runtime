@@ -76,8 +76,9 @@ HWTEST_F_L0(BuiltinsNumberTest, NumberConstructor)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(5)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::NumberConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::NumberConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     JSTaggedValue value(static_cast<JSTaggedType>(result.GetRawData()));
     ASSERT_TRUE(value.IsECMAObject());
     JSPrimitiveRef *ref = JSPrimitiveRef::Cast(value.GetTaggedObject());
@@ -93,9 +94,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(value)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite(Number.MAX_VALUE)
@@ -106,9 +108,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::MAX_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::True().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite("helloworld")
@@ -120,9 +123,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite(NaN)
@@ -133,9 +137,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite(Infinity)
@@ -146,9 +151,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite(undefined)
@@ -159,9 +165,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isFinite(null)
@@ -172,9 +179,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsFinite6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsFinite(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isInteger(0.1)
@@ -185,9 +193,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsInteger)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.1));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsInteger(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsInteger(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.isNaN(0.1)
@@ -198,9 +207,10 @@ HWTEST_F_L0(BuiltinsNumberTest, IsNaN)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.1));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::IsNaN(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::IsNaN(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::False().GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(123.456).toString(7)
@@ -219,14 +229,15 @@ HWTEST_F_L0(BuiltinsNumberTest, ToString)
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(7.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToString(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("234.312256641535441");
     CVector<uint8_t> test(res->GetLength() + 1);
     res->CopyDataUtf8(test.data(), res->GetLength());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(123.456).toExponential(5)
@@ -245,14 +256,15 @@ HWTEST_F_L0(BuiltinsNumberTest, IsExponential)
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(5.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToExponential(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToExponential(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("1.23456e+2");
     CVector<uint8_t> test(res->GetLength() + 1);
     res->CopyDataUtf8(test.data(), res->GetLength());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(123.456).toFixed(10)
@@ -271,12 +283,13 @@ HWTEST_F_L0(BuiltinsNumberTest, ToFixed)
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(10.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("123.4560000000");
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(123.456).toFixed(30)
@@ -295,12 +308,13 @@ HWTEST_F_L0(BuiltinsNumberTest, ToFixed1)
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(30.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("123.456000000000003069544618483633");
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(1e21).toFixed(20)
@@ -319,8 +333,8 @@ HWTEST_F_L0(BuiltinsNumberTest, ToFixed2) {
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(20.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToFixed(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("1e+21");
@@ -328,6 +342,7 @@ HWTEST_F_L0(BuiltinsNumberTest, ToFixed2) {
     res->CopyDataUtf8(test.data(), res->GetLength());
     std::cout << test.data();
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // new Number(123.456).toPrecision(8)
@@ -346,12 +361,13 @@ HWTEST_F_L0(BuiltinsNumberTest, ToPrecision)
     ecmaRuntimeCallInfo->SetThis(number.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(8.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ToPrecision(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ToPrecision(ecmaRuntimeCallInfo);
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     JSHandle<EcmaString> correctResult = factory->NewFromASCII("123.45600");
     ASSERT_TRUE(EcmaString::StringsAreEqual(*res, *correctResult));
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.parseFloat(0x123)
@@ -363,9 +379,10 @@ HWTEST_F_L0(BuiltinsNumberTest, parseFloat)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, param.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ParseFloat(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ParseFloat(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(static_cast<double>(0)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.parseFloat(0x123xx)
@@ -377,9 +394,10 @@ HWTEST_F_L0(BuiltinsNumberTest, parseFloat1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, param.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ParseFloat(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ParseFloat(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(static_cast<double>(0)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // Number.parseInt(0x123)
@@ -394,9 +412,10 @@ HWTEST_F_L0(BuiltinsNumberTest, parseInt)
     ecmaRuntimeCallInfo->SetCallArg(0, param.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(16.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsNumber::ParseInt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsNumber::ParseInt(ecmaRuntimeCallInfo);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(static_cast<double>(291)).GetRawData());
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 // testcases of StringToDouble flags

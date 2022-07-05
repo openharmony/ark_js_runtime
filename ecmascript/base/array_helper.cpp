@@ -81,10 +81,11 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // d. Return v.
     if (!callbackfnHandle->IsUndefined()) {
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackfnHandle, undefined, undefined, 2); // 2: «x, y»
-        info.SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
-        JSTaggedValue callResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
+        info->SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(info);
         if (callResult.IsInt()) {
             return callResult.GetInt();
         }
@@ -193,12 +194,13 @@ JSTaggedValue ArrayHelper::FlattenIntoArray(JSThread *thread, const JSHandle<JSO
             element.Update(JSArray::FastGetPropertyByValue(thread, thisObjVal, p).GetTaggedValue());
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             if (!mapperFunctionHandle->IsUndefined()) {
-                const size_t argsLength = 3; // 3: « element, sourceIndex, source »
+                const int32_t argsLength = 3; // 3: « element, sourceIndex, source »
                 JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, mapperFunctionHandle, thisArg, undefined, argsLength);
-                info.SetCallArg(element.GetTaggedValue(), p.GetTaggedValue(), thisObjVal.GetTaggedValue());
-                JSTaggedValue obj = JSFunction::Call(&info);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                info->SetCallArg(element.GetTaggedValue(), p.GetTaggedValue(), thisObjVal.GetTaggedValue());
+                JSTaggedValue obj = JSFunction::Call(info);
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 element.Update(obj);
             }

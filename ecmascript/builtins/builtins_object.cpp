@@ -767,15 +767,16 @@ JSTaggedValue BuiltinsObject::ToLocaleString(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // 1. Let O be the this value.
     JSHandle<JSTaggedValue> object = GetThis(argv);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(argv->GetThread());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 2. Return Invoke(O, "toString").
     JSHandle<JSTaggedValue> calleeKey = thread->GlobalConstants()->GetHandledToStringString();
-    const size_t argsLength = argv->GetArgsNumber();
+    const int32_t argsLength = argv->GetArgsNumber();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, object, undefined, argsLength);
-    info.SetCallArg(argsLength, 0, argv, 0);
-    return JSFunction::Invoke(&info, calleeKey);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, object, undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(argsLength, 0, argv, 0);
+    return JSFunction::Invoke(info, calleeKey);
 }
 
 JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSObject> &object)

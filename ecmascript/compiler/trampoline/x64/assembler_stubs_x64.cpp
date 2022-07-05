@@ -272,17 +272,19 @@ void AssemblerStubsX64::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler
 //          stack layout:
 //          sp + N*8 argvN
 //          ........
-//          sp + 24: argv1
-//          sp + 16: argv0
-// sp + 8:  actualArgc
-// sp:      codeAddress
+//          sp + 24: argv0
+//          sp + 16: actualArgc
+//          sp + 8:  env
+//          sp:      codeAddress
 // construct Native Leave Frame
 //          +--------------------------+
 //          |       argv0              | calltarget , newTarget, this, ....
 //          +--------------------------+ ---
 //          |       argc               |   ^
-//          |--------------------------|  Fixed
-//          |       codeAddress        | OptimizedLeaveFrame
+//          |--------------------------|   |
+//          |       env | thread       |   |
+//          |--------------------------|   Fixed
+//          |       codeAddress        | OptimizedBuiltinLeaveFrame
 //          |--------------------------|   |
 //          |       returnAddr         |   |
 //          |--------------------------|   |
@@ -310,29 +312,12 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Movq(rbp, rdx);
     __ Addq(16, rdx); // 16 : for rbp & return address
     // load native pointer address
-    __ Movq(Operand(rdx, 0), r10);  // r10 -> argv[0]
-    __ Subq(8, rsp); // 8: align 16 bytes
-    __ Subq(sizeof(EcmaRuntimeCallInfo), rsp);
-
-    // construct ecma_runtime_call_info
-    // get thread
-    Register threadReg = rax;
-    __ Subq(JSThread::GetGlueDataOffset(), threadReg);
-    __ Movq(threadReg, Operand(rsp, EcmaRuntimeCallInfo::GetThreadOffset()));   // thread_
-    // get numArgs
-    __ Movq(0, rax);
-    __ Movl(Operand(rdx, DOUBLE_SLOT_SIZE), rax); // sp + 16 actualArgc
-    __ Subl(3, rax); // 3: size
-    __ Movq(rax, Operand(rsp, EcmaRuntimeCallInfo::GetNumArgsOffset())); // actualArgc
-    // get gpr data
-    __ Movq(rdx, rbx);
-    __ Addq(TRIPLE_SLOT_SIZE, rbx); // argv[0]
-    __ Movq(rbx, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset())); // argv0
-
-    __ Movq(rsp, rdi);
+    __ Movq(Operand(rdx, 0), r10);
+    __ Movq(glueReg, Operand(rdx, FRAME_SLOT_SIZE)); // thread (instead of env)
+    // EcmaRuntimeCallInfo
+    __ Leaq(Operand(rdx, FRAME_SLOT_SIZE), rdi);
     __ Callq(r10);
-    __ Addq(8, rsp); //  8: sp + 8 align 16bytes
-    __ Addq(sizeof(EcmaRuntimeCallInfo), rsp);
+
     __ Popq(rbx);
     __ Pop(r10);
     __ Addq(8, rsp); // 8: sp + 8
@@ -1031,7 +1016,7 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
         __ Btq(JSMethod::IsNativeBit::START_BIT, callFieldRegister);
         __ Jb(&callNativeEntry);
 
-        __ Leaq(Operand(argvRegister, BuiltinFrame::RESERVED_CALL_ARGCOUNT * JSTaggedValue::TaggedTypeSize()),
+        __ Leaq(Operand(argvRegister, NUM_MANDATORY_JSFUNC_ARGS * JSTaggedValue::TaggedTypeSize()),
             argvRegister);
         JSCallCommonEntry(assembler, JSCallMode::CALL_ENTRY);
     }
@@ -1169,23 +1154,6 @@ void AssemblerStubsX64::CallBCStub(ExtendedAssembler *assembler, Register newSpR
         __ Jmp(r11);
         // fall through
     }
-}
-
-void AssemblerStubsX64::GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister)
-{
-    if (glueRegister != threadRegister) {
-        __ Movq(glueRegister, threadRegister);
-    }
-    __ Subq(JSThread::GetGlueDataOffset(), threadRegister);
-}
-
-void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register threadRegister,
-    Register numArgsRegister, Register stackArgsRegister)
-{
-    __ Subq(sizeof(EcmaRuntimeCallInfo), rsp);
-    __ Movq(threadRegister, Operand(rsp, EcmaRuntimeCallInfo::GetThreadOffset()));
-    __ Movq(numArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
-    __ Movq(stackArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
 }
 
 void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
@@ -1618,7 +1586,7 @@ void AssemblerStubsX64::CallNativeWithArgv(ExtendedAssembler *assembler, bool ca
     Register stackArgs = r9;
     Register temporary = rax;
     Register opNumArgs = r10;
-    Label notAligned;
+    Label aligned;
     Label pushThis;
 
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV);
@@ -1643,54 +1611,68 @@ void AssemblerStubsX64::CallNativeWithArgv(ExtendedAssembler *assembler, bool ca
     __ Leaq(Operand(rsp, numArgs, Times8, 40), rbp);
     __ Movq(rsp, stackArgs);
 
+    // push argc
+    __ Addl(NUM_MANDATORY_JSFUNC_ARGS, numArgs);
+    __ Pushq(numArgs);
+    // push thread
+    __ Pushq(glue);
+    // EcmaRuntimeCallInfo
+    __ Movq(rsp, rdi);
+
     __ Testq(0xf, rsp);  // 0xf: 0x1111
-    __ Jnz(&notAligned, Distance::Near);
+    __ Jz(&aligned, Distance::Near);
     __ PushAlignBytes();
 
-    __ Bind(&notAligned);
-    CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
+    __ Bind(&aligned);
+    CallNativeInternal(assembler, nativeCode);
     __ Ret();
 }
 
 void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler)
 {
     Register glue = rdi;
-    Register argc = r8;
     Register argv = r9;
     Register method = rdx;
     Register function = rsi;
     Register nativeCode = r10;
 
+    __ PushAlignBytes();
     __ Push(function);
-    // 24: skip nativeCode & argc & returnAddr
+    // 24: skip thread & argc & returnAddr
     __ Subq(24, rsp);
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_ENTRY_FRAME);
     __ Movq(Operand(method, JSMethod::GetBytecodeArrayOffset(false)), nativeCode); // get native pointer
-    CallNativeInternal(assembler, glue, argc, argv, nativeCode);
+    __ Movq(argv, r11);
+    // 16: skip numArgs & thread
+    __ Subq(16, r11);
+    // EcmaRuntimeCallInfo
+    __ Movq(r11, rdi);
 
-    // 32: skip function
-    __ Addq(32, rsp);
+    CallNativeInternal(assembler, nativeCode);
+
+    // 40: skip function
+    __ Addq(40, rsp);
     __ Ret();
 }
 
-// uint64_t PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
+// uint64_t PushCallArgsAndDispatchNative(uintptr_t codeAddress, uintptr_t glue, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
-// Input:        %rax - glue
+// Input:        %rax - codeAddress
 // stack layout: sp + N*8 argvN
 //               ........
 //               sp + 24: argv1
 //               sp + 16: argv0
-// sp + 8:       actualArgc
-// sp:           codeAddress
+//               sp + 8:  actualArgc
+//               sp:      thread
 // construct Native Leave Frame
 //               +--------------------------+
 //               |       argv0              | calltarget , newTarget, this, ....
 //               +--------------------------+ ---
 //               |       argc               |   ^
-//               |--------------------------|  Fixed
-//               |       codeAddress        | BuiltinFrame
 //               |--------------------------|   |
-//               |       returnAddr         |   |
+//               |       thread             |   |
+//               |--------------------------|  Fixed
+//               |       returnAddr         |  BuiltinFrame
 //               |--------------------------|   |
 //               |       callsiteFp         |   |
 //               |--------------------------|   |
@@ -1699,19 +1681,14 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler)
 void AssemblerStubsX64::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallArgsAndDispatchNative));
-    Register glue = rax;
-    Register numArgs = rdx;
-    Register stackArgs = rcx;
-    Register nativeCode = r10;
+    Register nativeCode = rax;
+    Register glue = rdi;
 
+    __ Movq(Operand(rsp, 8), glue); // 8: glue
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME);
-    __ Movq(Operand(rbp, BuiltinFrame::GetNativeCodeToFpDelta(false)), nativeCode);
-    // 8: offset of numArgs
-    __ Movq(Operand(rbp, BuiltinFrame::GetNumArgsToFpDelta(false)), numArgs);
-    // 8: offset of &argv[0]
-    __ Leaq(Operand(rbp, BuiltinFrame::GetStackArgsToFpDelta(false)), stackArgs);
-
-    CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
+    __ Leaq(Operand(rbp, 16), rdi); // 16: skip argc & thread
+    __ PushAlignBytes();
+    CallNativeInternal(assembler, nativeCode);
     __ Ret();
 }
 
@@ -1726,14 +1703,8 @@ void AssemblerStubsX64::PushBuiltinFrame(ExtendedAssembler *assembler,
     }
 }
 
-void AssemblerStubsX64::CallNativeInternal(ExtendedAssembler *assembler,
-    Register glue, Register numArgs, Register stackArgs, Register nativeCode)
+void AssemblerStubsX64::CallNativeInternal(ExtendedAssembler *assembler, Register nativeCode)
 {
-    GlueToThread(assembler, glue, glue);
-    ConstructEcmaRuntimeCallInfo(assembler, glue, numArgs, stackArgs);
-
-    // rsp is ecma callinfo base
-    __ Movq(rsp, rdi);
     __ Callq(nativeCode);
     // resume rsp
     __ Movq(rbp, rsp);

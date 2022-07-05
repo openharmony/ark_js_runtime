@@ -72,10 +72,11 @@ JSTaggedValue BuiltinsPromise::PromiseConstructor([[maybe_unused]] EcmaRuntimeCa
     auto resolveFunc = resolvingFunction->GetResolveFunction();
     auto rejectFunc = resolvingFunction->GetRejectFunction();
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    const size_t argsLength = 2; // 2: «resolvingFunctions.[[Resolve]], resolvingFunctions.[[Reject]]»
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, executor, undefined, undefined, argsLength);
-    info.SetCallArg(resolveFunc, rejectFunc);
-    JSTaggedValue taggedValue = JSFunction::Call(&info);
+    const int32_t argsLength = 2; // 2: «resolvingFunctions.[[Resolve]], resolvingFunctions.[[Reject]]»
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, executor, undefined, undefined, argsLength);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(resolveFunc, rejectFunc);
+    JSTaggedValue taggedValue = JSFunction::Call(info);
     JSHandle<JSTaggedValue> completionValue(thread, taggedValue);
 
     // 10. If completion is an abrupt completion, then
@@ -85,10 +86,11 @@ JSTaggedValue BuiltinsPromise::PromiseConstructor([[maybe_unused]] EcmaRuntimeCa
         completionValue = JSPromise::IfThrowGetThrowValue(thread);
         thread->ClearException();
         JSHandle<JSTaggedValue> reject(thread, resolvingFunction->GetRejectFunction());
-        EcmaRuntimeCallInfo runtimeInfo =
+        EcmaRuntimeCallInfo *runtimeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
-        runtimeInfo.SetCallArg(completionValue.GetTaggedValue());
-        JSFunction::Call(&runtimeInfo);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        runtimeInfo->SetCallArg(completionValue.GetTaggedValue());
+        JSFunction::Call(runtimeInfo);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
 
@@ -266,9 +268,10 @@ JSTaggedValue BuiltinsPromise::Resolve(EcmaRuntimeCallInfo *argv)
     // 7. ReturnIfAbrupt(resolveResult).
     JSHandle<JSTaggedValue> resolve(thread, promiseCapability->GetResolve());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
-    info.SetCallArg(xValue.GetTaggedValue());
-    JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(xValue.GetTaggedValue());
+    JSFunction::Call(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 8. Return promiseCapability.[[Promise]].
@@ -302,9 +305,10 @@ JSTaggedValue BuiltinsPromise::Reject(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> reason = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> reject(thread, promiseCapability->GetReject());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
-    info.SetCallArg(reason.GetTaggedValue());
-    JSFunction::Call(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(reason.GetTaggedValue());
+    JSFunction::Call(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 7. Return promiseCapability.[[Promise]].
@@ -333,10 +337,11 @@ JSTaggedValue BuiltinsPromise::Catch(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
     JSHandle<JSTaggedValue> reject = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promise, undefined, 2); // 2: «undefined, onRejected»
-    info.SetCallArg(undefined.GetTaggedValue(), reject.GetTaggedValue());
-    return JSFunction::Invoke(&info, thenKey);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(undefined.GetTaggedValue(), reject.GetTaggedValue());
+    return JSFunction::Invoke(info, thenKey);
 }
 
 // 25.4.5.3 Promise.prototype.then ( onFulfilled , onRejected )
@@ -481,10 +486,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
                     JSArray::CreateArrayFromList(thread, JSHandle<TaggedArray>(thread, values->GetValue()));
                 // 2. Let resolveResult be Call(resultCapability.[[Resolve]], undefined, «valuesArray»).
                 JSHandle<JSTaggedValue> resCapaFunc(thread, capa->GetResolve());
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, resCapaFunc, undefined, undefined, 1);
-                info.SetCallArg(jsArrayValues.GetTaggedValue());
-                JSTaggedValue resolveRes = JSFunction::Call(&info);
+                RETURN_COMPLETION_IF_ABRUPT(thread, next);
+                info->SetCallArg(jsArrayValues.GetTaggedValue());
+                JSTaggedValue resolveRes = JSFunction::Call(info);
                 // 3. ReturnIfAbrupt(resolveResult)
                 JSHandle<JSTaggedValue> resolveAbrupt(thread, resolveRes);
                 RETURN_COMPLETION_IF_ABRUPT(thread, resolveAbrupt);
@@ -512,9 +518,10 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         values->SetValue(thread, valuesArray);
         // i. Let nextPromise be Invoke(constructor, "resolve", «‍nextValue»).
         JSHandle<JSTaggedValue> resolveKey = globalConst->GetHandledPromiseResolveString();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, ctor, undefined, 1);
-        info.SetCallArg(nextVal.GetTaggedValue());
-        JSTaggedValue taggedNextPromise = JSFunction::Invoke(&info, resolveKey);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, ctor, undefined, 1);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        info->SetCallArg(nextVal.GetTaggedValue());
+        JSTaggedValue taggedNextPromise = JSFunction::Invoke(info, resolveKey);
         // j. ReturnIfAbrupt(nextPromise).
         JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
         RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
@@ -537,11 +544,12 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         remainCnt->SetValue(thread, ++JSTaggedNumber(remainCnt->GetValue()));
         // r. Let result be Invoke(nextPromise, "then", «‍resolveElement, resultCapability.[[Reject]]»).
         JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
-        EcmaRuntimeCallInfo runtimeInfo =
+        EcmaRuntimeCallInfo *runtimeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise,
             undefined, 2); // 2: «‍resolveElement, resultCapability.[[Reject]]»
-        runtimeInfo.SetCallArg(resoleveElement.GetTaggedValue(), capa->GetReject());
-        JSTaggedValue taggedResult = JSFunction::Invoke(&runtimeInfo, thenKey);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
+        runtimeInfo->SetCallArg(resoleveElement.GetTaggedValue(), capa->GetReject());
+        JSTaggedValue taggedResult = JSFunction::Invoke(runtimeInfo, thenKey);
         JSHandle<JSTaggedValue> result(thread, taggedResult);
         // s. ReturnIfAbrupt(result).
         RETURN_COMPLETION_IF_ABRUPT(thread, result);
@@ -597,9 +605,10 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
         RETURN_COMPLETION_IF_ABRUPT(thread, nextValue);
         JSHandle<JSTaggedValue> resolveStr = globalConst->GetHandledPromiseResolveString();
 
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, constructor, undefined, 1);
-        info.SetCallArg(nextValue.GetTaggedValue());
-        JSTaggedValue result = JSFunction::Invoke(&info, resolveStr);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, constructor, undefined, 1);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextValue);
+        info->SetCallArg(nextValue.GetTaggedValue());
+        JSTaggedValue result = JSFunction::Invoke(info, resolveStr);
         JSHandle<JSTaggedValue> nextPromise(thread, result);
         if (thread->HasPendingException()) {
             nextPromise = JSPromise::IfThrowGetThrowValue(thread);
@@ -608,10 +617,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
 
         JSHandle<JSTaggedValue> thenStr = globalConst->GetHandledPromiseThenString();
 
-        EcmaRuntimeCallInfo runtimeInfo =
+        EcmaRuntimeCallInfo *runtimeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise, undefined, 2); // 2: two args
-        runtimeInfo.SetCallArg(capability->GetResolve(), capability->GetReject());
-        result = JSFunction::Invoke(&runtimeInfo, thenStr);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
+        runtimeInfo->SetCallArg(capability->GetResolve(), capability->GetReject());
+        result = JSFunction::Invoke(runtimeInfo, thenStr);
         JSHandle<JSTaggedValue> handleResult(thread, result);
         if (thread->HasPendingException()) {
             handleResult = JSPromise::IfThrowGetThrowValue(thread);
@@ -768,10 +778,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAny(JSThread *thread,
         errorsArray->Set(thread, index, JSTaggedValue::Undefined());
         errors->SetValue(thread, errorsArray);
         // i. Let nextPromise be ? Call(promiseResolve, constructor, « nextValue »).
-        EcmaRuntimeCallInfo taggedInfo =
+        EcmaRuntimeCallInfo *taggedInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, promiseResolve, constructor, undefined, 1);
-        taggedInfo.SetCallArg(nextVal.GetTaggedValue());
-        JSTaggedValue taggedNextPromise = JSFunction::Call(&taggedInfo);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        taggedInfo->SetCallArg(nextVal.GetTaggedValue());
+        JSTaggedValue taggedNextPromise = JSFunction::Call(taggedInfo);
         JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
         if (thread->HasPendingException()) {
             JSHandle<JSTaggedValue> promiseResult = JSPromise::IfThrowGetThrowValue(thread);
@@ -800,10 +811,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAny(JSThread *thread,
         // s. Perform ? Invoke(nextPromise, "then", « resultCapability.[[Resolve]], onRejected »).
         JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
         JSHandle<JSTaggedValue> resCapaFunc(thread, resultCapability->GetResolve());
-        EcmaRuntimeCallInfo invokeInfo =
+        EcmaRuntimeCallInfo *invokeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise, undefined, 2); // 2: two args
-        invokeInfo.SetCallArg(resCapaFunc.GetTaggedValue(), onRejected.GetTaggedValue());
-        JSFunction::Invoke(&invokeInfo, thenKey);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        invokeInfo->SetCallArg(resCapaFunc.GetTaggedValue(), onRejected.GetTaggedValue());
+        JSFunction::Invoke(invokeInfo, thenKey);
         if (thread->HasPendingException()) {
             JSHandle<JSTaggedValue> taggedResult = JSPromise::IfThrowGetThrowValue(thread);
             JSHandle<CompletionRecord> completionRecord =
@@ -914,10 +926,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAllSettled(JSThread *t
                 JSHandle<JSArray> jsArrayValues = JSArray::CreateArrayFromList(thread, taggedValues);
                 // 2. Perform ? Call(resultCapability.[[Resolve]], undefined, « valuesArray »).
                 JSHandle<JSTaggedValue> resCapaFunc(thread, resultCapa->GetResolve());
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, resCapaFunc, undefined, undefined, 1);
-                info.SetCallArg(jsArrayValues.GetTaggedValue());
-                JSFunction::Call(&info);
+                RETURN_COMPLETION_IF_ABRUPT(thread, next);
+                info->SetCallArg(jsArrayValues.GetTaggedValue());
+                JSFunction::Call(info);
                 if (thread->HasPendingException()) {
                     JSHandle<JSTaggedValue> throwValue = JSPromise::IfThrowGetThrowValue(thread);
                     JSHandle<CompletionRecord> completionRecord =
@@ -947,10 +960,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAllSettled(JSThread *t
         valuesArray->Set(thread, index, JSTaggedValue::Undefined());
         values->SetValue(thread, valuesArray);
         // i. Let nextPromise be ? Call(promiseResolve, constructor, « nextValue »).
-        EcmaRuntimeCallInfo taggedInfo =
+        EcmaRuntimeCallInfo *taggedInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, promiseResolve, constructor, undefined, 1);
-        taggedInfo.SetCallArg(nextVal.GetTaggedValue());
-        JSTaggedValue taggedNextPromise = JSFunction::Call(&taggedInfo);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        taggedInfo->SetCallArg(nextVal.GetTaggedValue());
+        JSTaggedValue taggedNextPromise = JSFunction::Call(taggedInfo);
         JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
         if (thread->HasPendingException()) {
             JSHandle<JSTaggedValue> promiseResult = JSPromise::IfThrowGetThrowValue(thread);
@@ -999,10 +1013,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAllSettled(JSThread *t
         remainCnt->SetValue(thread, ++JSTaggedNumber(remainCnt->GetValue()));
         // ab. Perform ? Invoke(nextPromise, "then", « onFulfilled, onRejected »).
         JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
-        EcmaRuntimeCallInfo invokeInfo =
+        EcmaRuntimeCallInfo *invokeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, nextPromise, undefined, 2); // 2: two args
-        invokeInfo.SetCallArg(onFulfilled.GetTaggedValue(), onRejected.GetTaggedValue());
-        JSFunction::Invoke(&invokeInfo, thenKey);
+        RETURN_COMPLETION_IF_ABRUPT(thread, nextVal);
+        invokeInfo->SetCallArg(onFulfilled.GetTaggedValue(), onRejected.GetTaggedValue());
+        JSFunction::Invoke(invokeInfo, thenKey);
         if (thread->HasPendingException()) {
             JSHandle<JSTaggedValue> taggedResult = JSPromise::IfThrowGetThrowValue(thread);
             JSHandle<CompletionRecord> completionRecord =
@@ -1070,9 +1085,10 @@ JSTaggedValue BuiltinsPromise::Finally(EcmaRuntimeCallInfo *argv)
     // 7. return invoke(promise, "then", <<thenFinally, catchFinally>>)
     JSHandle<JSTaggedValue> thenKey(globalConst->GetHandledPromiseThenString());
     JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
-    EcmaRuntimeCallInfo invokeInfo =
+    EcmaRuntimeCallInfo *invokeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promise, undefined, 2); // 2: two args
-    invokeInfo.SetCallArg(thenFinally.GetTaggedValue(), catchFinally.GetTaggedValue());
-    return JSFunction::Invoke(&invokeInfo, thenKey);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    invokeInfo->SetCallArg(thenFinally.GetTaggedValue(), catchFinally.GetTaggedValue());
+    return JSFunction::Invoke(invokeInfo, thenKey);
 }
 }  // namespace panda::ecmascript::builtins

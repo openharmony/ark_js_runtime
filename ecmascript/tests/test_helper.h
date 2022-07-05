@@ -30,6 +30,8 @@ using panda::ecmascript::EcmaHandleScope;
 using panda::ecmascript::EcmaRuntimeCallInfo;
 using panda::ecmascript::EcmaVM;
 using panda::ecmascript::InterpretedFrame;
+using panda::ecmascript::InterpretedBuiltinFrame;
+using panda::ecmascript::InterpretedEntryFrame;
 using panda::ecmascript::JSTaggedType;
 using panda::ecmascript::JSTaggedValue;
 using panda::ecmascript::JSThread;
@@ -41,32 +43,34 @@ using ecmascript::JSRuntimeOptions;
 
 class TestHelper {
 public:
-    static std::unique_ptr<EcmaRuntimeCallInfo> CreateEcmaRuntimeCallInfo(JSThread *thread, JSTaggedValue newTgt,
-                                                                          uint32_t argvLength)
+    static EcmaRuntimeCallInfo* CreateEcmaRuntimeCallInfo(JSThread *thread, JSTaggedValue newTgt, uint32_t argvLength)
     {
         const uint8_t testDecodedSize = 2;
         // argvLength includes number of int64_t to store value and tag of function, 'this' and call args
         // It doesn't include new.target argument
-        uint32_t numActualArgs = argvLength / testDecodedSize + 1;
+        int32_t numActualArgs = argvLength / testDecodedSize + 1;
         JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        size_t frameSize = ecmascript::INTERPRETER_FRAME_STATE_SIZE + numActualArgs;
+        size_t frameSize = InterpretedFrame::NumOfMembers() + numActualArgs;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         for (int i = numActualArgs; i > 0; i--) {
             newSp[i - 1] = JSTaggedValue::Undefined().GetRawData();
         }
-        auto callInfo = std::make_unique<EcmaRuntimeCallInfo>(thread, numActualArgs - NUM_MANDATORY_JSFUNC_ARGS, newSp);
-        callInfo->SetNewTarget(newTgt);
-        return callInfo;
+        EcmaRuntimeCallInfo *ecmaRuntimeCallInfo = reinterpret_cast<EcmaRuntimeCallInfo *>(newSp - 2);
+        *(--newSp) = numActualArgs;
+        *(--newSp) = ToUintPtr(thread);
+        ecmaRuntimeCallInfo->SetNewTarget(newTgt);
+        return ecmaRuntimeCallInfo;
     }
 
     static JSTaggedType *SetupFrame(JSThread *thread, EcmaRuntimeCallInfo *info)
     {
         JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        size_t frameSize = ecmascript::INTERPRETER_FRAME_STATE_SIZE + info->GetArgsNumber() + NUM_MANDATORY_JSFUNC_ARGS;
+        size_t frameSize =
+            InterpretedFrame::NumOfMembers() + info->GetArgsNumber() + NUM_MANDATORY_JSFUNC_ARGS + 2;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
-        InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(newSp) - 1;
-        state->base.type = ecmascript::FrameType::INTERPRETER_FRAME;
+        InterpretedBuiltinFrame *state = reinterpret_cast<InterpretedBuiltinFrame *>(newSp) - 1;
+        state->base.type = ecmascript::FrameType::INTERPRETER_BUILTIN_FRAME;
         state->base.prev = sp;
         state->pc = nullptr;
         state->function = methodFunction_.GetTaggedValue();

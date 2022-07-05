@@ -75,8 +75,9 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Symbol::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Symbol::ToString(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     ASSERT_TRUE(result.IsString());
 
@@ -95,8 +96,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterToString)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Symbol::ToString(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = Symbol::ToString(ecmaRuntimeCallInfo);
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     ASSERT_TRUE(result.IsString());
 
@@ -116,8 +117,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterValueOf)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::ValueOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::ValueOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsSymbol());
     ASSERT_EQ(result.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -130,8 +131,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterValueOf)
     otherEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     otherEcmaRuntimeCallInfo->SetThis(symbolRef.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo.get());
-    JSTaggedValue otherResult = BuiltinsSymbol::ValueOf(otherEcmaRuntimeCallInfo.get());
+    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo);
+    JSTaggedValue otherResult = BuiltinsSymbol::ValueOf(otherEcmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(otherResult.IsSymbol());
     ASSERT_EQ(otherResult.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -149,8 +150,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterValueOf)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::ValueOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::ValueOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsSymbol());
     ASSERT_EQ(result.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -163,8 +164,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterValueOf)
     otherEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     otherEcmaRuntimeCallInfo->SetThis(symbolRef.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo.get());
-    JSTaggedValue otherResult = BuiltinsSymbol::ValueOf(otherEcmaRuntimeCallInfo.get());
+    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo);
+    JSTaggedValue otherResult = BuiltinsSymbol::ValueOf(otherEcmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(otherResult.IsSymbol());
     ASSERT_EQ(otherResult.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -190,8 +191,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, string.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::For(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::For(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(tableHandle->ContainsKey(string_handle.GetTaggedValue()), true);
 
@@ -212,8 +213,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::KeyFor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::KeyFor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
 
@@ -225,8 +226,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, string.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    BuiltinsSymbol::For(ecmaRuntimeCallInfo1.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    BuiltinsSymbol::For(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSSymbol> otherSymbol = ecmaVM->GetFactory()->NewPublicSymbolWithChar("ccc");
@@ -235,8 +236,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     ecmaRuntimeCallInfo2->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetCallArg(0, otherSymbol.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue otherResult = BuiltinsSymbol::KeyFor(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue otherResult = BuiltinsSymbol::KeyFor(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(otherResult.IsString());
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
@@ -256,8 +257,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolToPrimitive)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::ToPrimitive(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::ToPrimitive(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsSymbol());
     ASSERT_EQ(result.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -270,8 +271,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolToPrimitive)
     otherEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     otherEcmaRuntimeCallInfo->SetThis(symbolRef.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo.get());
-    JSTaggedValue otherResult = BuiltinsSymbol::ToPrimitive(otherEcmaRuntimeCallInfo.get());
+    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo);
+    JSTaggedValue otherResult = BuiltinsSymbol::ToPrimitive(otherEcmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(otherResult.IsSymbol());
     ASSERT_EQ(otherResult.GetRawData() == (JSTaggedValue(*symbol)).GetRawData(), true);
@@ -287,8 +288,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::SymbolConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::SymbolConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsSymbol());
     JSSymbol *sym = reinterpret_cast<JSSymbol *>(result.GetRawData());
@@ -301,8 +302,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
     otherEcmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     otherEcmaRuntimeCallInfo->SetCallArg(0, string.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsSymbol::SymbolConstructor(otherEcmaRuntimeCallInfo.get());
+    prev = TestHelper::SetupFrame(thread, otherEcmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsSymbol::SymbolConstructor(otherEcmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultString = JSTaggedValue::ToString(
         thread, JSHandle<JSTaggedValue>(thread, reinterpret_cast<JSSymbol *>(result1.GetRawData())->GetDescription()));
@@ -320,8 +321,8 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolGetter)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(symbol.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsSymbol::DescriptionGetter(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsSymbol::DescriptionGetter(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.IsString());
     EcmaString *resString = reinterpret_cast<EcmaString *>(result.GetRawData());

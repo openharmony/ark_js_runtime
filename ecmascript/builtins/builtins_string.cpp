@@ -621,10 +621,11 @@ JSTaggedValue BuiltinsString::Match(EcmaRuntimeCallInfo *argv)
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             if (!matcher->IsUndefined()) {
                 ASSERT(matcher->IsJSFunction());
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, matcher, regexp, undefined, 1);
-                info.SetCallArg(thisTag.GetTaggedValue());
-                return JSFunction::Call(&info);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                info->SetCallArg(thisTag.GetTaggedValue());
+                return JSFunction::Call(info);
             }
         }
     }
@@ -633,9 +634,10 @@ JSTaggedValue BuiltinsString::Match(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> undifinedHandle = globalConst->GetHandledUndefined();
     JSHandle<JSTaggedValue> rx(thread, BuiltinsRegExp::RegExpCreate(thread, regexp, undifinedHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, rx, undefined, 1);
-    info.SetCallArg(thisVal.GetTaggedValue());
-    return JSFunction::Invoke(&info, matchTag);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, rx, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(thisVal.GetTaggedValue());
+    return JSFunction::Invoke(info, matchTag);
 }
 
 JSTaggedValue BuiltinsString::MatchAll(EcmaRuntimeCallInfo *argv)
@@ -687,10 +689,11 @@ JSTaggedValue BuiltinsString::MatchAll(EcmaRuntimeCallInfo *argv)
             if (!matcher->IsUndefined()) {
                 ASSERT(matcher->IsJSFunction());
                 // i. i. Return ? Call(matcher, regexp, « O »).
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, matcher, regexp, undefined, 1);
-                info.SetCallArg(thisTag.GetTaggedValue());
-                return JSFunction::Call(&info);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                info->SetCallArg(thisTag.GetTaggedValue());
+                return JSFunction::Call(info);
             }
         }
     }
@@ -700,9 +703,10 @@ JSTaggedValue BuiltinsString::MatchAll(EcmaRuntimeCallInfo *argv)
     // 4. Let rx be ? RegExpCreate(regexp, "g").
     JSHandle<JSTaggedValue> rx(thread, BuiltinsRegExp::RegExpCreate(thread, regexp, gvalue));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, rx, undefined, 1);
-    info.SetCallArg(thisVal.GetTaggedValue());
-    return JSFunction::Invoke(&info, matchAllTag);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, rx, undefined, 1);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(thisVal.GetTaggedValue());
+    return JSFunction::Invoke(info, matchAllTag);
 }
 
 // 21.1.3.12
@@ -960,12 +964,13 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
         // If replacer is not undefined, then
         if (!replaceMethod->IsUndefined()) {
             // Return Call(replacer, searchValue, «O, replaceValue»).
-            const size_t argsLength = 2;
+            const int32_t argsLength = 2;
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, replaceMethod, searchTag, undefined, argsLength);
-            info.SetCallArg(thisTag.GetTaggedValue(), replaceTag.GetTaggedValue());
-            return JSFunction::Call(&info);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            info->SetCallArg(thisTag.GetTaggedValue(), replaceTag.GetTaggedValue());
+            return JSFunction::Call(info);
         }
     }
 
@@ -997,12 +1002,12 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
     // If functionalReplace is true, then
     if (replaceTag->IsCallable()) {
         // Let replValue be Call(replaceValue, undefined,«matched, pos, and string»).
-        const size_t argsLength = 3; // 3: «matched, pos, and string»
-       
-        EcmaRuntimeCallInfo info =
+        const int32_t argsLength = 3; // 3: «matched, pos, and string»
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, replaceTag, undefined, undefined, argsLength);
-        info.SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
-        JSTaggedValue replStrDeocodeValue = JSFunction::Call(&info);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
+        JSTaggedValue replStrDeocodeValue = JSFunction::Call(info);
         replHandle.Update(replStrDeocodeValue);
     } else {
         // Let captures be an empty List.
@@ -1109,10 +1114,10 @@ JSTaggedValue BuiltinsString::ReplaceAll(EcmaRuntimeCallInfo *argv)
             // i. Return ? Call(replacer, searchValue, «O, replaceValue»).
             const size_t argsLength = 2;
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, replaceMethod, searchTag, undefined, argsLength);
-            info.SetCallArg(thisTag.GetTaggedValue(), replaceTag.GetTaggedValue());
-            return JSFunction::Call(&info);
+            info->SetCallArg(thisTag.GetTaggedValue(), replaceTag.GetTaggedValue());
+            return JSFunction::Call(info);
         }
     }
 
@@ -1149,12 +1154,11 @@ JSTaggedValue BuiltinsString::ReplaceAll(EcmaRuntimeCallInfo *argv)
         // If functionalReplace is true, then
         if (replaceTag->IsCallable()) {
             // Let replValue be Call(replaceValue, undefined,«matched, pos, and string»).
-            const size_t argsLength = 3; // 3: «matched, pos, and string»
-            
-            EcmaRuntimeCallInfo info =
+            const int32_t argsLength = 3; // 3: «matched, pos, and string»
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, replaceTag, undefined, undefined, argsLength);
-            info.SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
-            JSTaggedValue replStrDeocodeValue = JSFunction::Call(&info);
+            info->SetCallArg(searchString.GetTaggedValue(), JSTaggedValue(pos), thisString.GetTaggedValue());
+            JSTaggedValue replStrDeocodeValue = JSFunction::Call(info);
             replHandle.Update(replStrDeocodeValue);
         } else {
             // Let captures be an empty List.
@@ -1452,10 +1456,11 @@ JSTaggedValue BuiltinsString::Search(EcmaRuntimeCallInfo *argv)
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             if (!searcher->IsUndefined()) {
                 ASSERT(searcher->IsJSFunction());
-                EcmaRuntimeCallInfo info =
+                EcmaRuntimeCallInfo *info =
                     EcmaInterpreter::NewRuntimeCallInfo(thread, searcher, regexp, undefined, 1);
-                info.SetCallArg(thisTag.GetTaggedValue());
-                return JSFunction::Call(&info);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                info->SetCallArg(thisTag.GetTaggedValue());
+                return JSFunction::Call(info);
             }
         }
     }
@@ -1463,10 +1468,11 @@ JSTaggedValue BuiltinsString::Search(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> rx(thread, BuiltinsRegExp::RegExpCreate(thread, regexp, undefined));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    EcmaRuntimeCallInfo info =
+    EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, rx, undefined, 1);
-    info.SetCallArg(thisVal.GetTaggedValue());
-    return JSFunction::Invoke(&info, searchTag);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    info->SetCallArg(thisVal.GetTaggedValue());
+    return JSFunction::Invoke(info, searchTag);
 }
 
 // 21.1.3.16
@@ -1534,12 +1540,13 @@ JSTaggedValue BuiltinsString::Split(EcmaRuntimeCallInfo *argv)
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         if (!splitter->IsUndefined()) {
             // Return Call(splitter, separator, «‍O, limit»).
-            const size_t argsLength = 2;
+            const int32_t argsLength = 2;
             JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, splitter, seperatorTag, undefined, argsLength);
-            info.SetCallArg(thisTag.GetTaggedValue(), limitTag.GetTaggedValue());
-            return JSFunction::Call(&info);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            info->SetCallArg(thisTag.GetTaggedValue(), limitTag.GetTaggedValue());
+            return JSFunction::Call(info);
         }
     }
     // Let S be ToString(O).

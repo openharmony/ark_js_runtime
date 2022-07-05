@@ -529,10 +529,11 @@ JSTaggedValue BuiltinsRegExp::MatchAll(EcmaRuntimeCallInfo *argv)
 
     // 6. Let matcher be ? Construct(C, « R, flags »).
     JSHandle<JSTaggedValue> undefined = globalConstants->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo =
+    EcmaRuntimeCallInfo *runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 2); // 2: two args
-    runtimeInfo.SetCallArg(thisObj.GetTaggedValue(), flagsStrHandle.GetTaggedValue());
-    JSTaggedValue taggedMatcher = JSFunction::Construct(&runtimeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    runtimeInfo->SetCallArg(thisObj.GetTaggedValue(), flagsStrHandle.GetTaggedValue());
+    JSTaggedValue taggedMatcher = JSFunction::Construct(runtimeInfo);
     JSHandle<JSTaggedValue> matcherHandle(thread, taggedMatcher);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -946,12 +947,13 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
                 replacerArgs->Set(thread, index + 3, namedCaptures.GetTaggedValue()); // 3: position of groups
             }
             // iv. Let replValue be Call(replaceValue, undefined, replacerArgs).
-            const size_t argsLength = replacerArgs->GetLength();
+            const int32_t argsLength = replacerArgs->GetLength();
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-            EcmaRuntimeCallInfo info =
+            EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, inputReplaceValue, undefined, undefined, argsLength);
-            info.SetCallArg(argsLength, replacerArgs);
-            JSTaggedValue replaceResult = JSFunction::Call(&info);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            info->SetCallArg(argsLength, replacerArgs);
+            JSTaggedValue replaceResult = JSFunction::Call(info);
             JSHandle<JSTaggedValue> replValue(thread, replaceResult);
             // v. Let replacement be ToString(replValue).
             JSHandle<EcmaString> replacementString = JSTaggedValue::ToString(thread, replValue);
@@ -1152,10 +1154,11 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     // 13. Let splitter be Construct(C, «rx, newFlags»).
     JSHandle<JSObject> globalObject(thread, thread->GetEcmaVM()->GetGlobalEnv()->GetGlobalObject());
     JSHandle<JSTaggedValue> undefined = globalConstants->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo =
+    EcmaRuntimeCallInfo *runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 2); // 2: two args
-    runtimeInfo.SetCallArg(thisObj.GetTaggedValue(), newFlagsHandle.GetTaggedValue());
-    JSTaggedValue taggedSplitter = JSFunction::Construct(&runtimeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    runtimeInfo->SetCallArg(thisObj.GetTaggedValue(), newFlagsHandle.GetTaggedValue());
+    JSTaggedValue taggedSplitter = JSFunction::Construct(runtimeInfo);
     // 14. ReturnIfAbrupt(splitter).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -1531,9 +1534,10 @@ JSTaggedValue BuiltinsRegExp::RegExpExec(JSThread *thread, const JSHandle<JSTagg
     // 5. If IsCallable(exec) is true, then
     if (exec->IsCallable()) {
         JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, exec, regexp, undefined, 1);
-        info.SetCallArg(inputStr.GetTaggedValue());
-        JSTaggedValue result = JSFunction::Call(&info);
+        EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, exec, regexp, undefined, 1);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        info->SetCallArg(inputStr.GetTaggedValue());
+        JSTaggedValue result = JSFunction::Call(info);
         // b. ReturnIfAbrupt(result).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         if (!result.IsECMAObject() && !result.IsNull()) {
