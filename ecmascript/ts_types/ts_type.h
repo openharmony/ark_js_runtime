@@ -35,7 +35,8 @@ public:
         return static_cast<TSType *>(const_cast<TaggedObject *>(object));
     }
 
-    ACCESSORS_PRIMITIVE_FIELD(GT, uint64_t, BIT_FIELD_OFFSET, SIZE);
+    ACCESSORS_PRIMITIVE_FIELD(GT, uint32_t, BIT_FIELD_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     GlobalTSTypeRef GetGTRef() const
     {
@@ -81,12 +82,44 @@ public:
 
     ACCESSORS(InstanceType, INSTANCE_TYPE_OFFSET, CONSTRUCTOR_TYPE_OFFSET);
     ACCESSORS(ConstructorType, CONSTRUCTOR_TYPE_OFFSET, PROTOTYPE_TYPE_OFFSET);
-    ACCESSORS(PrototypeType, PROTOTYPE_TYPE_OFFSET, EXTENSION_TYPE_OFFSET);
-    ACCESSORS(ExtensionType, EXTENSION_TYPE_OFFSET, LAST_OFFSET);
+    ACCESSORS(PrototypeType, PROTOTYPE_TYPE_OFFSET, EXTENSION_GT_RAW_DATA_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(ExtensionGTRawData, uint32_t, EXTENSION_GT_RAW_DATA_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT(INSTANCE_TYPE_OFFSET, LAST_OFFSET)
+    // define BitField
+    static constexpr size_t HAS_LINKED_BITS = 1;
+    FIRST_BIT_FIELD(BitField, HasLinked, bool, HAS_LINKED_BITS);
+
+    DECL_VISIT_OBJECT(INSTANCE_TYPE_OFFSET, EXTENSION_GT_RAW_DATA_OFFSET)
     DECL_DUMP()
+
+    // Judgment base classType by extends typeId, ts2abc write 0 in base class type extends domain
+    inline static bool IsBaseClassType(int extendsTypeId)
+    {
+        const int baseClassTypeExtendsTypeId = 0;
+        return extendsTypeId == baseClassTypeExtendsTypeId;
+    }
+
+    GlobalTSTypeRef GetExtensionGT() const
+    {
+        uint32_t extensionGTRawData = GetExtensionGTRawData();
+        return GlobalTSTypeRef(extensionGTRawData);
+    }
+
+    void SetExtensionGT(GlobalTSTypeRef gt)
+    {
+        uint32_t extensionGTRawData = gt.GetType();
+        SetExtensionGTRawData(extensionGTRawData);
+    }
+
+    JSHandle<TSClassType> GetExtendClassType(JSThread *thread) const
+    {
+        GlobalTSTypeRef extensionGT = GetExtensionGT();
+        JSHandle<JSTaggedValue> extendClassType = thread->GetEcmaVM()->GetTSLoader()->GetType(extensionGT);
+        ASSERT(extendClassType->IsTSClassType());
+        return JSHandle<TSClassType>(extendClassType);
+    }
 };
 
 class TSClassInstanceType : public TSType {

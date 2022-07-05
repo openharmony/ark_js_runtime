@@ -240,6 +240,8 @@ public:
 
     void GenerateStaticHClass(JSHandle<TSTypeTable> tsTypeTable);
 
+    JSHandle<JSTaggedValue> GetType(const GlobalTSTypeRef &gt) const;
+
 private:
 
     NO_COPY_SEMANTIC(TSLoader);

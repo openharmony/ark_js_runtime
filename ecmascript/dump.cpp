@@ -2806,14 +2806,16 @@ void TSClassType::Dump(std::ostream &os) const
     os << typeKind;
     os << "\n";
     os << " - ExtensionTypeGT: ";
-    JSTaggedValue extensionType = GetExtensionType();
-    if (extensionType.IsUndefined()) {
+    GlobalTSTypeRef extensionGT = GetExtensionGT();
+    if (extensionGT.IsDefault()) {
         os << " (base class type) ";
     } else {
-        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetType();
-        os << extensionTypeGT;
+        os << extensionGT.GetType();
     }
     os << "\n";
+
+    CString hasLinked = GetHasLinked() ? "true" : "false";
+    os << " - HasLinked: " << hasLinked  << "\n";
 
     os << " - InstanceType: " << "\n";
     if (GetInstanceType().IsTSObjectType()) {
@@ -4651,7 +4653,8 @@ void TSClassType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>>
     vec.push_back(std::make_pair(CString("InstanceType"), GetInstanceType()));
     vec.push_back(std::make_pair(CString("ConstructorType"), GetConstructorType()));
     vec.push_back(std::make_pair(CString("PrototypeType"), GetPrototypeType()));
-    vec.push_back(std::make_pair(CString("ExtensionType"), GetExtensionType()));
+    vec.push_back(std::make_pair(CString("ExtensionGTRawData"), JSTaggedValue(GetExtensionGTRawData())));
+    vec.push_back(std::make_pair(CString("HasLinked"), JSTaggedValue(GetHasLinked())));
 }
 
 void TSInterfaceType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
