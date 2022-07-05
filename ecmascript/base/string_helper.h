@@ -50,6 +50,7 @@ static constexpr char UTF8_FIRST_CODE[] = {
 };
 class StringHelper {
 public:
+    static constexpr int INVALID_UNICODE_FROM_UTF8 = -1;
     static std::string ToStdString(EcmaString *string);
 
     static bool CheckDuplicate(EcmaString *string);
@@ -202,12 +203,12 @@ public:
         } else if (c == UICODE_FROM_UTF8[9] || c == UICODE_FROM_UTF8[10]) { // 9 - 10: 0400 0000 - 7FFF FFFF
             l = 5; // 5: 0400 0000 - 7FFF FFFF Unicode
         } else {
-            return -1;
+            return INVALID_UNICODE_FROM_UTF8;
         }
         /* check that we have enough characters */
-        if (l > (maxLen - 1))
-            return -1;
-
+        if (l > (maxLen - 1)) {
+            return INVALID_UNICODE_FROM_UTF8;
+        }
         return FromUtf8(c, l, p, pp);
     }
 
@@ -218,12 +219,12 @@ public:
         for (int i = 0; i < l; i++) {
             b = *p++;
             if (b < utf_helper::UTF8_2B_SECOND || b >= utf_helper::UTF8_2B_FIRST) {
-                return -1;
+                return INVALID_UNICODE_FROM_UTF8;
             }
             c = (c << 6) | (b & utf_helper::UTF8_2B_THIRD); // 6: Maximum Unicode range
         }
         if (c < UTF8_MIN_CODE[l - 1]) {
-            return -1;
+            return INVALID_UNICODE_FROM_UTF8;
         }
         *pp = p;
         return c;
