@@ -145,9 +145,13 @@ private:
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 
-    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler);
 
-    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler);
+
+    static void PushAsmInterpBridgeFrame(ExtendedAssembler *assembler);
+
+    static void PopAsmInterpBridgeFrame(ExtendedAssembler *assembler);
 
     static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register &prevSpRegister, Register &fpRegister,
         Register &callTargetRegister, Register &methodRegister, Register &contextRegister, Register &pcRegister,
