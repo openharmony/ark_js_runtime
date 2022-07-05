@@ -306,9 +306,9 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
 void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
 {
     Label target;
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Bl(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     {
@@ -690,9 +690,9 @@ void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
     Label target;
-    PushAsmInterpEntryFrame(assembler, true);
+    PushAsmInterpEntryFrame(assembler);
     __ Bl(&target);
-    PopAsmInterpEntryFrame(assembler, true);
+    PopAsmInterpEntryFrame(assembler);
     __ Ret();
 
     __ Bind(&target);
@@ -1377,9 +1377,9 @@ void AssemblerStubs::CallGetter(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(CallGetter));
     Label target;
 
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Bl(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     {
@@ -1392,9 +1392,9 @@ void AssemblerStubs::CallSetter(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallSetter));
     Label target;
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Bl(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     {
@@ -1411,9 +1411,9 @@ void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
     Label target;
-    PushAsmInterpEntryFrame(assembler, true);
+    PushAsmInterpEntryFrame(assembler);
     __ Bl(&target);
-    PopAsmInterpEntryFrame(assembler, true);
+    PopAsmInterpEntryFrame(assembler);
     __ Ret();
     __ Bind(&target);
     {
@@ -1618,7 +1618,7 @@ void AssemblerStubs::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *asse
 {
 }
 
-void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
+void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler)
 {
     Register glue = __ GlueRegister();
     Register fp(X29);
@@ -1633,25 +1633,19 @@ void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool 
     [[maybe_unused]] TempRegister2Scope scope2(assembler);
     Register frameTypeRegister = __ TempRegister2();
 
-    if (saveLeave) {
-        // prev managed fp is leave frame or nullptr(the first frame)
-        __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-        __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME)));
-        __ PushFpAndLr();
-    } else {
-        __ Mov(prevFrameRegister, Register(FP));
-        __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_BRIDGE_FRAME)));
-        __ PushLrAndFp();
-    }
+    __ PushFpAndLr();
 
-    // 2 : 2 means pair
+    // prev managed fp is leave frame or nullptr(the first frame)
+    __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME)));
+    // 2 : prevSp & frame type
     __ Stp(prevFrameRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     // 2 : pc & glue
     __ Stp(glue, Register(Zero), MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // pc
     __ Add(fp, sp, Immediate(32));  // 32: skip frame type, prevSp, pc and glue
 }
 
-void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
+void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler)
 {
     Register sp(SP);
 
@@ -1659,24 +1653,49 @@ void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool s
     Register prevFrameRegister = __ TempRegister1();
     [[maybe_unused]] TempRegister2Scope scope2(assembler);
     Register glue = __ TempRegister2();
-    if (saveLeave) {
-        // 2: glue & pc
-        __ Ldp(glue, Register(Zero), MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    } else {
-        // 2: glue & pc
-        __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE));
-    }
+    // 2: glue & pc
+    __ Ldp(glue, Register(Zero), MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     // 2: skip frame type & prev
     __ Ldp(prevFrameRegister, Register(Zero), MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    if (saveLeave) {
-        __ RestoreFpAndLr();
-        __ Str(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    } else {
-        __ RestoreLrAndFp();
-    }
+
+    __ RestoreFpAndLr();
+    __ Str(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
     if (!assembler->FromInterpreterHandler()) {
         __ CalleeRestore();
     }
+}
+
+void AssemblerStubs::PushAsmInterpBridgeFrame(ExtendedAssembler *assembler)
+{
+    Register fp(X29);
+    Register sp(SP);
+
+    [[maybe_unused]] TempRegister1Scope scope1(assembler);
+    Register frameTypeRegister = __ TempRegister1();
+
+    __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_BRIDGE_FRAME)));
+    // 2 : return addr & frame type
+    __ Stp(frameTypeRegister, Register(X30), MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    // 2 : prevSp & pc
+    __ Stp(Register(Zero), Register(FP), MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Add(fp, sp, Immediate(24));  // 24: skip frame type, prevSp, pc
+
+    if (!assembler->FromInterpreterHandler()) {
+        __ CalleeSave();
+    }
+}
+
+void AssemblerStubs::PopAsmInterpBridgeFrame(ExtendedAssembler *assembler)
+{
+    Register sp(SP);
+
+    if (!assembler->FromInterpreterHandler()) {
+        __ CalleeRestore();
+    }
+    // 2: prevSp & pc
+    __ Ldp(Register(Zero), Register(FP), MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+    // 2: return addr & frame type
+    __ Ldp(Register(Zero), Register(X30), MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
 }
 
 void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Register &prevSpRegister,
