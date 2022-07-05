@@ -39,7 +39,11 @@ if (defined(ark_standalone_build)) {
   group("ark_js_host_mac_tools_packages") {
     deps = []
     if (host_os == "mac") {
-      deps += [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(//build/toolchain/mac:clang_x64)" ]
+      if (host_cpu == "arm64") {
+        deps += [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(//build/toolchain/mac:clang_arm64)" ]
+      } else {
+        deps += [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(//build/toolchain/mac:clang_x64)" ]
+      }
     }
   }
 
