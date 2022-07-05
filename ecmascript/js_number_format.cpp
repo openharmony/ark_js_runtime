@@ -508,9 +508,6 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     icu::number::LocalizedNumberFormatter icuNumberFormatter =
         icu::number::NumberFormatter::withLocale(icuLocale).roundingMode(UNUM_ROUND_HALFUP);
 
-    // Get default numbering system associated with the specified locale
-    std::unique_ptr<icu::NumberingSystem> numberingSystemPtr(icu::NumberingSystem::createInstance(icuLocale, status));
-
     int32_t mnfdDefault = 0;
     int32_t mxfdDefault = 0;
     FractionDigitsOption fractionOptions =
