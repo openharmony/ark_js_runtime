@@ -26,10 +26,13 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/mem/dyn_chunk.h"
+#include "ecmascript/napi/jsnapi_helper.h"
+#include "ecmascript/napi/include/jsnapi.h"
 
+using panda::JSValueRef;
 namespace panda::ecmascript {
-typedef void* (*DetachFunc)(void *param1, void *param2);
-typedef void* (*AttachFunc)(void *buffer);
+typedef void* (*DetachFunc)(void *enginePointer, void *objPointer, void *hint);
+typedef Local<JSValueRef> (*AttachFunc)(void *enginePointer, void *buffer, void *hint);
 
 enum class SerializationUID : uint8_t {
     // JS special values
@@ -145,8 +148,9 @@ private:
 class JSDeserializer {
 public:
     // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSDeserializer(JSThread *thread, uint8_t *data, size_t size)
-        : thread_(thread), factory_(thread->GetEcmaVM()->GetFactory()), begin_(data), position_(data), end_(data + size)
+    JSDeserializer(JSThread *thread, uint8_t *data, size_t size, void *hint = nullptr)
+        : thread_(thread), factory_(thread->GetEcmaVM()->GetFactory()),
+        begin_(data), position_(data), end_(data + size), engine_(hint)
     {
     }
     ~JSDeserializer();
@@ -188,6 +192,7 @@ private:
     const uint8_t * const end_ = nullptr;
     uint64_t objectId_ = 0;
     std::map<uint64_t, JSHandle<JSTaggedValue>> referenceMap_;
+    void *engine_ = nullptr;
 };
 
 class SerializationData {
@@ -243,8 +248,8 @@ private:
 
 class Deserializer {
 public:
-    explicit Deserializer(JSThread *thread, SerializationData* data)
-        : valueDeserializer_(thread, data->GetData(), data->GetSize()) {}
+    explicit Deserializer(JSThread *thread, SerializationData *data, void *hint)
+        : valueDeserializer_(thread, data->GetData(), data->GetSize(), hint) {}
     ~Deserializer() = default;
 
     JSHandle<JSTaggedValue> ReadValue();
