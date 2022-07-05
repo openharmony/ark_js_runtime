@@ -57,6 +57,14 @@ public:
     JSThread *thread {nullptr};
 };
 
+/**
+ * @tc.name: GetIcuCallTarget
+ * @tc.desc: Call "NewJSIntlIcuData" function Set IcuCallTarget,check whether the IcuCallTarget through
+ *           "GetIcuCallTarget" function is within expectations then call "formatInt" function format
+ *           Int type data and check the returned value is within expectations.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
 HWTEST_F_L0(JSNumberFormatTest, GetIcuCallTarget)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -82,6 +90,13 @@ HWTEST_F_L0(JSNumberFormatTest, GetIcuCallTarget)
     EXPECT_STREQ("-123,456", CString(stringValue->GetCString().get()).c_str());
 }
 
+/**
+ * @tc.name: InitializeNumberFormat
+ * @tc.desc: Call "InitializeNumberFormat" function Initialize NumberFormat,and check whether the properties of
+ *           the object is within expectations.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
 HWTEST_F_L0(JSNumberFormatTest, InitializeNumberFormat)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -90,6 +105,7 @@ HWTEST_F_L0(JSNumberFormatTest, InitializeNumberFormat)
     JSHandle<JSTaggedValue> ctor = env->GetNumberFormatFunction();
     JSHandle<JSNumberFormat> numberFormat =
         JSHandle<JSNumberFormat>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(ctor), ctor));
+    EXPECT_TRUE(*numberFormat != nullptr);
 
     JSHandle<JSTaggedValue> locales(factory->NewFromASCII("zh-Hans-CN"));
     JSHandle<JSTaggedValue> undefinedOptions(thread, JSTaggedValue::Undefined());
@@ -115,22 +131,37 @@ HWTEST_F_L0(JSNumberFormatTest, InitializeNumberFormat)
     EXPECT_TRUE(numberFormat->GetCurrency().IsUndefined());
 }
 
+/**
+ * @tc.name: CurrencyDigits
+ * @tc.desc: If the ISO 4217 currency contains currency as an alphabetic code, return the minor unit value
+ *           corresponding to the currency from the list
+ * @tc.type: FUNC
+ * @tc.require:
+ */
 HWTEST_F_L0(JSNumberFormatTest, CurrencyDigits)
 {
-    // Alphabetic code:USD 美元
+    // Alphabetic code:USD
     icu::UnicodeString usdCurrency("USD");
     // 2 : 2 fraction digits
     EXPECT_EQ(JSNumberFormat::CurrencyDigits(usdCurrency), 2);
-    // Alphabetic code:EUR 欧元
+    // Alphabetic code:EUR
     icu::UnicodeString eurCurrency("EUR");
     // 2 : 2 fraction digits
     EXPECT_EQ(JSNumberFormat::CurrencyDigits(eurCurrency), 2);
-    // Alphabetic code:CHF 法郎
+    // Alphabetic code:CHF
     icu::UnicodeString numberCurrency("CHF");
     // 2 : 2 fraction digits
     EXPECT_EQ(JSNumberFormat::CurrencyDigits(numberCurrency), 2);
 }
 
+/**
+ * @tc.name: FormatNumeric
+ * @tc.desc: Call "InitializeNumberFormat" function Initialize NumberFormat,Set the sytle attribute of the object to
+ *           decimal,construct a bigint type data,and the object calls the FormatNumeric method to interpret the bigint
+ *           type data into the corresponding decimal, and check whether the decimal meets the expectation.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
 HWTEST_F_L0(JSNumberFormatTest, FormatNumeric)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -158,6 +189,13 @@ HWTEST_F_L0(JSNumberFormatTest, FormatNumeric)
     EXPECT_STREQ("123,456,789", CString(resultEcmaStr->GetCString().get()).c_str());
 }
 
+/**
+ * @tc.name: UnwrapNumberFormat
+ * @tc.desc: Construct an object,If it is a numberformat object,it will be returned.If it is an object of other types
+ *           and inherits the numberformat object, it will get value from the fallbacksymbol key and return.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
 HWTEST_F_L0(JSNumberFormatTest, UnwrapNumberFormat)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -165,19 +203,21 @@ HWTEST_F_L0(JSNumberFormatTest, UnwrapNumberFormat)
     EcmaVM *vm = thread->GetEcmaVM();
 
     JSHandle<JSTaggedValue> numberFormatFunc = env->GetNumberFormatFunction();
+    JSHandle<JSTaggedValue> numberFormat(
+        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(numberFormatFunc), numberFormatFunc));
+
     Local<FunctionRef> numberFormatLocal = JSNApiHelper::ToLocal<FunctionRef>(numberFormatFunc);
     JSHandle<JSTaggedValue> disPlayNamesFunc = env->GetDisplayNamesFunction();
     Local<FunctionRef> disPlayNamesLocal = JSNApiHelper::ToLocal<FunctionRef>(disPlayNamesFunc);
+    // displaynames Inherit numberformat
     disPlayNamesLocal->Inherit(vm, numberFormatLocal);
     JSHandle<JSTaggedValue> disPlayNamesHandle = JSNApiHelper::ToJSHandle(disPlayNamesLocal);
     JSHandle<JSTaggedValue> disPlayNamesObj(
         factory->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(disPlayNamesHandle), disPlayNamesHandle));
-    // has no Instance
-    JSHandle<JSTaggedValue> numberFormat(
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(numberFormatFunc), numberFormatFunc));
+    // object has no Instance
     JSHandle<JSTaggedValue> unwrapNumberFormat1 = JSNumberFormat::UnwrapNumberFormat(thread, numberFormat);
     EXPECT_TRUE(JSTaggedValue::SameValue(numberFormat, unwrapNumberFormat1));
-    // has Instance
+    // object has Instance
     JSHandle<JSTaggedValue> unwrapNumberFormat2 = JSNumberFormat::UnwrapNumberFormat(thread, disPlayNamesObj);
     EXPECT_TRUE(unwrapNumberFormat2->IsUndefined());
 }
