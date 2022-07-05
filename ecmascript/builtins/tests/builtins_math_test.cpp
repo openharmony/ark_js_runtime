@@ -57,8 +57,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-10)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(10);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -72,8 +72,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(10)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(10);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -87,8 +87,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -102,8 +102,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -119,8 +119,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -135,8 +135,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(testValue));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::MAX_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -151,8 +151,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(testValue));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -167,8 +167,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(testValue));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -183,8 +183,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(testValue));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -199,8 +199,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(testValue));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -214,8 +214,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_10)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -229,8 +229,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_11)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(1);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -244,8 +244,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_12)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -259,8 +259,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_13)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Hole());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -275,8 +275,8 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_14)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Abs(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(100.12);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -290,8 +290,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(BuiltinsMath::PI);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -305,8 +305,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -320,8 +320,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -335,8 +335,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -350,8 +350,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -365,8 +365,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -380,8 +380,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -396,8 +396,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.4706289056333368);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -412,8 +412,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -427,8 +427,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -442,8 +442,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(1.1));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.4435682543851154);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -457,8 +457,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -472,8 +472,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -487,8 +487,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -502,8 +502,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -517,8 +517,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -532,8 +532,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -547,8 +547,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Hole());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -563,8 +563,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -579,8 +579,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -594,8 +594,8 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_10)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Acosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -609,8 +609,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -624,8 +624,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -639,8 +639,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -654,8 +654,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -669,8 +669,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -684,8 +684,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -699,8 +699,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -715,8 +715,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -731,8 +731,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -746,8 +746,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.881373587019543);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -761,8 +761,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.881373587019543);
@@ -777,8 +777,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
@@ -793,8 +793,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -808,8 +808,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -823,8 +823,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.881373587019543);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -838,8 +838,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -854,8 +854,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -870,8 +870,8 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Asinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-2.44122070725561);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -885,8 +885,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.7853981633974483);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -900,8 +900,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.7853981633974483);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -915,8 +915,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -930,8 +930,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -945,8 +945,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(BuiltinsMath::PI / 2);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -960,8 +960,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.7853981633974483);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -975,8 +975,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -991,8 +991,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1007,8 +1007,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.7853981633974483);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1022,8 +1022,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1037,8 +1037,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1052,8 +1052,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1067,8 +1067,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1082,8 +1082,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1097,8 +1097,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1112,8 +1112,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1128,8 +1128,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1144,8 +1144,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1160,8 +1160,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::NAN_VALUE));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1176,8 +1176,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_1)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.5880026035475675);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1192,8 +1192,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_2)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(BuiltinsMath::PI / 2);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1208,8 +1208,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_3)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1224,8 +1224,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_4)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(BuiltinsMath::PI);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1240,8 +1240,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_5)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1256,8 +1256,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_6)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-BuiltinsMath::PI);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1272,8 +1272,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_7)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1288,8 +1288,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_8)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1306,8 +1306,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_9)
     ecmaRuntimeCallInfo->SetCallArg(0, test_1.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, test_2.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.5707963267948966);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1324,8 +1324,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_10)
     ecmaRuntimeCallInfo->SetCallArg(0, test_1.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, test_2.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.3091989123270746);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1340,8 +1340,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_11)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(-1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Atan2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1355,8 +1355,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1370,8 +1370,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1385,8 +1385,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1400,8 +1400,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1415,8 +1415,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1430,8 +1430,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1445,8 +1445,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1461,8 +1461,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1477,8 +1477,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0714412696907731);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1492,8 +1492,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cbrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1507,8 +1507,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(3.25));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(4.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1522,8 +1522,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1537,8 +1537,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1552,8 +1552,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1567,8 +1567,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1582,8 +1582,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1597,8 +1597,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1613,8 +1613,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1629,8 +1629,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(4.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1644,8 +1644,8 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Ceil(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1659,8 +1659,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1674,8 +1674,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1689,8 +1689,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1704,8 +1704,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1719,8 +1719,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.5403023058681398);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1734,8 +1734,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1750,8 +1750,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1766,8 +1766,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cos(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.9960946152060809);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1781,8 +1781,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1796,8 +1796,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1811,8 +1811,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1826,8 +1826,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1841,8 +1841,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5430806348152437);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1856,8 +1856,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1872,8 +1872,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1888,8 +1888,8 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Cosh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(12.659607234875645);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1903,8 +1903,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1918,8 +1918,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1933,8 +1933,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1948,8 +1948,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1963,8 +1963,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(2.718281828459045);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1978,8 +1978,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -1994,8 +1994,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2010,8 +2010,8 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Exp(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.039557498788398725);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2025,8 +2025,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(0)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2040,8 +2040,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2055,8 +2055,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2070,8 +2070,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2085,8 +2085,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2100,8 +2100,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     double expect = 1.718281828459045;
     ASSERT_TRUE(result.IsDouble());
@@ -2116,8 +2116,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2132,8 +2132,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2148,8 +2148,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.9604425012116012);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2164,8 +2164,8 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_9)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Expm1(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(65659968.13733051);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2179,8 +2179,8 @@ HWTEST_F_L0(BuiltinsMathTest, Floor)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2194,8 +2194,8 @@ HWTEST_F_L0(BuiltinsMathTest, Floor_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2209,8 +2209,8 @@ HWTEST_F_L0(BuiltinsMathTest, Floor_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2224,8 +2224,8 @@ HWTEST_F_L0(BuiltinsMathTest, Floor_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2240,8 +2240,8 @@ HWTEST_F_L0(BuiltinsMathTest, Floor_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Floor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-4.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2255,8 +2255,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2270,8 +2270,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2285,8 +2285,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2300,8 +2300,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2316,8 +2316,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2331,8 +2331,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.12));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-2.120263536200091);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2346,8 +2346,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2361,8 +2361,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2376,8 +2376,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2391,8 +2391,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.6931471805599453);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2407,8 +2407,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2422,8 +2422,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.12));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log1p(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.11332868530700317);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2437,8 +2437,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2452,8 +2452,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2467,8 +2467,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2482,8 +2482,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2498,8 +2498,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.3010299956639812);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2513,8 +2513,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(0.12));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log10(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.9208187539523752);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2528,8 +2528,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2543,8 +2543,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2558,8 +2558,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2573,8 +2573,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2589,8 +2589,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2604,8 +2604,8 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Log2(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2621,8 +2621,8 @@ HWTEST_F_L0(BuiltinsMathTest, Max)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2635,8 +2635,8 @@ HWTEST_F_L0(BuiltinsMathTest, Max_1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2653,8 +2653,8 @@ HWTEST_F_L0(BuiltinsMathTest, Max_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(100)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(2.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(100);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2671,8 +2671,8 @@ HWTEST_F_L0(BuiltinsMathTest, Max_3)
     ecmaRuntimeCallInfo->SetCallArg(1, test.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(-101.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(100.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2689,8 +2689,8 @@ HWTEST_F_L0(BuiltinsMathTest, Max_4)
     ecmaRuntimeCallInfo->SetCallArg(1, test.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Max(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(1);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2706,8 +2706,8 @@ HWTEST_F_L0(BuiltinsMathTest, Min)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2720,8 +2720,8 @@ HWTEST_F_L0(BuiltinsMathTest, Min_1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2738,8 +2738,8 @@ HWTEST_F_L0(BuiltinsMathTest, Min_2)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(100)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(2.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(2.5);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2756,8 +2756,8 @@ HWTEST_F_L0(BuiltinsMathTest, Min_3)
     ecmaRuntimeCallInfo->SetCallArg(1, test.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(-101.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-101.5);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2773,8 +2773,8 @@ HWTEST_F_L0(BuiltinsMathTest, Min_4)
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(100)));
     ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue::False());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Min(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2790,8 +2790,8 @@ HWTEST_F_L0(BuiltinsMathTest, Pow)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
     ecmaRuntimeCallInfo->SetCallArg(1, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.25);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2806,8 +2806,8 @@ HWTEST_F_L0(BuiltinsMathTest, Pow_1)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(-2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2820,8 +2820,8 @@ HWTEST_F_L0(BuiltinsMathTest, Pow_2)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2836,8 +2836,8 @@ HWTEST_F_L0(BuiltinsMathTest, Pow_3)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::False());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(-2)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Pow(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2850,10 +2850,10 @@ HWTEST_F_L0(BuiltinsMathTest, Random)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsMath::Random(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsMath::Random(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
-    JSTaggedValue result2 = BuiltinsMath::Random(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result2 = BuiltinsMath::Random(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     ASSERT_NE(result1.GetRawData(), result2.GetRawData());
 }
@@ -2865,10 +2865,10 @@ HWTEST_F_L0(BuiltinsMathTest, Random_1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsMath::Random(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsMath::Random(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
-    JSTaggedValue result2 = BuiltinsMath::Random(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result2 = BuiltinsMath::Random(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     double value1 = JSTaggedValue(static_cast<JSTaggedType>(result1.GetRawData())).GetDouble();
     double value2 = JSTaggedValue(static_cast<JSTaggedType>(result2.GetRawData())).GetDouble();
@@ -2886,8 +2886,8 @@ HWTEST_F_L0(BuiltinsMathTest, Round)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2901,8 +2901,8 @@ HWTEST_F_L0(BuiltinsMathTest, Round_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(1.25));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2916,8 +2916,8 @@ HWTEST_F_L0(BuiltinsMathTest, Round_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.14));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2931,8 +2931,8 @@ HWTEST_F_L0(BuiltinsMathTest, Round_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.7));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2946,8 +2946,8 @@ HWTEST_F_L0(BuiltinsMathTest, Round_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Round(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2961,8 +2961,8 @@ HWTEST_F_L0(BuiltinsMathTest, Fround)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2976,8 +2976,8 @@ HWTEST_F_L0(BuiltinsMathTest, Fround_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -2991,8 +2991,8 @@ HWTEST_F_L0(BuiltinsMathTest, Fround_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3006,8 +3006,8 @@ HWTEST_F_L0(BuiltinsMathTest, Fround_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(1.337));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.3370000123977661);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3021,8 +3021,8 @@ HWTEST_F_L0(BuiltinsMathTest, Fround_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-668523145.253485));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Fround(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-668523136.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3036,8 +3036,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(32);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3051,8 +3051,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(32);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3066,8 +3066,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(31);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3081,8 +3081,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(568243)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(12);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3096,8 +3096,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(4294967295)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3111,8 +3111,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(10000000000.123));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(1);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3125,8 +3125,8 @@ HWTEST_F_L0(BuiltinsMathTest, Clz32_6)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Clz32(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(32);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3139,8 +3139,8 @@ HWTEST_F_L0(BuiltinsMathTest, Hypot)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3154,8 +3154,8 @@ HWTEST_F_L0(BuiltinsMathTest, Hypot_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-2.1));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(2.1);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3169,8 +3169,8 @@ HWTEST_F_L0(BuiltinsMathTest, Hypot_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     ASSERT_TRUE(result.IsDouble());
     ASSERT_TRUE(std::isnan(result.GetDouble()));
@@ -3188,8 +3188,8 @@ HWTEST_F_L0(BuiltinsMathTest, Hypot_3)
     ecmaRuntimeCallInfo->SetCallArg(3, JSTaggedValue(-0.2));
     ecmaRuntimeCallInfo->SetCallArg(4, JSTaggedValue(static_cast<int32_t>(90000)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Hypot(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(90000.00050022222);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3202,8 +3202,8 @@ HWTEST_F_L0(BuiltinsMathTest, Imul)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3219,8 +3219,8 @@ HWTEST_F_L0(BuiltinsMathTest, Imul_1)
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(9.256));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(-18);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3235,8 +3235,8 @@ HWTEST_F_L0(BuiltinsMathTest, Imul_2)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(5)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0xffffffff)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(-5);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3251,8 +3251,8 @@ HWTEST_F_L0(BuiltinsMathTest, Imul_3)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(5)));
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(0xfffffffe)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Imul(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedInt(-10);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3266,8 +3266,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.8414709848078965);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3281,8 +3281,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.9974949866040544);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3296,8 +3296,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3311,8 +3311,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3326,8 +3326,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.8414709848078965);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3342,8 +3342,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.09983341664682815);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3357,8 +3357,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3372,8 +3372,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_8)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sin(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3387,8 +3387,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.1752011936438014);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3402,8 +3402,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-1.5));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-2.1292794550948173);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3417,8 +3417,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3432,8 +3432,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3447,8 +3447,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.1752011936438014);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3463,8 +3463,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.10016675001984403);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3478,8 +3478,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3493,8 +3493,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_7)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sinh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3508,8 +3508,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3523,8 +3523,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3538,8 +3538,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3553,8 +3553,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3569,8 +3569,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.31622776601683794);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3584,8 +3584,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3599,8 +3599,8 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(-base::NAN_VALUE)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Sqrt(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3614,8 +3614,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.5574077246549023);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3629,8 +3629,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3644,8 +3644,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3659,8 +3659,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.5574077246549023);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3675,8 +3675,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.10033467208545055);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3690,8 +3690,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3705,8 +3705,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tan(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3720,8 +3720,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.7615941559557649);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3735,8 +3735,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3750,8 +3750,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3765,8 +3765,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.7615941559557649);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3781,8 +3781,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0.09966799462495582);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3796,8 +3796,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3811,8 +3811,8 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Tanh(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3826,8 +3826,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(-1)));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3841,8 +3841,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_1)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-0.0));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3856,8 +3856,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_2)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Null());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3871,8 +3871,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_3)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::True());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(1.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3887,8 +3887,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_4)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, test.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(-0.0);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3902,8 +3902,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_5)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(base::POSITIVE_INFINITY));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::POSITIVE_INFINITY);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());
@@ -3917,8 +3917,8 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_6)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(-base::NAN_VALUE));
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread_, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsMath::Trunc(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread_, prev);
     JSTaggedValue expect = BuiltinsBase::GetTaggedDouble(base::NAN_VALUE);
     ASSERT_EQ(result.GetRawData(), expect.GetRawData());

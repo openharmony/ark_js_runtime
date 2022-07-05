@@ -298,9 +298,10 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
         // c. If IsCallable(toJSON) is true
         if (UNLIKELY(toJsonFun->IsCallable())) {
             // Let value be Call(toJSON, value, «key»).
-            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread_, toJsonFun, value, undefined, 1);
-            info.SetCallArg(key.GetTaggedValue());
-            tagValue = JSFunction::Call(&info);
+            EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread_, toJsonFun, value, undefined, 1);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
+            info->SetCallArg(key.GetTaggedValue());
+            tagValue = JSFunction::Call(info);
             // ii. ReturnIfAbrupt(value).
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
         }
@@ -309,11 +310,12 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
     if (UNLIKELY(replacer->IsCallable())) {
         handleValue_.Update(tagValue);
         // a. Let value be Call(ReplacerFunction, holder, «key, value»).
-        const size_t argsLength = 2; // 2: «key, value»
-        EcmaRuntimeCallInfo info =
+        const int32_t argsLength = 2; // 2: «key, value»
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread_, replacer, object, undefined, argsLength);
-        info.SetCallArg(key.GetTaggedValue(), handleValue_.GetTaggedValue());
-        tagValue = JSFunction::Call(&info);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
+        info->SetCallArg(key.GetTaggedValue(), handleValue_.GetTaggedValue());
+        tagValue = JSFunction::Call(info);
         // b. ReturnIfAbrupt(value).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
     }

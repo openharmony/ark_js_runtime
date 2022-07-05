@@ -75,8 +75,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, ListFormatConstructor)
     // option tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::ListFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::ListFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsJSListFormat());
 }
@@ -99,8 +99,8 @@ static JSTaggedValue JSListFormatCreateWithOptionTest(JSThread *thread, JSHandle
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::ListFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::ListFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSListFormat());
@@ -122,8 +122,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, Format_001)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, listValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -160,8 +160,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, Format_002)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -198,8 +198,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, Format_003)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -228,8 +228,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, Format_004)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -266,8 +266,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, Format_005)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -286,8 +286,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, FormatToParts_001)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, result);
@@ -325,8 +325,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, FormatToParts_002)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, result);
@@ -364,8 +364,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, FormatToParts_003)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     JSTaggedValue valueList(static_cast<JSTaggedType>(result.GetRawData()));
 
@@ -400,8 +400,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, FormatToParts_004)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, result);
@@ -444,8 +444,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, FormatToParts_005)
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, value.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     JSTaggedValue valueList(static_cast<JSTaggedType>(result.GetRawData()));
 
@@ -467,8 +467,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, SupportedLocalesOf_001)
     // set the tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsListFormat::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsListFormat::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -498,8 +498,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, SupportedLocalesOf_002)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsListFormat::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsListFormat::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -523,8 +523,8 @@ HWTEST_F_L0(BuiltinsListFormatTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jSListFormat.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsListFormat::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsListFormat::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =

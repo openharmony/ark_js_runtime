@@ -74,8 +74,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, RelativeTimeFormatConstructor)
     // option tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::RelativeTimeFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::RelativeTimeFormatConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSRelativeTimeFormat());
@@ -100,9 +100,10 @@ static JSTaggedValue JSRelativeTimeFormatCreateWithLocaleTest(JSThread *thread, 
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::RelativeTimeFormatConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::RelativeTimeFormatConstructor(ecmaRuntimeCallInfo);
     EXPECT_TRUE(result.IsJSRelativeTimeFormat());
+    TestHelper::TearDownFrame(thread, prev);
     return result;
 }
 
@@ -123,8 +124,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_001)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -148,8 +149,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_002)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -173,8 +174,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_003)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -198,8 +199,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_004)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -223,8 +224,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_005)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<EcmaString> handleEcmaStr(thread, result);
@@ -249,8 +250,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, FormatToParts)
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::FormatToParts(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::FormatToParts(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultArr(thread, result);
@@ -271,8 +272,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsRelativeTimeFormat::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsRelativeTimeFormat::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =

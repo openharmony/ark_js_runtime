@@ -155,10 +155,10 @@ HWTEST_F_L0(JSSetIteratorTest, KEY_Next)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(setIteratorValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     
     for (int i = 0; i <= 3; i++) { // 3 : 3 default numberOfElements
-        JSTaggedValue result = JSSetIterator::Next(ecmaRuntimeCallInfo.get());
+        JSTaggedValue result = JSSetIterator::Next(ecmaRuntimeCallInfo);
         JSHandle<JSTaggedValue> resultObj(thread, result);
         if (i < 3) {
             EXPECT_EQ(setIterator->GetNextIndex(), static_cast<uint32_t>(i+1));
@@ -191,10 +191,10 @@ HWTEST_F_L0(JSSetIteratorTest, KEY_AND_VALUE_Next)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(setIteratorValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     
     for (int i = 0; i <= 3; i++) { // 3 : 3 default numberOfElements
-        JSTaggedValue result = JSSetIterator::Next(ecmaRuntimeCallInfo.get());
+        JSTaggedValue result = JSSetIterator::Next(ecmaRuntimeCallInfo);
         JSHandle<JSTaggedValue> resultObj(thread, result);
         if (i < 3) {
             JSHandle<JSArray> arrayList(thread, JSIterator::IteratorValue(thread, resultObj).GetTaggedValue());

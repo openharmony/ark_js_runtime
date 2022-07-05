@@ -70,8 +70,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, BigIntConstructor_001)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -88,8 +88,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, BigIntConstructor_002)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -108,8 +108,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_001)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(bit)));
     ecmaRuntimeCallInfo->SetCallArg(1, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::AsIntN(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::AsIntN(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -132,8 +132,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_002)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(bit)));
     ecmaRuntimeCallInfo->SetCallArg(1, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::AsIntN(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::AsIntN(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -156,8 +156,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_001)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(bit)));
     ecmaRuntimeCallInfo->SetCallArg(1, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::AsUintN(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::AsUintN(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -180,8 +180,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_002)
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(bit)));
     ecmaRuntimeCallInfo->SetCallArg(1, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsBigInt::AsUintN(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsBigInt::AsUintN(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsBigInt());
@@ -202,8 +202,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_001)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -215,8 +215,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_001)
     ecmaRuntimeCallInfo2->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, JSTaggedValue::Undefined());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToLocaleString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToLocaleString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -242,8 +242,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_002)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -257,8 +257,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_002)
     ecmaRuntimeCallInfo2->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToLocaleString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToLocaleString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -277,8 +277,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_001)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -287,8 +287,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_001)
     ecmaRuntimeCallInfo2->SetThis(bigIntHandle.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, JSTaggedValue::Undefined());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -307,8 +307,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_002)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -317,8 +317,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_002)
     ecmaRuntimeCallInfo2->SetThis(bigIntHandle.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, JSTaggedValue::Undefined());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -337,8 +337,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_003)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -348,8 +348,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_003)
     ecmaRuntimeCallInfo2->SetThis(bigIntHandle.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, radix.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -368,8 +368,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_004)
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -379,8 +379,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_004)
     ecmaRuntimeCallInfo2->SetThis(bigIntHandle.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, radix.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ToString(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result2.IsString());
@@ -399,8 +399,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_001)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -408,8 +408,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_001)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(bigIntHandle.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ValueOf(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ValueOf(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(BigInt::SameValue(result1, result2), true);
@@ -426,8 +426,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_002)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, numericValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result1 = BuiltinsBigInt::BigIntConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
@@ -438,8 +438,8 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_002)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(jsPrimitiveRef.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsBigInt::ValueOf(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsBigInt::ValueOf(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_EQ(BigInt::SameValue(bigIntHandle.GetTaggedValue(), result2), true);

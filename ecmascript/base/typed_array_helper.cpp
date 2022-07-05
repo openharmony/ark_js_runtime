@@ -474,9 +474,10 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
 {
     // 1. Let newTypedArray be ? Construct(constructor, argumentList).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, argc);
-    info.SetCallArg(argc, argv);
-    JSTaggedValue taggedArray = JSFunction::Construct(&info);
+    EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, argc);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
+    info->SetCallArg(argc, argv);
+    JSTaggedValue taggedArray = JSFunction::Construct(info);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     if (!taggedArray.IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Failed to construct the Typedarray.",
@@ -491,7 +492,7 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
     //   a. If newTypedArray.[[ArrayLength]] < argumentList[0], throw a TypeError exception.
     if (argc == 1) {
         if (JSHandle<JSTypedArray>::Cast(newTypedArray)->GetArrayLength() <
-            JSTaggedValue::ToUint32(thread, info.GetCallArg(0))) {
+            JSTaggedValue::ToUint32(thread, info->GetCallArg(0))) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "the length of newTypedArray is not a correct value.",
                                         JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
         }
@@ -533,12 +534,13 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
     //   d. If v is NaN, return +0.
     //   e. Return v.
     if (!callbackfnHandle->IsUndefined()) {
-        const size_t argsLength = 2;
+        const int32_t argsLength = 2;
         JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackfnHandle, undefined, undefined, argsLength);
-        info.SetCallArg(firstValue.GetTaggedValue(), secondValue.GetTaggedValue());
-        JSTaggedValue callResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
+        info->SetCallArg(firstValue.GetTaggedValue(), secondValue.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
         if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer.GetTaggedValue())) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "The buffer is detached buffer.", 0);

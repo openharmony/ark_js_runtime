@@ -23,7 +23,7 @@
 
 namespace panda::ecmascript {
 class JSThread;
-class EcmaRuntimeCallInfo;
+struct EcmaRuntimeCallInfo;
 
 class JSFunctionBase : public JSObject {
 public:

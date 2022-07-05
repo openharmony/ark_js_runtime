@@ -66,8 +66,8 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_001)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo);
     JSHandle<JSArray> resultHandle(thread, resultObj);
     EXPECT_EQ(resultHandle->GetArrayLength(), 0U);
 }
@@ -82,8 +82,8 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_002)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, handleStr.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo);
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());
@@ -109,8 +109,8 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_003)
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, obj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo);
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());

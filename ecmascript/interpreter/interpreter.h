@@ -29,16 +29,6 @@ class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
 
-// NOLINTNEXTLINE(bugprone-sizeof-expression)
-static const uint32_t INTERPRETER_FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
-static const uint32_t INTERPRETER_ENTRY_FRAME_STATE_SIZE = sizeof(InterpretedEntryFrame) / sizeof(uint64_t);
-
-static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
-static constexpr uint32_t RESERVED_INDEX_CALL_TARGET = 0;
-static constexpr uint32_t RESERVED_INDEX_NEW_TARGET = 1;
-static constexpr uint32_t RESERVED_INDEX_THIS = 2;
-static constexpr uint32_t INVALID_ARGS_NUMBER = -1;
-
 class EcmaInterpreter {
 public:
     static const int16_t METHOD_HOTNESS_THRESHOLD = 512;
@@ -46,9 +36,9 @@ public:
 
     static inline JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
     static inline JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
-    static EcmaRuntimeCallInfo NewRuntimeCallInfo(
+    static EcmaRuntimeCallInfo* NewRuntimeCallInfo(
         JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj,
-        JSHandle<JSTaggedValue> newTarget, size_t numArgs);
+        JSHandle<JSTaggedValue> newTarget, int32_t numArgs);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
     static inline void InitStackFrame(JSThread *thread);

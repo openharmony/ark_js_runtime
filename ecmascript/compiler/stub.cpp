@@ -3949,22 +3949,23 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef newTarget = Undefined();
         GateRef thisValue = Undefined();
+        actualNumArgs = Int32Add(actualNumArgs, Int32(NUM_MANDATORY_JSFUNC_ARGS));
         switch (mode) {
             case JSCallMode::CALL_ARG0:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue });
+                    { nativeCode, glue, actualNumArgs, func, newTarget, thisValue });
                 break;
             case JSCallMode::CALL_ARG1:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0]});
+                    { nativeCode, glue, actualNumArgs, func, newTarget, thisValue, data[0]});
                 break;
             case JSCallMode::CALL_ARG2:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0], data[1] });
+                    { nativeCode, glue, actualNumArgs, func, newTarget, thisValue, data[0], data[1] });
                 break;
             case JSCallMode::CALL_ARG3:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func,
+                    { nativeCode, glue, actualNumArgs, func,
                       newTarget, thisValue, data[0], data[1], data[2] }); // 2: args2
                 break;
             case JSCallMode::CALL_THIS_WITH_ARGV: {
@@ -3981,13 +3982,11 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 break;
             case JSCallMode::CALL_GETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func,
-                      newTarget, data[0] });
+                    { nativeCode, glue, actualNumArgs, func, newTarget, data[0] });
                 break;
             case JSCallMode::CALL_SETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
-                    { glue, nativeCode, actualNumArgs, func,
-                      newTarget, data[0], data[1] });
+                    { nativeCode, glue, actualNumArgs, func, newTarget, data[0], data[1] });
                 break;
             default:
                 UNREACHABLE();

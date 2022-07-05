@@ -140,10 +140,10 @@ HWTEST_F_L0(JSArrayTest, Next)
     JSHandle<JSTaggedValue> iter(factory->NewJSArrayIterator(array, IterationKind::KEY));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     for (int i = 0; i < 5; i++) {
         ecmaRuntimeCallInfo->SetThis(iter.GetTaggedValue());
-        JSTaggedValue ret = JSArrayIterator::Next(ecmaRuntimeCallInfo.get());
+        JSTaggedValue ret = JSArrayIterator::Next(ecmaRuntimeCallInfo);
         JSHandle<JSTaggedValue> result(thread, ret);
         EXPECT_EQ(JSIterator::IteratorValue(thread, result)->GetInt(), i);
     }

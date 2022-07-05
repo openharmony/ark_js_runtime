@@ -302,16 +302,17 @@ JSTaggedValue JSAPIVector::ForEach(JSThread *thread, const JSHandle<JSTaggedValu
     int32_t length = vector->GetSize();
     JSTaggedValue key = JSTaggedValue::Undefined();
     JSMutableHandle<JSTaggedValue> kValue(thread, JSTaggedValue::Undefined());
-    const size_t argsLength = RESERVED_CALL_ARGCOUNT;
+    const int32_t argsLength = NUM_MANDATORY_JSFUNC_ARGS;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
 
     for (int32_t k = 0; k < length; k++) {
         kValue.Update(Get(thread, vector, k));
         key = JSTaggedValue(k);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
-        info.SetCallArg(kValue.GetTaggedValue(), key, thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+        info->SetCallArg(kValue.GetTaggedValue(), key, thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         if (length != vector->GetSize()) {  // prevent length change
             length = vector->GetSize();
@@ -329,16 +330,17 @@ JSTaggedValue JSAPIVector::ReplaceAllElements(JSThread *thread, const JSHandle<J
     int32_t length = vector->GetSize();
     JSTaggedValue key = JSTaggedValue::Undefined();
     JSMutableHandle<JSTaggedValue> kValue(thread, JSTaggedValue::Undefined());
-    const size_t argsLength = RESERVED_CALL_ARGCOUNT;
+    const int32_t argsLength = NUM_MANDATORY_JSFUNC_ARGS;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
 
     for (int32_t k = 0; k < length; k++) {
         kValue.Update(Get(thread, vector, k));
         key = JSTaggedValue(k);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
-        info.SetCallArg(kValue.GetTaggedValue(), key, thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+        info->SetCallArg(kValue.GetTaggedValue(), key, thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         if (length != vector->GetSize()) {  // prevent length change
             length = vector->GetSize();

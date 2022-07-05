@@ -126,8 +126,8 @@ protected:
         objCallInfo->SetFunction(JSTaggedValue::Undefined());
         objCallInfo->SetThis(value.GetTaggedValue());
         objCallInfo->SetCallArg(0, JSTaggedValue(static_cast<int>(ContainerTag::TreeMap)));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersPrivate::Load(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersPrivate::Load(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
 
         return result;
@@ -143,8 +143,8 @@ protected:
         objCallInfo->SetThis(JSTaggedValue::Undefined());
         objCallInfo->SetCallArg(0, compareHandle.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-        JSTaggedValue result = ContainersTreeMap::TreeMapConstructor(objCallInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+        JSTaggedValue result = ContainersTreeMap::TreeMapConstructor(objCallInfo);
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSAPITreeMap> map(thread, result);
         return map;
@@ -163,8 +163,8 @@ HWTEST_F_L0(ContainersTreeMapTest, TreeMapConstructor)
     objCallInfo->SetNewTarget(newTarget.GetTaggedValue());
     objCallInfo->SetThis(JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-    JSTaggedValue result = ContainersTreeMap::TreeMapConstructor(objCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo);
+    JSTaggedValue result = ContainersTreeMap::TreeMapConstructor(objCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsJSAPITreeMap());
@@ -188,8 +188,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -212,8 +212,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -225,8 +225,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i));
     }
@@ -241,8 +241,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, value.GetTaggedValue());
     }
@@ -261,8 +261,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -274,8 +274,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue rvalue = ContainersTreeMap::Remove(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue rvalue = ContainersTreeMap::Remove(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(rvalue, JSTaggedValue(i));
     }
@@ -287,8 +287,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i < REMOVE_SIZE) {
             EXPECT_EQ(result, JSTaggedValue::Undefined());
@@ -314,8 +314,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS - REMOVE_SIZE + i + 1);
@@ -331,8 +331,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue rvalue = ContainersTreeMap::Remove(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue rvalue = ContainersTreeMap::Remove(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(rvalue, value.GetTaggedValue()));
     }
@@ -351,8 +351,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -366,8 +366,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
             callInfo->SetThis(tmap.GetTaggedValue());
             callInfo->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            JSTaggedValue result = ContainersTreeMap::HasKey(callInfo.get());
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            JSTaggedValue result = ContainersTreeMap::HasKey(callInfo);
             TestHelper::TearDownFrame(thread, prev);
             EXPECT_EQ(result, JSTaggedValue::True());
         }
@@ -378,8 +378,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
             callInfo->SetThis(tmap.GetTaggedValue());
             callInfo->SetCallArg(0, JSTaggedValue(i));
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            JSTaggedValue result = ContainersTreeMap::HasValue(callInfo.get());
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            JSTaggedValue result = ContainersTreeMap::HasValue(callInfo);
             TestHelper::TearDownFrame(thread, prev);
             EXPECT_EQ(result, JSTaggedValue::True());
         }
@@ -402,8 +402,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -419,8 +419,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
             callInfo->SetThis(tmap.GetTaggedValue());
             callInfo->SetCallArg(0, key.GetTaggedValue());
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            JSTaggedValue result = ContainersTreeMap::HasKey(callInfo.get());
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            JSTaggedValue result = ContainersTreeMap::HasKey(callInfo);
             TestHelper::TearDownFrame(thread, prev);
             EXPECT_EQ(result, JSTaggedValue::True());
         }
@@ -433,8 +433,8 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
             callInfo->SetThis(tmap.GetTaggedValue());
             callInfo->SetCallArg(0, value.GetTaggedValue());
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            JSTaggedValue result = ContainersTreeMap::HasValue(callInfo.get());
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            JSTaggedValue result = ContainersTreeMap::HasValue(callInfo);
             TestHelper::TearDownFrame(thread, prev);
             EXPECT_EQ(result, JSTaggedValue::True());
         }
@@ -453,8 +453,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -465,8 +465,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetFirstKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetFirstKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(0));
     }
@@ -476,8 +476,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetLastKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetLastKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(NODE_NUMBERS - 1));
     }
@@ -499,8 +499,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -512,8 +512,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetFirstKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetFirstKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(0));
     }
@@ -525,8 +525,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetLastKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetLastKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, key.GetTaggedValue());
     }
@@ -544,8 +544,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -557,8 +557,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::Clear(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::Clear(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(tmap->GetSize(), 0);
     }
@@ -568,8 +568,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::Undefined());
     }
@@ -591,8 +591,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -604,8 +604,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::Clear(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::Clear(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(tmap->GetSize(), 0);
     }
@@ -617,8 +617,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::Undefined());
     }
@@ -636,8 +636,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -650,8 +650,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, smap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::SetAll(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::SetAll(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS);
     }
@@ -661,8 +661,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i));
     }
@@ -684,8 +684,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetThis(smap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -696,8 +696,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, smap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::SetAll(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::SetAll(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS * 2);
     }
@@ -711,8 +711,8 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(result, value.GetTaggedValue()));
     }
@@ -731,8 +731,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -745,8 +745,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetLowerKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetLowerKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i == 0) {
             EXPECT_EQ(result, JSTaggedValue::Undefined());
@@ -761,8 +761,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetHigherKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetHigherKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i >= NODE_NUMBERS - 1) {
             EXPECT_EQ(result, JSTaggedValue::Undefined());
@@ -788,8 +788,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -807,8 +807,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetLowerKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetLowerKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i == 0) {
             EXPECT_EQ(result, JSTaggedValue(NODE_NUMBERS - 1));
@@ -828,8 +828,8 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::GetHigherKey(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::GetHigherKey(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i >= NODE_NUMBERS - 1) {
             EXPECT_EQ(result, JSTaggedValue::Undefined());
@@ -851,8 +851,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -862,8 +862,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
     auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     callInfo1->SetFunction(JSTaggedValue::Undefined());
     callInfo1->SetThis(tmap.GetTaggedValue());
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-    JSHandle<JSTaggedValue> iterKeys(thread, ContainersTreeMap::Keys(callInfo1.get()));
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+    JSHandle<JSTaggedValue> iterKeys(thread, ContainersTreeMap::Keys(callInfo1));
     TestHelper::TearDownFrame(thread, prev1);
     EXPECT_TRUE(iterKeys->IsJSAPITreeMapIterator());
 
@@ -873,8 +873,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, result)->GetInt());
     }
@@ -883,8 +883,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
     callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     callInfo1->SetFunction(JSTaggedValue::Undefined());
     callInfo1->SetThis(tmap.GetTaggedValue());
-    auto prev2 = TestHelper::SetupFrame(thread, callInfo1.get());
-    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeMap::Values(callInfo1.get()));
+    auto prev2 = TestHelper::SetupFrame(thread, callInfo1);
+    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeMap::Values(callInfo1));
     TestHelper::TearDownFrame(thread, prev2);
     EXPECT_TRUE(iterValues->IsJSAPITreeMapIterator());
 
@@ -893,8 +893,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterValues.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, result)->GetInt());
     }
@@ -916,8 +916,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result1 = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result1 = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result1.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result1.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -931,8 +931,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSTaggedValue> itRes = JSIterator::IteratorValue(thread, result);
         EXPECT_TRUE(JSTaggedValue::SameValue(key, itRes));
@@ -946,8 +946,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterValues.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(value, JSIterator::IteratorValue(thread, result)));
     }
@@ -957,8 +957,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         auto callInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo3->SetFunction(JSTaggedValue::Undefined());
         callInfo3->SetThis(tmap.GetTaggedValue());
-        [[maybe_unused]] auto prev3 = TestHelper::SetupFrame(thread, callInfo3.get());
-        JSHandle<JSTaggedValue> iter(thread, ContainersTreeMap::Entries(callInfo3.get()));
+        [[maybe_unused]] auto prev3 = TestHelper::SetupFrame(thread, callInfo3);
+        JSHandle<JSTaggedValue> iter(thread, ContainersTreeMap::Entries(callInfo3));
         TestHelper::TearDownFrame(thread, prev3);
         EXPECT_TRUE(iter->IsJSAPITreeMapIterator());
 
@@ -971,8 +971,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
             callInfo->SetFunction(JSTaggedValue::Undefined());
             callInfo->SetThis(iter.GetTaggedValue());
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            result1.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            result1.Update(JSAPITreeMapIterator::Next(callInfo));
             TestHelper::TearDownFrame(thread, prev);
             entries.Update(JSIterator::IteratorValue(thread, result1).GetTaggedValue());
             EXPECT_EQ(i, JSObject::GetProperty(thread, entries, first).GetValue()->GetInt());
@@ -989,8 +989,8 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
             callInfo->SetFunction(JSTaggedValue::Undefined());
             callInfo->SetThis(iter.GetTaggedValue());
 
-            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-            result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+            [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+            result.Update(JSAPITreeMapIterator::Next(callInfo));
             TestHelper::TearDownFrame(thread, prev);
             entries.Update(JSIterator::IteratorValue(thread, result).GetTaggedValue());
             EXPECT_TRUE(JSTaggedValue::SameValue(key, JSObject::GetProperty(thread, entries, first).GetValue()));
@@ -1011,8 +1011,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -1025,8 +1025,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetCallArg(0, JSTaggedValue(NODE_NUMBERS / 2));
         callInfo->SetCallArg(1, JSTaggedValue(NODE_NUMBERS));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Replace(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Replace(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
         EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS);
@@ -1037,8 +1037,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         if (i == (NODE_NUMBERS / 2)) {
             EXPECT_EQ(result, JSTaggedValue(NODE_NUMBERS));
@@ -1064,8 +1064,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -1082,8 +1082,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Replace(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Replace(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue::True());
         EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS * 2);
@@ -1103,8 +1103,8 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(JSTaggedValue::SameValue(result, value.GetTaggedValue()));
     }
@@ -1122,8 +1122,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -1140,8 +1140,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetCallArg(0, func.GetTaggedValue());
         callInfo->SetCallArg(1, dmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::ForEach(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::ForEach(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
 
@@ -1152,8 +1152,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i * 2));
     }
@@ -1164,8 +1164,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i));
     }
@@ -1186,8 +1186,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -1203,8 +1203,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetCallArg(0, func.GetTaggedValue());
         callInfo->SetCallArg(1, dmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::ForEach(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::ForEach(callInfo);
         TestHelper::TearDownFrame(thread, prev);
     }
 
@@ -1215,8 +1215,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i * 4)); // 4 means 4 times
     }
@@ -1227,8 +1227,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, JSTaggedValue(i * 2));
     }
@@ -1244,8 +1244,8 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         callInfo->SetThis(dmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Get(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Get(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(result, value.GetTaggedValue());
     }
@@ -1264,8 +1264,8 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
@@ -1286,8 +1286,8 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         callInfo->SetThis(tmap.GetTaggedValue());
         callInfo->SetCallArg(0, key.GetTaggedValue());
         callInfo->SetCallArg(1, value.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
@@ -1297,8 +1297,8 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
     auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     callInfo1->SetFunction(JSTaggedValue::Undefined());
     callInfo1->SetThis(tmap.GetTaggedValue());
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
-    JSHandle<JSTaggedValue> iterKeys(thread, ContainersTreeMap::Keys(callInfo1.get()));
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1);
+    JSHandle<JSTaggedValue> iterKeys(thread, ContainersTreeMap::Keys(callInfo1));
     TestHelper::TearDownFrame(thread, prev1);
     EXPECT_TRUE(iterKeys->IsJSAPITreeMapIterator());
 
@@ -1310,8 +1310,8 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         JSHandle<JSTaggedValue> itRes = JSIterator::IteratorValue(thread, result);
         EXPECT_TRUE(JSTaggedValue::SameValue(key, itRes));
@@ -1321,8 +1321,8 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        result.Update(JSAPITreeMapIterator::Next(callInfo.get()));
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        result.Update(JSAPITreeMapIterator::Next(callInfo));
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ((NODE_NUMBERS - 1 - i), JSIterator::IteratorValue(thread, result)->GetInt());
     }
@@ -1340,12 +1340,12 @@ HWTEST_F_L0(ContainersTreeMapTest, IsEmpty)
         callInfo->SetCallArg(0, JSTaggedValue(i));
         callInfo->SetCallArg(1, JSTaggedValue(i));
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo);
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_TRUE(result.IsJSAPITreeMap());
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
-        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo.get());
+        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo);
         EXPECT_EQ(isEmpty, JSTaggedValue::False());
     }
 
@@ -1355,10 +1355,10 @@ HWTEST_F_L0(ContainersTreeMapTest, IsEmpty)
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
 
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        ContainersTreeMap::Clear(callInfo.get());
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo);
+        ContainersTreeMap::Clear(callInfo);
         TestHelper::TearDownFrame(thread, prev);
-        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo.get());
+        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo);
         EXPECT_EQ(isEmpty, JSTaggedValue::True());
     }
 }

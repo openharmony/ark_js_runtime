@@ -74,8 +74,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_001)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(stringIterator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_EQ(stringIterator->GetStringIteratorNextIndex(), 1U);
 
@@ -83,8 +83,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_001)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(stringIterator.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_EQ(stringIterator->GetStringIteratorNextIndex(), 2U);
 
@@ -92,8 +92,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_001)
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo3->SetThis(stringIterator.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result = BuiltinsStringIterator::Next(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result = BuiltinsStringIterator::Next(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj(thread, result);
@@ -113,8 +113,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_002)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(stringIterator.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo1);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_EQ(stringIterator->GetStringIteratorNextIndex(), 1U);
 
@@ -122,8 +122,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_002)
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(stringIterator.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo2.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    BuiltinsStringIterator::Next(ecmaRuntimeCallInfo2);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_EQ(stringIterator->GetStringIteratorNextIndex(), 3U);
 
@@ -131,8 +131,8 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_002)
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo3->SetThis(stringIterator.GetTaggedValue());
 
-    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
-    JSTaggedValue result = BuiltinsStringIterator::Next(ecmaRuntimeCallInfo3.get());
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3);
+    JSTaggedValue result = BuiltinsStringIterator::Next(ecmaRuntimeCallInfo3);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj(thread, result);

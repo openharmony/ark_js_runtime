@@ -52,7 +52,7 @@ namespace ecmascript {
 class EcmaVM;
 class JSRuntimeOptions;
 class JSThread;
-class EcmaRuntimeCallInfo;
+struct EcmaRuntimeCallInfo;
 }  // namespace ecmascript
 
 using Deleter = void (*)(void *nativePointer, void *data);
@@ -1180,7 +1180,7 @@ public:
 
     EcmaVM *GetVM() const;
 
-    inline size_t GetArgsNumber() const
+    inline int32_t GetArgsNumber() const
     {
         return numArgs_;
     }
@@ -1220,7 +1220,7 @@ private:
 
     uintptr_t GetArgAddress(uint32_t idx) const
     {
-        if (idx < static_cast<uint64_t>(numArgs_ + FIRST_ARGS_INDEX)) {
+        if (idx < static_cast<uint32_t>(numArgs_ + FIRST_ARGS_INDEX)) {
             return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
         }
         return 0U;
@@ -1228,7 +1228,7 @@ private:
 
 private:
     JSThread *thread_ {nullptr};
-    size_t numArgs_ = 0;
+    int32_t numArgs_ = 0;
     JSTaggedType *stackArgs_ {nullptr};
     void *data_ {nullptr};
     friend class FunctionRef;

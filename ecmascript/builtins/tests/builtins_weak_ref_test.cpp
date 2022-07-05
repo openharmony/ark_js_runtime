@@ -77,8 +77,10 @@ JSTaggedValue CreateWeakRefConstructor(JSThread *thread, JSTaggedValue target)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, target);
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    return JSTaggedValue(BuiltinsWeakRef::WeakRefConstructor(ecmaRuntimeCallInfo.get()));
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsWeakRef::WeakRefConstructor(ecmaRuntimeCallInfo);
+    TestHelper::TearDownFrame(thread, prev);
+    return result;
 }
 
 // new WeakRef(target)
@@ -98,8 +100,8 @@ HWTEST_F_L0(BuiltinsWeakRefTest, WeakRefConstructor)
     ecmaRuntimeCallInfo->SetThis(globalObject.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsWeakRef::WeakRefConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsWeakRef::WeakRefConstructor(ecmaRuntimeCallInfo);
 
     ASSERT_TRUE(result.IsECMAObject());
 }
@@ -118,9 +120,9 @@ HWTEST_F_L0(BuiltinsWeakRefTest, Deref1)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsWeakRef.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
-    JSTaggedValue result1 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result1 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo);
     ASSERT_EQ(result1, target.GetTaggedValue());
 }
 
@@ -143,9 +145,9 @@ HWTEST_F_L0(BuiltinsWeakRefTest, Deref2)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsWeakRef.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
-    JSTaggedValue result1 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo.get());
+    JSTaggedValue result1 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo);
     ASSERT_EQ(result1, target.GetTaggedValue());
     
     JSObject::SetProperty(thread, target, styleKey, styleValue);
@@ -175,8 +177,8 @@ HWTEST_F_L0(BuiltinsWeakRefTest, Deref3)
         ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo1->SetThis(jsWeakRef.GetTaggedValue());
 
-        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-        result2 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo1.get());
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+        result2 = BuiltinsWeakRef::Deref(ecmaRuntimeCallInfo1);
         TestHelper::TearDownFrame(thread, prev1);
     }
     vm->CollectGarbage(TriggerGCType::FULL_GC);

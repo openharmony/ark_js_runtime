@@ -86,8 +86,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, DisplayNamesConstructor)
     ecmaRuntimeCallInfo->SetCallArg(0, localeString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::DisplayNamesConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::DisplayNamesConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(result.IsJSDisplayNames());
 }
@@ -111,8 +111,8 @@ static JSTaggedValue JSDisplayNamesCreateWithOptionTest(JSThread *thread, JSHand
     ecmaRuntimeCallInfo->SetCallArg(0, localesString.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::DisplayNamesConstructor(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::DisplayNamesConstructor(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsJSDisplayNames());
@@ -134,8 +134,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_001)
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, stringValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -158,8 +158,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_002)
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, stringValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -182,8 +182,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_003)
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, stringValue.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::Of(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
@@ -204,8 +204,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, SupportedLocalesOf_001)
     // set the tag is default value
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsDisplayNames::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsDisplayNames::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -234,8 +234,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, SupportedLocalesOf_002)
     ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue resultArr = BuiltinsDisplayNames::SupportedLocalesOf(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue resultArr = BuiltinsDisplayNames::SupportedLocalesOf(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
@@ -258,8 +258,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, ResolvedOptions)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsDisplayNames::ResolvedOptions(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsDisplayNames::ResolvedOptions(ecmaRuntimeCallInfo);
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<JSTaggedValue> resultObj =

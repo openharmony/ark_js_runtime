@@ -141,11 +141,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject1)
     /**
      * @tc.steps: var p1 = Promise.reject(3).
      */
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), JSTaggedValue(3)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 }
 
 /*
@@ -171,11 +172,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
     ecmaRuntimeCallInfo->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo);
     JSHandle<JSPromise> promise1(thread, result);
     EXPECT_EQ(promise1->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(promise1->GetPromiseResult(), paramMsg1.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prev);
 
     /**
      * @tc.steps: step2. var p2 = Promise.reject(p1)
@@ -184,15 +186,16 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
     ecmaRuntimeCallInfo1->SetFunction(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, promise1.GetTaggedValue());
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
 
-    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> promise2(thread, result1);
     EXPECT_NE(*promise1, *promise2);
     EXPECT_EQ(promise2->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(
         JSTaggedValue::SameValue(promise2->GetPromiseResult(), JSTaggedValue(promise1.GetTaggedValue().GetRawData())),
         true);
+    TestHelper::TearDownFrame(thread, prev);
 }
 
 /*
@@ -215,11 +218,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve1)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), JSTaggedValue(5)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 }
 
 /*
@@ -245,11 +249,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
     ecmaRuntimeCallInfo->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
+    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo);
     JSHandle<JSPromise> promise1(thread, result);
     EXPECT_EQ(promise1->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(promise1->GetPromiseResult(), paramMsg1.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prev);
 
     // promise1 Enter Reject() as a parameter.
     /**
@@ -259,13 +264,14 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
     ecmaRuntimeCallInfo1->SetFunction(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, promise1.GetTaggedValue());
-    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo);
 
-    JSTaggedValue result1 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1.get());
+    JSTaggedValue result1 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> promise2(thread, result1);
     EXPECT_EQ(*promise1, *promise2);
     EXPECT_EQ(promise2->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(promise2->GetPromiseResult(), paramMsg1.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prev1);
 }
 
 /*
@@ -289,11 +295,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race1)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result1);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), JSTaggedValue(12345)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step2. var p2 = Promise.resolve(6789)
@@ -303,11 +310,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race1)
     ecmaRuntimeCallInfo2->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, paramMsg2.GetTaggedValue());
 
-    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> resolvePromise(thread, result2);
     EXPECT_EQ(resolvePromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(resolvePromise->GetPromiseResult(), JSTaggedValue(6789)), true);
+    TestHelper::TearDownFrame(thread, prevResolve);
 
     /**
      * @tc.steps: step3. Construct an array with two elements p1 and p2. array = [p1. p2]
@@ -327,11 +335,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race1)
     ecmaRuntimeCallInfo4->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo4->SetCallArg(0, array.GetTaggedValue());
 
-    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    JSTaggedValue result4 = BuiltinsPromise::Race(ecmaRuntimeCallInfo4.get());
+    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    JSTaggedValue result4 = BuiltinsPromise::Race(ecmaRuntimeCallInfo4);
     JSHandle<JSPromise> racePromise(thread, result4);
     EXPECT_EQ(racePromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(racePromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prev4);
 }
 
 /*
@@ -357,11 +366,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result1);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), JSTaggedValue(12345)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step2. var p2 = Promise.resolve(6789)
@@ -371,11 +381,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     ecmaRuntimeCallInfo2->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, paramMsg2.GetTaggedValue());
 
-    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> resolvePromise(thread, result2);
     EXPECT_EQ(resolvePromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(resolvePromise->GetPromiseResult(), JSTaggedValue(6789)), true);
+    TestHelper::TearDownFrame(thread, prevResolve);
 
     /**
      * @tc.steps: step3. Construct an array with two elements p1 and p2. array = [p1. p2]
@@ -395,11 +406,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     ecmaRuntimeCallInfo4->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo4->SetCallArg(0, array.GetTaggedValue());
 
-    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    JSTaggedValue result4 = BuiltinsPromise::Race(ecmaRuntimeCallInfo4.get());
+    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    JSTaggedValue result4 = BuiltinsPromise::Race(ecmaRuntimeCallInfo4);
     JSHandle<JSPromise> racePromise(thread, result4);
     EXPECT_EQ(racePromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(racePromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prev4);
 
     /**
      * @tc.steps: step5. p3.then((resolve)=>{print(resolve)}, (reject)=>{print(reject)})
@@ -412,12 +424,13 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     ecmaRuntimeCallInfo5->SetCallArg(0, JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo5->SetCallArg(1, native_func_race_then_onrejected.GetTaggedValue());
 
-    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5.get());
-    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo5.get());
+    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5);
+    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo5);
     JSHandle<JSPromise> thenPromise(thread, thenResult);
 
     EXPECT_EQ(thenPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_TRUE(thenPromise->GetPromiseResult().IsUndefined());
+    TestHelper::TearDownFrame(thread, prev5);
 
     /**
      * @tc.steps: step6. execute promise queue
@@ -451,11 +464,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result1 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result1 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> resolvePromise1(thread, result1);
     EXPECT_EQ(resolvePromise1->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(resolvePromise1->GetPromiseResult(), JSTaggedValue(111)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step2. var p2 = Promise.resolve(222)
@@ -465,11 +479,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
     ecmaRuntimeCallInfo2->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, paramMsg2.GetTaggedValue());
 
-    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevResolve = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue result2 = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> resolvePromise2(thread, result2);
     EXPECT_EQ(resolvePromise2->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(resolvePromise2->GetPromiseResult(), JSTaggedValue(222)), true);
+    TestHelper::TearDownFrame(thread, prevResolve);
 
     /**
      * @tc.steps: step3. Construct an array with two elements p1 and p2. array = [p1. p2]
@@ -489,11 +504,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
     ecmaRuntimeCallInfo4->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo4->SetCallArg(0, array.GetTaggedValue());
 
-    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
-    JSTaggedValue result4 = BuiltinsPromise::All(ecmaRuntimeCallInfo4.get());
+    [[maybe_unused]] auto prev4 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4);
+    JSTaggedValue result4 = BuiltinsPromise::All(ecmaRuntimeCallInfo4);
     JSHandle<JSPromise> allPromise(thread, result4);
     EXPECT_EQ(allPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(allPromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prev4);
 
     /**
      * @tc.steps: step5. p3.then((resolve)=>{print(resolve)}, (reject)=>{print(reject)});
@@ -506,12 +522,13 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
     ecmaRuntimeCallInfo5->SetCallArg(0, nativeFuncRaceThenOnResolved.GetTaggedValue());
     ecmaRuntimeCallInfo5->SetCallArg(1, nativeFuncRaceThenOnResolved.GetTaggedValue());
 
-    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5.get());
-    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo5.get());
+    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5);
+    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo5);
     JSHandle<JSPromise> thenPromise(thread, thenResult);
 
     EXPECT_EQ(thenPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_TRUE(thenPromise->GetPromiseResult().IsUndefined());
+    TestHelper::TearDownFrame(thread, prev5);
 
     /**
      * @tc.steps: step6. execute promise queue
@@ -543,11 +560,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, Catch)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg1.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), JSTaggedValue(3)), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step2. p1 invokes catch()
@@ -558,12 +576,13 @@ HWTEST_F_L0(BuiltinsPromiseTest, Catch)
     ecmaRuntimeCallInfo2->SetThis(rejectPromise.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(0, testPromiseCatch.GetTaggedValue());
 
-    [[maybe_unused]] auto prevCatch = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue catchResult = BuiltinsPromise::Catch(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevCatch = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue catchResult = BuiltinsPromise::Catch(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> catchPromise(thread, catchResult);
 
     EXPECT_EQ(catchPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(catchPromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prevCatch);
 
     /**
      * @tc.steps: step3. execute promise queue
@@ -595,11 +614,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsPromise::Resolve(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> resolvePromise(thread, result);
     EXPECT_EQ(resolvePromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(resolvePromise->GetPromiseResult(), paramMsg.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step2. p1 invokes then()
@@ -612,12 +632,13 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
     ecmaRuntimeCallInfo2->SetCallArg(0, testPromiseThenOnResolved.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, JSTaggedValue::Undefined());
 
-    [[maybe_unused]] auto prevThen = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevThen = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> thenPromise(thread, thenResult);
 
     EXPECT_EQ(thenPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(thenPromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prevThen);
 
     /**
      * @tc.steps: step3.  execute promise queue
@@ -649,11 +670,12 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
     ecmaRuntimeCallInfo1->SetThis(promise.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, paramMsg.GetTaggedValue());
 
-    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] auto prevReject = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1);
+    JSTaggedValue result = BuiltinsPromise::Reject(ecmaRuntimeCallInfo1);
     JSHandle<JSPromise> rejectPromise(thread, result);
     EXPECT_EQ(rejectPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(rejectPromise->GetPromiseResult(), paramMsg.GetTaggedValue()), true);
+    TestHelper::TearDownFrame(thread, prevReject);
 
     /**
      * @tc.steps: step1. p1 invokes then()
@@ -666,12 +688,13 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
     ecmaRuntimeCallInfo2->SetCallArg(0, testPromiseThenOnRejected.GetTaggedValue());
     ecmaRuntimeCallInfo2->SetCallArg(1, testPromiseThenOnRejected.GetTaggedValue());
 
-    [[maybe_unused]] auto prevThen = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
-    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo2.get());
+    [[maybe_unused]] auto prevThen = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2);
+    JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo2);
     JSHandle<JSPromise> thenPromise(thread, thenResult);
 
     EXPECT_EQ(thenPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(thenPromise->GetPromiseResult().IsUndefined(), true);
+    TestHelper::TearDownFrame(thread, prevThen);
     /**
      * @tc.steps: step3.  execute promise queue
      */

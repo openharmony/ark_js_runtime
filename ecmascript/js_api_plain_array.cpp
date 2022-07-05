@@ -242,10 +242,11 @@ JSTaggedValue JSAPIPlainArray::ForEach(JSThread *thread, const JSHandle<JSTagged
     for (int32_t k = 0; k < length; k++) {
         JSTaggedValue kValue = valueArray->Get(k);
         JSTaggedValue key = keyArray->Get(k);
-        EcmaRuntimeCallInfo info =
+        EcmaRuntimeCallInfo *info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, 3);  // 3: three args
-        info.SetCallArg(kValue, key, thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult = JSFunction::Call(&info);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+        info->SetCallArg(kValue, key, thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
     }
     return JSTaggedValue::Undefined();
