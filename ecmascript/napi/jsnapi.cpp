@@ -494,6 +494,19 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 
+Local<ObjectRef> JSNApi::GetExportObjectFromBuffer(EcmaVM *vm, const std::string &file, const std::string &key)
+{
+    ecmascript::ModuleManager *moduleManager = vm->GetModuleManager();
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostGetImportedModule(file.c_str());
+
+    ObjectFactory *factory = vm->GetFactory();
+    JSHandle<EcmaString> keyHandle = factory->NewFromASCII(key.c_str());
+
+    JSHandle<JSTaggedValue> exportObj(thread, ecmaModule->GetModuleValue(thread, keyHandle.GetTaggedValue(), false));
+    return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
+}
+
 void JSNApi::InitializeMemMapAllocator()
 {
     MemMapAllocator::GetInstance()->Initialize(ecmascript::DEFAULT_REGION_SIZE);
@@ -777,6 +790,22 @@ Local<ObjectRef> ObjectRef::New(const EcmaVM *vm, void *detach, void *attach)
     JSTaggedValue::SetProperty(vm->GetJSThread(), object, attachKey, attachValue);
     RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), JSValueRef::Exception(vm));
     return JSNApiHelper::ToLocal<ObjectRef>(object);
+}
+
+bool ObjectRef::Set(const EcmaVM *vm, void *detach, void *attach)
+{
+    [[maybe_unused]] LocalScope scope(vm);
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    JSHandle<JSTaggedValue> object = JSNApiHelper::ToJSHandle(this);
+    JSHandle<JSTaggedValue> detachKey = env->GetDetachSymbol();
+    JSHandle<JSTaggedValue> attachKey = env->GetAttachSymbol();
+    JSHandle<JSTaggedValue> detachValue = JSNApiHelper::ToJSHandle(NativePointerRef::New(vm, detach));
+    JSHandle<JSTaggedValue> attachValue = JSNApiHelper::ToJSHandle(NativePointerRef::New(vm, attach));
+    bool detachResult = JSTaggedValue::SetProperty(vm->GetJSThread(), object, detachKey, detachValue);
+    RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), false);
+    bool attachResult = JSTaggedValue::SetProperty(vm->GetJSThread(), object, attachKey, attachValue);
+    RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), false);
+    return detachResult && attachResult;
 }
 
 bool ObjectRef::Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value)
