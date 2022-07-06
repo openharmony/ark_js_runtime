@@ -255,18 +255,22 @@ public:
 
     static inline std::string GetSpecifiedLine(const std::string &srcStr, int lineNumber)
     {
-        std::stringstream ss(srcStr);
-        int count = 0;
-        std::string lineStr = "";
-        std::string tempLine;
-        while (getline(ss, tempLine, '\n')) {
-            count++;
-            if (count == lineNumber) {
-                lineStr = tempLine;
-                break;
+        ASSERT(lineNumber >= 1);
+        int prePos = 0;
+        int findPrePos = lineNumber - 1;
+        for (int i = 0; i < findPrePos; i++) {
+            prePos = srcStr.find('\n', prePos);
+            if (prePos == -1) {
+                return "";
             }
+            prePos += 1;
         }
-        return lineStr;
+        int findEndPos = srcStr.find('\n', prePos);
+        if (findEndPos == -1) {
+            return srcStr.substr(prePos, srcStr.length() - prePos);
+        }
+        ASSERT(findEndPos > prePos);
+        return srcStr.substr(prePos, findEndPos - prePos);
     }
 
     static inline bool IsNonspace(uint16_t c)
