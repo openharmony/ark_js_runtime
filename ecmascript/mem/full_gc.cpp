@@ -37,7 +37,7 @@ void FullGC::RunPhases()
     ClockScope clockScope;
 
     if (heap_->CheckOngoingConcurrentMarking()) {
-        ECMA_GC_LOG() << "FullGC after ConcurrentMarking";
+        LOG_GC(DEBUG) << "FullGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
     Initialize();
@@ -47,7 +47,7 @@ void FullGC::RunPhases()
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticFullGC(clockScope.GetPauseTime(), youngAndOldAliveSize_,
                                                           youngSpaceCommitSize_, oldSpaceCommitSize_,
                                                           nonMoveSpaceFreeSize_, nonMoveSpaceCommitSize_);
-    ECMA_GC_LOG() << "FullGC::RunPhases " << clockScope.TotalSpentTime();
+    LOG_GC(DEBUG) << "FullGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
 void FullGC::RunPhasesForAppSpawn()

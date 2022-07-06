@@ -18,7 +18,6 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/protocol_channel.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 void TracingImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -32,7 +31,7 @@ void TracingImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     };
 
     const std::string &method = request.GetMethod();
-    LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to TracingImpl";
+    LOG_DEBUGGER(DEBUG) << "dispatch [" << method << "] to TracingImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
@@ -116,32 +115,27 @@ void TracingImpl::Frontend::TracingComplete()
 
 DispatchResponse TracingImpl::End()
 {
-    LOG(ERROR, DEBUGGER) << "End not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("End not support now.");
 }
 
 DispatchResponse TracingImpl::GetCategories([[maybe_unused]] std::vector<std::string> categories)
 {
-    LOG(ERROR, DEBUGGER) << "GetCategories not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("GetCategories not support now.");
 }
 
 DispatchResponse TracingImpl::RecordClockSyncMarker([[maybe_unused]] std::string syncId)
 {
-    LOG(ERROR, DEBUGGER) << "RecordClockSyncMarker not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("RecordClockSyncMarker not support now.");
 }
 
 DispatchResponse TracingImpl::RequestMemoryDump([[maybe_unused]] std::unique_ptr<RequestMemoryDumpParams> params,
                                                 [[maybe_unused]] std::string dumpGuid, [[maybe_unused]] bool success)
 {
-    LOG(ERROR, DEBUGGER) << "RequestMemoryDump not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("RequestMemoryDump not support now.");
 }
 
 DispatchResponse TracingImpl::Start([[maybe_unused]] std::unique_ptr<StartParams> params)
 {
-    LOG(ERROR, DEBUGGER) << "Start not support now.";
-    return DispatchResponse::Ok();
+    return DispatchResponse::Fail("Start not support now.");
 }
 }  // namespace panda::ecmascript::tooling

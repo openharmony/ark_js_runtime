@@ -25,7 +25,7 @@ void InitializeDebugger(::panda::ecmascript::EcmaVM *vm,
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
-        LOG(ERROR, DEBUGGER) << "JS debugger was initialized";
+        LOG_DEBUGGER(ERROR) << "JS debugger was initialized";
         return;
     }
     vm->GetJsDebuggerManager()->SetDebuggerHandler(new ProtocolHandler(onResponse, vm));

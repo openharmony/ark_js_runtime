@@ -17,7 +17,6 @@
 #define ECMASCRIPT_SHARED_MEMORY_MANAGER_MANAGER_H
 
 #include "ecmascript/mem/c_containers.h"
-#include "libpandabase/utils/logger.h"
 #include "os/mutex.h"
 
 namespace panda {

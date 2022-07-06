@@ -129,10 +129,10 @@ void ParallelEvacuator::EvacuateRegion(TlabAllocator *allocator, Region *region)
                 promotedSize += size;
             }
         }
-        LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
+        LOG_ECMA_IF(address == 0, FATAL) << "Evacuate object failed:" << size;
 
         if (memcpy_s(ToVoidPtr(address), size, ToVoidPtr(ToUintPtr(mem)), size) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
         }
 
         Barriers::SetDynPrimitive(header, 0, MarkWord::FromForwardingAddress(address));
@@ -162,7 +162,7 @@ void ParallelEvacuator::VerifyHeapObject(TaggedObject *object)
                         continue;
                     }
                     if (!objectRegion->Test(value.GetTaggedObject())) {
-                        LOG(FATAL, RUNTIME) << "Miss mark value: " << value.GetTaggedObject()
+                        LOG_GC(FATAL) << "Miss mark value: " << value.GetTaggedObject()
                                             << ", body address:" << slot.SlotAddress()
                                             << ", header address:" << object;
                     }
@@ -197,7 +197,7 @@ void ParallelEvacuator::UpdateReference()
     heap_->EnumerateSnapshotSpaceRegions([this] (Region *current) {
         AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
     });
-    LOG(DEBUG, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:"
+    LOG_GC(DEBUG) << "UpdatePointers statistic: younge space region compact moving count:"
                         << youngeRegionMoveCount
                         << "younge space region compact coping count:" << youngeRegionCopyCount
                         << "old space region count:" << oldRegionCount;

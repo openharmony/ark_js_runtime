@@ -15,11 +15,11 @@
 
 #include "ecmascript/tooling/interface/file_stream.h"
 
-#include <string>
 #include <climits>
+#include <string>
+#include <unistd.h>
 
 #include "ecmascript/ecma_macros.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 FileStream::FileStream(const std::string &fileName)

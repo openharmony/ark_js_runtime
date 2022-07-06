@@ -53,7 +53,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define LOG_INST() LOG(DEBUG, INTERPRETER) << ": "
+#define LOG_INST() LOG_INTERPRETER(DEBUG)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define HANDLE_OPCODE(handle_opcode) \
@@ -421,10 +421,10 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     thread->CheckSafepoint();
     ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
     JSMethod *method = callTarget->GetCallTarget();
-    LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
+    LOG_INST() << "Entry: Runtime Call.";
     JSTaggedValue tagged =
         reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(info);
-    LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
+    LOG_INST() << "Exit: Runtime Call.";
 
     InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
     JSTaggedType *prevSp = entryState->base.prev;
@@ -536,7 +536,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
     thread->CheckSafepoint();
-    LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
+    LOG_INST() << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
@@ -901,7 +901,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             state->pc = nullptr;
             state->function = JSTaggedValue(funcTagged);
             thread->SetCurrentSPFrame(newSp);
-            LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
+            LOG_INST() << "Entry: Runtime Call.";
             SAVE_PC();
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(ecmaRuntimeCallInfo);
@@ -909,7 +909,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (UNLIKELY(thread->HasPendingException())) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
-            LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
+            LOG_INST() << "Exit: Runtime Call.";
             SET_ACC(retValue);
             INTERPRETER_HANDLE_RETURN();
         }
@@ -960,7 +960,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             JSTaggedValue env = JSFunction::Cast(funcObject)->GetLexicalEnv();
             state->env = env;
             thread->SetCurrentSPFrame(newSp);
-            LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+            LOG_INST() << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                     << std::hex << reinterpret_cast<uintptr_t>(pc);
             DISPATCH_OFFSET(0);
         }
@@ -968,7 +968,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     HANDLE_OPCODE(HANDLE_RETURN_DYN) {
         LOG_INST() << "return.dyn";
         InterpretedFrame *state = GET_FRAME(sp);
-        LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+        LOG_INST() << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
         [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
@@ -1020,7 +1020,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     HANDLE_OPCODE(HANDLE_RETURNUNDEFINED_PREF) {
         LOG_INST() << "return.undefined";
         InterpretedFrame *state = GET_FRAME(sp);
-        LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+        LOG_INST() << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
         [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
@@ -1970,7 +1970,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->function = ctor;
                 thread->SetCurrentSPFrame(newSp);
 
-                LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
+                LOG_INST() << "Entry: Runtime New.";
                 SAVE_PC();
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(ctorMethod->GetNativePointer()))(ecmaRuntimeCallInfo);
@@ -1978,7 +1978,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
-                LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
+                LOG_INST() << "Exit: Runtime New.";
                 SET_ACC(retValue);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
@@ -2050,7 +2050,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 constpool = ConstantPool::Cast(state->constpool.GetTaggedObject());
 
                 thread->SetCurrentSPFrame(newSp);
-                LOG(DEBUG, INTERPRETER) << "Entry: Runtime New " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+                LOG_INST() << "Entry: Runtime New " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                         << std::hex << reinterpret_cast<uintptr_t>(pc);
                 DISPATCH_OFFSET(0);
             }
@@ -2323,7 +2323,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
         [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
         UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
-        LOG(DEBUG, INTERPRETER) << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+        LOG_INST() << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         sp = state->base.prev;
         ASSERT(sp != nullptr);
@@ -3514,7 +3514,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->pc = nullptr;
                 state->function = superCtor;
                 thread->SetCurrentSPFrame(newSp);
-                LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall ";
+                LOG_INST() << "Entry: Runtime SuperCall ";
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(superCtorMethod->GetNativePointer()))(ecmaRuntimeCallInfo);
                 thread->SetCurrentSPFrame(sp);
@@ -3522,7 +3522,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
-                LOG(DEBUG, INTERPRETER) << "Exit: Runtime SuperCall ";
+                LOG_INST() << "Exit: Runtime SuperCall ";
                 SET_ACC(retValue);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
@@ -3592,7 +3592,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 constpool = ConstantPool::Cast(state->constpool.GetTaggedObject());
 
                 thread->SetCurrentSPFrame(newSp);
-                LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall " << std::hex << reinterpret_cast<uintptr_t>(sp)
+                LOG_INST() << "Entry: Runtime SuperCall " << std::hex << reinterpret_cast<uintptr_t>(sp)
                                         << " " << std::hex << reinterpret_cast<uintptr_t>(pc);
                 DISPATCH_OFFSET(0);
             }
@@ -3708,7 +3708,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH_OFFSET(0);
     }
     HANDLE_OPCODE(HANDLE_OVERFLOW) {
-        LOG(FATAL, INTERPRETER) << "opcode overflow";
+        LOG_INTERPRETER(FATAL) << "opcode overflow";
     }
 #include "templates/debugger_instruction_handler.inl"
 }

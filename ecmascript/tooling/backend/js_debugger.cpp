@@ -29,12 +29,12 @@ bool JSDebugger::SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> 
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Cannot find JSMethod";
+        LOG_DEBUGGER(ERROR) << "SetBreakpoint: Cannot find JSMethod";
         return false;
     }
 
     if (location.GetBytecodeOffset() >= method->GetCodeSize()) {
-        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Invalid breakpoint location";
+        LOG_DEBUGGER(ERROR) << "SetBreakpoint: Invalid breakpoint location";
         return false;
     }
 
@@ -42,7 +42,7 @@ bool JSDebugger::SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> 
         Global<FunctionRef>(ecmaVm_, condFuncRef));
     if (!success) {
         // also return true
-        LOG(WARNING, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
+        LOG_DEBUGGER(WARN) << "SetBreakpoint: Breakpoint already exists";
     }
 
     return true;
@@ -52,12 +52,12 @@ bool JSDebugger::RemoveBreakpoint(const JSPtLocation &location)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Cannot find JSMethod";
+        LOG_DEBUGGER(ERROR) << "RemoveBreakpoint: Cannot find JSMethod";
         return false;
     }
 
     if (!RemoveBreakpoint(method, location.GetBytecodeOffset())) {
-        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Breakpoint not found";
+        LOG_DEBUGGER(ERROR) << "RemoveBreakpoint: Breakpoint not found";
         return false;
     }
 
@@ -86,18 +86,18 @@ bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
     JSThread *thread = ecmaVm_->GetJSThread();
     auto condFuncRef = breakpoint.value().GetConditionFunction();
     if (condFuncRef->IsFunction()) {
-        LOG(INFO, DEBUGGER) << "HandleBreakpoint: begin evaluate condition";
+        LOG_DEBUGGER(INFO) << "HandleBreakpoint: begin evaluate condition";
         auto handlerPtr = std::make_shared<FrameHandler>(ecmaVm_->GetJSThread());
         auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_),
             condFuncRef.ToLocal(ecmaVm_), handlerPtr);
         if (thread->HasPendingException()) {
-            LOG(ERROR, DEBUGGER) << "HandleBreakpoint: has pending exception";
+            LOG_DEBUGGER(ERROR) << "HandleBreakpoint: has pending exception";
             thread->ClearException();
             return false;
         }
         bool isMeet = res->ToBoolean(ecmaVm_)->Value();
         if (!isMeet) {
-            LOG(ERROR, DEBUGGER) << "HandleBreakpoint: condition not meet";
+            LOG_DEBUGGER(ERROR) << "HandleBreakpoint: condition not meet";
             return false;
         }
     }

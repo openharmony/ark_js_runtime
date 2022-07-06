@@ -15,8 +15,6 @@
 
 #include "ecmascript/tooling/dispatcher.h"
 
-#include "libpandabase/utils/logger.h"
-
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/agent/runtime_impl.h"
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
@@ -30,7 +28,7 @@ DispatchRequest::DispatchRequest(const std::string &message)
     std::unique_ptr<PtJson> json = PtJson::Parse(message);
     if (json == nullptr || !json->IsObject()) {
         code_ = RequestCode::JSON_PARSE_ERROR;
-        LOG(ERROR, DEBUGGER) << "json parse error";
+        LOG_DEBUGGER(ERROR) << "json parse error";
         return;
     }
 
@@ -39,7 +37,7 @@ DispatchRequest::DispatchRequest(const std::string &message)
     ret = json->GetInt("id", &callId);
     if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_ID_ERROR;
-        LOG(ERROR, DEBUGGER) << "parse id error";
+        LOG_DEBUGGER(ERROR) << "parse id error";
         return;
     }
     callId_ = callId;
@@ -48,7 +46,7 @@ DispatchRequest::DispatchRequest(const std::string &message)
     ret = json->GetString("method", &wholeMethod);
     if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_METHOD_ERROR;
-        LOG(ERROR, DEBUGGER) << "parse method error";
+        LOG_DEBUGGER(ERROR) << "parse method error";
         return;
     }
     std::string::size_type length = wholeMethod.length();
@@ -56,15 +54,15 @@ DispatchRequest::DispatchRequest(const std::string &message)
     indexPoint = wholeMethod.find_first_of('.', 0);
     if (indexPoint == std::string::npos || indexPoint == 0 || indexPoint == length - 1) {
         code_ = RequestCode::METHOD_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "method format error: " << wholeMethod;
+        LOG_DEBUGGER(ERROR) << "method format error: " << wholeMethod;
         return;
     }
     domain_ = wholeMethod.substr(0, indexPoint);
     method_ = wholeMethod.substr(indexPoint + 1, length);
 
-    LOG(DEBUG, DEBUGGER) << "id: " << callId_;
-    LOG(DEBUG, DEBUGGER) << "domain: " << domain_;
-    LOG(DEBUG, DEBUGGER) << "method: " << method_;
+    LOG_DEBUGGER(DEBUG) << "id: " << callId_;
+    LOG_DEBUGGER(DEBUG) << "domain: " << domain_;
+    LOG_DEBUGGER(DEBUG) << "method: " << method_;
 
     std::unique_ptr<PtJson> params;
     ret = json->GetObject("params", &params);
@@ -73,7 +71,7 @@ DispatchRequest::DispatchRequest(const std::string &message)
     }
     if (ret == Result::TYPE_ERROR) {
         code_ = RequestCode::PARAMS_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "params format error";
+        LOG_DEBUGGER(ERROR) << "params format error";
         return;
     }
     params_ = std::move(params);
@@ -148,7 +146,7 @@ Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
 void Dispatcher::Dispatch(const DispatchRequest &request)
 {
     if (!request.IsValid()) {
-        LOG(ERROR, DEBUGGER) << "Unknown request";
+        LOG_DEBUGGER(ERROR) << "Unknown request";
         return;
     }
     const std::string &domain = request.GetDomain();
@@ -156,7 +154,7 @@ void Dispatcher::Dispatch(const DispatchRequest &request)
     if (dispatcher != dispatchers_.end()) {
         dispatcher->second->Dispatch(request);
     } else {
-        LOG(ERROR, DEBUGGER) << "unknown domain: " << domain;
+        LOG_DEBUGGER(ERROR) << "unknown domain: " << domain;
     }
 }
 }  // namespace panda::ecmascript::tooling

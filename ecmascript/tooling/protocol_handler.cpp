@@ -16,7 +16,6 @@
 #include "ecmascript/tooling/protocol_handler.h"
 
 #include "ecmascript/tooling/agent/debugger_impl.h"
-#include "utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 void ProtocolHandler::WaitForDebugger()
@@ -32,6 +31,7 @@ void ProtocolHandler::RunIfWaitingForDebugger()
 
 void ProtocolHandler::DispatchCommand(std::string &&msg)
 {
+    LOG_DEBUGGER(DEBUG) << "ProtocolHandler::DispatchCommand: " << msg;
     std::unique_lock<std::mutex> queueLock(requestLock_);
     requestQueue_.push(std::move(msg));
     requestQueueCond_.notify_one();
@@ -82,7 +82,7 @@ void ProtocolHandler::ProcessCommand()
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
     const PtBaseReturns &result)
 {
-    LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
+    LOG_DEBUGGER(INFO) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
 
     std::unique_ptr<PtJson> reply = PtJson::CreateObject();
@@ -99,7 +99,7 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 
 void ProtocolHandler::SendNotification(const PtBaseEvents &events)
 {
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events.GetName();
+    LOG_DEBUGGER(DEBUG) << "ProtocolHandler::SendNotification: " << events.GetName();
     SendReply(*events.ToJson());
 }
 
@@ -107,7 +107,7 @@ void ProtocolHandler::SendReply(const PtJson &reply)
 {
     std::string str = reply.Stringify();
     if (str.empty()) {
-        LOG(ERROR, DEBUGGER) << "ProtocolHandler::SendReply: json stringify error";
+        LOG_DEBUGGER(ERROR) << "ProtocolHandler::SendReply: json stringify error";
         return;
     }
 

@@ -22,7 +22,6 @@
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/mem/c_containers.h"
 #include "libpandafile/file.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda {
 namespace panda_file {

@@ -481,7 +481,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create " << error;
+        LOG_DEBUGGER(ERROR) << "RemoteObject::Create " << error;
         return nullptr;
     }
 
@@ -588,7 +588,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ExceptionDetails::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ExceptionDetails::Create " << error;
         return nullptr;
     }
 
@@ -649,7 +649,7 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create " << error;
+        LOG_DEBUGGER(ERROR) << "InternalPropertyDescriptor::Create " << error;
         return nullptr;
     }
 
@@ -724,7 +724,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create " << error;
+        LOG_DEBUGGER(ERROR) << "PrivatePropertyDescriptor::Create " << error;
         return nullptr;
     }
 
@@ -894,7 +894,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &par
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PropertyDescriptor::Create " << error;
+        LOG_DEBUGGER(ERROR) << "PropertyDescriptor::Create " << error;
         return nullptr;
     }
 
@@ -959,7 +959,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "CallArgument::Create " << error;
+        LOG_DEBUGGER(ERROR) << "CallArgument::Create " << error;
         return nullptr;
     }
 
@@ -1009,7 +1009,7 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        LOG_DEBUGGER(ERROR) << "Location::Create " << error;
         return nullptr;
     }
 
@@ -1051,7 +1051,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptPosition::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ScriptPosition::Create " << error;
         return nullptr;
     }
 
@@ -1091,7 +1091,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SearchMatch::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SearchMatch::Create " << error;
         return nullptr;
     }
 
@@ -1150,7 +1150,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "LocationRange::Create " << error;
+        LOG_DEBUGGER(ERROR) << "LocationRange::Create " << error;
         return nullptr;
     }
 
@@ -1213,7 +1213,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        LOG_DEBUGGER(ERROR) << "Location::Create " << error;
         return nullptr;
     }
 
@@ -1304,7 +1304,7 @@ std::unique_ptr<Scope> Scope::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        LOG_DEBUGGER(ERROR) << "Location::Create " << error;
         return nullptr;
     }
 
@@ -1436,7 +1436,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "CallFrame::Create " << error;
+        LOG_DEBUGGER(ERROR) << "CallFrame::Create " << error;
         return nullptr;
     }
 
@@ -1505,7 +1505,7 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
         error += "Unknown 'ordinal';";
     }
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SamplingHeapProfileSample::Create " << error;
         return nullptr;
     }
 
@@ -1569,7 +1569,7 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const PtJson &params)
         error += "Unknown 'columnNumber';";
     }
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create " << error;
+        LOG_DEBUGGER(ERROR) << "RuntimeCallFrame::Create " << error;
         return nullptr;
     }
 
@@ -1654,7 +1654,7 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const P
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SamplingHeapProfileNode::Create " << error;
         return nullptr;
     }
 
@@ -1718,7 +1718,7 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const PtJson &p
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SamplingHeapProfile::Create " << error;
         return nullptr;
     }
 
@@ -1765,7 +1765,7 @@ std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PositionTickInfo::Create " << error;
+        LOG_DEBUGGER(ERROR) << "PositionTickInfo::Create " << error;
         return nullptr;
     }
 
@@ -1856,7 +1856,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ProfileNode::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ProfileNode::Create " << error;
         return nullptr;
     }
 
@@ -1980,7 +1980,7 @@ std::unique_ptr<Profile> Profile::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Profile::Create " << error;
+        LOG_DEBUGGER(ERROR) << "Profile::Create " << error;
         return nullptr;
     }
 
@@ -2085,7 +2085,7 @@ std::unique_ptr<Coverage> Coverage::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Coverage::Create " << error;
+        LOG_DEBUGGER(ERROR) << "Coverage::Create " << error;
         return nullptr;
     }
 
@@ -2144,7 +2144,7 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create " << error;
+        LOG_DEBUGGER(ERROR) << "FunctionCoverage::Create " << error;
         return nullptr;
     }
 
@@ -2211,7 +2211,7 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ScriptCoverage::Create " << error;
         return nullptr;
     }
 
@@ -2251,7 +2251,7 @@ std::unique_ptr<TypeObject> TypeObject::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "TypeObject::Create " << error;
+        LOG_DEBUGGER(ERROR) << "TypeObject::Create " << error;
         return nullptr;
     }
 
@@ -2300,7 +2300,7 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const PtJson &params)
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create " << error;
+        LOG_DEBUGGER(ERROR) << "TypeProfileEntry::Create " << error;
         return nullptr;
     }
 
@@ -2365,7 +2365,7 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const PtJson &param
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ScriptTypeProfile::Create " << error;
         return nullptr;
     }
 
@@ -2482,7 +2482,7 @@ std::unique_ptr<TraceConfig> TraceConfig::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "TraceConfig::Create " << error;
+        LOG_DEBUGGER(ERROR) << "TraceConfig::Create " << error;
         return nullptr;
     }
 

@@ -214,7 +214,7 @@ std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulin
             }
             auto predUpperBound = predResult.value();
             if (!isAncestor(curUpperBound, predUpperBound) && !isAncestor(predUpperBound, curUpperBound)) {
-                COMPILER_LOG(ERROR) << "[Verifier][Error] Scheduling upper bound of gate (id="
+                LOG_COMPILER(ERROR) << "[Verifier][Error] Scheduling upper bound of gate (id="
                                     << circuit->LoadGatePtrConst(curGate)->GetId() << ") does not exist";
                 return std::nullopt;
             }
@@ -304,31 +304,31 @@ void Scheduler::Print(const std::vector<std::vector<GateRef>> *cfg, const Circui
     std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
     std::vector<size_t> immDom;
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
-    COMPILER_LOG(INFO) << "==========================================================================";
+    LOG_COMPILER(INFO) << "==========================================================================";
     for (size_t bbIdx = 0; bbIdx < cfg->size(); bbIdx++) {
-        COMPILER_LOG(INFO) << "BB_" << bbIdx << "_" << circuit->GetOpCode((*cfg)[bbIdx].front()).Str() << ":"
+        LOG_COMPILER(INFO) << "BB_" << bbIdx << "_" << circuit->GetOpCode((*cfg)[bbIdx].front()).Str() << ":"
                            << "  immDom=" << immDom[bbIdx];
-        COMPILER_LOG(INFO) << "  pred=[";
+        LOG_COMPILER(INFO) << "  pred=[";
         bool isFirst = true;
         for (const auto &predStates : circuit->GetInVector((*cfg)[bbIdx].front())) {
             if (circuit->GetOpCode(predStates).IsState() || circuit->GetOpCode(predStates) == OpCode::STATE_ENTRY) {
-                COMPILER_LOG(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(predStates);
+                LOG_COMPILER(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(predStates);
                 isFirst = false;
             }
         }
-        COMPILER_LOG(INFO) << "]  succ=[";
+        LOG_COMPILER(INFO) << "]  succ=[";
         isFirst = true;
         for (const auto &succStates : circuit->GetOutVector((*cfg)[bbIdx].front())) {
             if (circuit->GetOpCode(succStates).IsState() || circuit->GetOpCode(succStates) == OpCode::STATE_ENTRY) {
-                COMPILER_LOG(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(succStates);
+                LOG_COMPILER(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(succStates);
                 isFirst = false;
             }
         }
-        COMPILER_LOG(INFO) << "]";
+        LOG_COMPILER(INFO) << "]";
         for (size_t instIdx = (*cfg)[bbIdx].size(); instIdx > 0; instIdx--) {
             circuit->Print((*cfg)[bbIdx][instIdx - 1]);
         }
     }
-    COMPILER_LOG(INFO) << "==========================================================================";
+    LOG_COMPILER(INFO) << "==========================================================================";
 }
 }  // namespace panda::ecmascript::kungfu

@@ -103,7 +103,7 @@ public:
         if (TestUtil::IsTestFinished()) {
             return;
         }
-        LOG(FATAL, DEBUGGER) << "Test " << testName_ << " failed";
+        LOG_DEBUGGER(FATAL) << "Test " << testName_ << " failed";
     }
 
     ~TestHooks() = default;

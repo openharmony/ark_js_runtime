@@ -70,7 +70,7 @@ bool StubModulePackInfo::Load(EcmaVM *vm)
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     if (_binary_stub_m_length <= 1) {
-        LOG_ECMA(FATAL) << "stub.m length <= 1, is default and invalid.";
+        LOG_FULL(FATAL) << "stub.m length <= 1, is default and invalid.";
         return false;
     }
     BinaryBufferParser binBufparser((uint8_t *)_binary_stub_m_start, _binary_stub_m_length);
@@ -121,7 +121,7 @@ bool StubModulePackInfo::Load(EcmaVM *vm)
         auto des = des_[entries_[i].moduleIndex_];
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();
     }
-    COMPILER_LOG(INFO) << "Load stub file success";
+    LOG_COMPILER(INFO) << "Load stub file success";
     return true;
 }
 
@@ -156,7 +156,7 @@ void AOTModulePackInfo::Save(const std::string &filename)
 bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
 {
     if (!VerifyFilePath(filename)) {
-        COMPILER_LOG(ERROR) << "Can not load aot file from path [ "  << filename << " ], "
+        LOG_COMPILER(ERROR) << "Can not load aot file from path [ "  << filename << " ], "
             << "please execute ark_aot_compiler with options --aot-file.";
         return false;
     }
@@ -217,7 +217,7 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         vm->SaveAOTFuncEntry(curFileHash, curMethodId, entries_[i].codeAddr_);
     }
     moduleFile.close();
-    COMPILER_LOG(INFO) << "Load aot file success";
+    LOG_COMPILER(INFO) << "Load aot file success";
     return true;
 }
 
@@ -411,12 +411,12 @@ void BinaryBufferParser::ParseBuffer(void *dst, uint32_t count)
 {
     if (count > 0 && count + offset_ <= length_) {
         if (memcpy_s(dst, count, buffer_ + offset_, count) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             return;
         };
         offset_ = offset_ + count;
     } else {
-        LOG_ECMA(FATAL) << "parse buffer error, length is 0 or overflow";
+        LOG_FULL(FATAL) << "parse buffer error, length is 0 or overflow";
     }
 }
 }

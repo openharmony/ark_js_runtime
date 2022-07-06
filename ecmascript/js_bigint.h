@@ -105,7 +105,7 @@ public:
     {
         uint32_t size = GetLength() * sizeof(uint32_t);
         if (memset_s(GetData(), size, 0, size) != EOK) {
-            LOG_ECMA(FATAL) << "memset failed";
+            LOG_FULL(FATAL) << "memset failed";
             UNREACHABLE();
         }
     }

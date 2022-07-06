@@ -110,12 +110,12 @@ int32_t DebuggerApi::GetVregIndex(const FrameHandler *frameHandler, std::string_
 {
     JSMethod *method = frameHandler->GetMethod();
     if (method->IsNativeWithCallField()) {
-        LOG(ERROR, DEBUGGER) << "GetVregIndex: native frame not support";
+        LOG_DEBUGGER(ERROR) << "GetVregIndex: native frame not support";
         return -1;
     }
     JSPtExtractor *extractor = JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
-        LOG(ERROR, DEBUGGER) << "GetVregIndex: extractor is null";
+        LOG_DEBUGGER(ERROR) << "GetVregIndex: extractor is null";
         return -1;
     }
     auto table = extractor->GetLocalVariableTable(method->GetMethodId());

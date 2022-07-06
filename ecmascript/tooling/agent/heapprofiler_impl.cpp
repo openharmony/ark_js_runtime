@@ -34,7 +34,7 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     };
 
     const std::string &method = request.GetMethod();
-    LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to HeapProfilerImpl";
+    LOG_DEBUGGER(DEBUG) << "dispatch [" << method << "] to HeapProfilerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);

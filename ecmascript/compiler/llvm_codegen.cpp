@@ -131,7 +131,7 @@ bool LLVMAssembler::BuildMCJITEngine()
 {
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
     if (ret) {
-        COMPILER_LOG(FATAL) << "error_ : " << error_;
+        LOG_COMPILER(FATAL) << "error_ : " << error_;
         return false;
     }
     return true;
@@ -261,7 +261,7 @@ int LLVMAssembler::GetFpDeltaPrevFramSp(LLVMValueRef fn, const CompilerLog &log)
         fpToCallerSpDelta = atoi(value);
         if (log.IsAlwaysEnabled()) {
             size_t length;
-            COMPILER_LOG(INFO) << " funcName: " << LLVMGetValueName2(fn, &length) << " fpToCallerSpDelta:"
+            LOG_COMPILER(INFO) << " funcName: " << LLVMGetValueName2(fn, &length) << " fpToCallerSpDelta:"
             << fpToCallerSpDelta;
         }
     }
@@ -288,8 +288,8 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
             if (addr2name.find(addr) != addr2name.end()) {
                 methodName = addr2name.at(addr);
                 if (logFlag) {
-                    COMPILER_LOG(INFO) << "=======================================================================";
-                    COMPILER_LOG(INFO) << methodName.c_str() << " disassemble:";
+                    LOG_COMPILER(INFO) << "=======================================================================";
+                    LOG_COMPILER(INFO) << methodName.c_str() << " disassemble:";
                 }
             }
             logFlag = log.IsDisassembleEnabled() ? true : log.IncludesMethod(methodName);
@@ -297,7 +297,7 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
             size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
             if (InstSize == 0) {
                 if (logFlag) {
-                    COMPILER_LOG(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                    LOG_COMPILER(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
                                         << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant";
                 }
                 pc += 4; // 4 pc length
@@ -305,7 +305,7 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
                 numBytes -= 4; // 4 num bytes
             }
             if (logFlag) {
-                COMPILER_LOG(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                LOG_COMPILER(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
                                    << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString;
             }
             pc += InstSize;
@@ -330,7 +330,7 @@ void LLVMAssembler::Disassemble(uint8_t *buf, size_t size)
     LLVMInitializeX86Target();
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module), nullptr, 0, nullptr, SymbolLookupCallback);
     if (!dcr) {
-        COMPILER_LOG(ERROR) << "ERROR: Couldn't create disassembler for triple!";
+        LOG_COMPILER(ERROR) << "ERROR: Couldn't create disassembler for triple!";
         return;
     }
     uint8_t *byteSp;
@@ -343,13 +343,13 @@ void LLVMAssembler::Disassemble(uint8_t *buf, size_t size)
     while (numBytes > 0) {
         size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
         if (InstSize == 0) {
-            COMPILER_LOG(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+            LOG_COMPILER(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
                                << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant";
             pc += 4; // 4 pc length
             byteSp += 4; // 4 sp offset
             numBytes -= 4; // 4 num bytes
         }
-        COMPILER_LOG(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+        LOG_COMPILER(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
                                << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString;
         pc += InstSize;
         byteSp += InstSize;

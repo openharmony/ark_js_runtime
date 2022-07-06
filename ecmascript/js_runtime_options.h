@@ -17,7 +17,6 @@
 #define ECMASCRIPT_JS_RUNTIME_OPTIONS_H_
 
 #include "libpandabase/utils/pandargs.h"
-#include "utils/logger.h"
 
 // namespace panda {
 namespace panda::ecmascript {

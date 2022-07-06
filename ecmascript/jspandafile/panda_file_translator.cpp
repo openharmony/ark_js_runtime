@@ -30,7 +30,6 @@
 #include "ecmascript/ts_types/ts_type_table.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "libpandabase/mem/mem.h"
-#include "libpandabase/utils/logger.h"
 #include "libpandabase/utils/utf.h"
 #include "libpandafile/bytecode_instruction-inl.h"
 #include "libpandafile/class_data_accessor-inl.h"
@@ -332,7 +331,7 @@ void PandaFileTranslator::FixOpcode(uint8_t *pc)
             break;
         default:
             if (*pc != static_cast<uint8_t>(BytecodeInstruction::Opcode::ECMA_LDNAN_PREF_NONE)) {
-                LOG_ECMA(FATAL) << "Is not an Ecma Opcode opcode: " << static_cast<uint16_t>(opcode);
+                LOG_FULL(FATAL) << "Is not an Ecma Opcode opcode: " << static_cast<uint16_t>(opcode);
                 UNREACHABLE();
             }
             *pc = *(pc + 1);
@@ -404,7 +403,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
             uint8_t size = sizeof(uint32_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(pc + FixInstructionIndex::FIX_ONE, size, &index, size) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             break;
@@ -414,7 +413,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
             uint8_t size = sizeof(uint16_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &u16Index, size) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             break;
@@ -425,7 +424,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
             uint8_t size = sizeof(uint32_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &index, size) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             break;
@@ -436,7 +435,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
             uint8_t size = sizeof(uint16_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &u16Index, size) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             break;
@@ -449,7 +448,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
                 ASSERT(static_cast<uint16_t>(index) == index);
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &index, size) != EOK) {
-                    LOG_ECMA(FATAL) << "memcpy_s failed";
+                    LOG_FULL(FATAL) << "memcpy_s failed";
                     UNREACHABLE();
                 }
                 break;
@@ -460,7 +459,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, ui
                 uint8_t size = sizeof(uint16_t);
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 if (memcpy_s(pc + FixInstructionIndex::FIX_FOUR, size, &u16Index, size) != EOK) {
-                    LOG_ECMA(FATAL) << "memcpy_s failed";
+                    LOG_FULL(FATAL) << "memcpy_s failed";
                     UNREACHABLE();
                 }
                 break;

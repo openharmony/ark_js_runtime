@@ -36,7 +36,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(mapMem, capacity, 0, capacity) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif
@@ -44,7 +44,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
 
     uintptr_t mem = ToUintPtr(mapMem);
     // Check that the address is 256K byte aligned
-    LOG_IF(AlignUp(mem, PANDA_POOL_ALIGNMENT_IN_BYTES) != mem, FATAL, RUNTIME) << "region not align by 256KB";
+    LOG_ECMA_IF(AlignUp(mem, PANDA_POOL_ALIGNMENT_IN_BYTES) != mem, FATAL) << "region not align by 256KB";
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     uintptr_t begin = AlignUp(mem + sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
@@ -63,7 +63,7 @@ void HeapRegionAllocator::FreeRegion(Region *region)
     region->Invalidate();
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(ToVoidPtr(allocateBase), size, INVALID_VALUE, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif

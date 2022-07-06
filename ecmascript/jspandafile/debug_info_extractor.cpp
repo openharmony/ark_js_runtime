@@ -243,7 +243,7 @@ const std::string &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId 
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        LOG(FATAL, DEBUGGER) << "Get source file of unknown method id: " << methodId.GetOffset();
+        LOG_DEBUGGER(FATAL) << "Get source file of unknown method id: " << methodId.GetOffset();
     }
     return iter->second.sourceFile;
 }
@@ -252,7 +252,7 @@ const std::string &DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId 
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        LOG(FATAL, DEBUGGER) << "Get source code of unknown method id: " << methodId.GetOffset();
+        LOG_DEBUGGER(FATAL) << "Get source code of unknown method id: " << methodId.GetOffset();
     }
     return iter->second.sourceCode;
 }

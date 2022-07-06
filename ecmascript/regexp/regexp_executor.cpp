@@ -43,14 +43,14 @@ bool RegExpExecutor::Execute(const uint8_t *input, uint32_t lastIndex, uint32_t 
     if (captureResultSize != 0) {
         captureResultList_ = chunk_->NewArray<CaptureState>(nCapture_);
         if (memset_s(captureResultList_, captureResultSize, 0, captureResultSize) != EOK) {
-            LOG_ECMA(FATAL) << "memset_s failed";
+            LOG_FULL(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
     }
     if (stackSize != 0) {
         stack_ = chunk_->NewArray<uintptr_t>(nStack_);
         if (memset_s(stack_, stackSize, 0, stackSize) != EOK) {
-            LOG_ECMA(FATAL) << "memset_s failed";
+            LOG_FULL(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
     }
@@ -264,7 +264,7 @@ MatchResult RegExpExecutor::GetResult(const JSThread *thread, bool isSuccess) co
                     uint8_t *dest = buffer.data();
                     if (memcpy_s(dest, len + 1, reinterpret_cast<const uint8_t *>(captureState->captureStart), len) !=
                         EOK) {
-                        LOG_ECMA(FATAL) << "memcpy_s failed";
+                        LOG_FULL(FATAL) << "memcpy_s failed";
                         UNREACHABLE();
                     }
                     dest[len] = '\0';  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -298,7 +298,7 @@ void RegExpExecutor::PushRegExpState(StateType type, uint32_t pc)
     state->currentPtr_ = GetCurrentPtr();
     size_t listSize = sizeof(CaptureState) * nCapture_;
     if (memcpy_s(state->captureResultList_, listSize, GetCaptureResultList(), listSize) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     uint8_t *stackStart =
@@ -307,7 +307,7 @@ void RegExpExecutor::PushRegExpState(StateType type, uint32_t pc)
     if (stack_ != nullptr) {
         size_t stackSize = sizeof(uintptr_t) * nStack_;
         if (memcpy_s(stackStart, stackSize, stack_, stackSize) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }
@@ -321,7 +321,7 @@ RegExpState *RegExpExecutor::PopRegExpState(bool copyCaptrue)
         size_t listSize = sizeof(CaptureState) * nCapture_;
         if (copyCaptrue) {
             if (memcpy_s(GetCaptureResultList(), listSize, state->captureResultList_, listSize) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
         }
@@ -333,7 +333,7 @@ RegExpState *RegExpExecutor::PopRegExpState(bool copyCaptrue)
         if (stack_ != nullptr) {
             size_t stackSize = sizeof(uintptr_t) * nStack_;
             if (memcpy_s(stack_, stackSize, stackStart, stackSize) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
         }
@@ -350,7 +350,7 @@ void RegExpExecutor::ReAllocStack(uint32_t stackLen)
         uint32_t stackByteSize = newStackSize * stateSize_;
         auto newStack = chunk_->NewArray<uint8_t>(stackByteSize);
         if (memset_s(newStack, stackByteSize, 0, stackByteSize) != EOK) {
-            LOG_ECMA(FATAL) << "memset_s failed";
+            LOG_FULL(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
         if (stateStack_ != nullptr) {

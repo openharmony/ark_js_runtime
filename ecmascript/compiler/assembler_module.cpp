@@ -39,11 +39,11 @@ void AssemblerModule::Run(const CompilationConfig *cfg, Chunk* chunk)
 void AssemblerModule::GenerateStubsX64(Chunk* chunk)
 {
     x64::ExtendedAssembler assembler(chunk, this);
-    COMPILER_LOG(INFO) << "compiling asm stubs";
+    LOG_COMPILER(INFO) << "compiling asm stubs";
     for (size_t i = 0; i < asmCallSigns_.size(); i++) {
         auto cs = asmCallSigns_[i];
         ASSERT(cs->HasConstructor());
-        COMPILER_LOG(INFO) << "Stub Name: " << cs->GetName();
+        LOG_COMPILER(INFO) << "Stub Name: " << cs->GetName();
         AssemblerStub *stub = static_cast<AssemblerStub*>(
             cs->GetConstructor()(nullptr));
         stub->GenerateX64(&assembler);
@@ -56,11 +56,11 @@ void AssemblerModule::GenerateStubsX64(Chunk* chunk)
 void AssemblerModule::GenerateStubsAarch64(Chunk* chunk)
 {
     aarch64::ExtendedAssembler assembler(chunk, this);
-    COMPILER_LOG(INFO) << "compiling asm stubs";
+    LOG_COMPILER(INFO) << "compiling asm stubs";
     for (size_t i = 0; i < asmCallSigns_.size(); i++) {
         auto cs = asmCallSigns_[i];
         ASSERT(cs->HasConstructor());
-        COMPILER_LOG(INFO) << "Stub Name: " << cs->GetName();
+        LOG_COMPILER(INFO) << "Stub Name: " << cs->GetName();
         AssemblerStub *stub = static_cast<AssemblerStub*>(
             cs->GetConstructor()(nullptr));
         stub->GenerateAarch64(&assembler);
