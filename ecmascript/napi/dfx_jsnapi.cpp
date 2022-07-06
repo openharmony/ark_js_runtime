@@ -90,10 +90,11 @@ bool DFXJSNApi::BuildJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
     return true;
 }
 
-bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode, Stream *stream)
+bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode,
+                                  Stream *stream, bool traceAllocation)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    return heapProfile->StartHeapTracking(timeInterval, isVmMode, stream);
+    return heapProfile->StartHeapTracking(timeInterval, isVmMode, stream, traceAllocation);
 }
 
 bool DFXJSNApi::StopHeapTracking(const EcmaVM *vm, const std::string &filePath)

@@ -35,7 +35,8 @@ public:
     virtual bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress = nullptr,
                                   bool isVmMode = true, bool isPrivate = false) = 0;
 
-    virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true, Stream *stream = nullptr) = 0;
+    virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true,
+                                   Stream *stream = nullptr, bool traceAllocation = false) = 0;
     virtual bool StopHeapTracking(Stream *stream, Progress *progress = nullptr) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);

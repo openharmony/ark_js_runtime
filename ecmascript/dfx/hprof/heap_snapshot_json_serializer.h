@@ -28,6 +28,7 @@ using fstream = std::fstream;
 using stringstream = std::stringstream;
 
 class HeapSnapshot;
+class TraceNode;
 
 class HeapSnapshotJSONSerializer {
 public:
@@ -43,6 +44,7 @@ private:
     void SerializeEdges();
     void SerializeTraceFunctionInfo();
     void SerializeTraceTree();
+    void SerializeTraceNode(TraceNode* node);
     void SerializeSamples();
     void SerializeLocations();
     void SerializeStringTable();

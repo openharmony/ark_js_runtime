@@ -53,7 +53,8 @@ public:
 
     void AddSnapshot(HeapSnapshot *snapshot);
 
-    bool StartHeapTracking(double timeInterval, bool isVmMode = true, Stream *stream = nullptr) override;
+    bool StartHeapTracking(double timeInterval, bool isVmMode = true,
+                           Stream *stream = nullptr, bool traceAllocation = false) override;
     bool StopHeapTracking(Stream *stream, Progress *progress = nullptr) override;
 
 private:
@@ -65,7 +66,8 @@ private:
     /**
      * make a new heap snapshot and put it into a container eg, vector
      */
-    HeapSnapshot *MakeHeapSnapshot(SampleType sampleType, bool isVmMode = true, bool isPrivate = false);
+    HeapSnapshot *MakeHeapSnapshot(SampleType sampleType, bool isVmMode = true,
+                                   bool isPrivate = false, bool traceAllocation = false);
     std::string GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();
     void ClearSnapshot();

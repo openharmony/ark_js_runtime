@@ -55,13 +55,13 @@ bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progr
     return jsonSerializer_->Serialize(snapshot, stream);
 }
 
-bool HeapProfiler::StartHeapTracking(double timeInterval, bool isVmMode, Stream *stream)
+bool HeapProfiler::StartHeapTracking(double timeInterval, bool isVmMode, Stream *stream, bool traceAllocation)
 {
-    HeapSnapshot *snapshot = MakeHeapSnapshot(SampleType::REAL_TIME, isVmMode);
+    HeapSnapshot *snapshot = MakeHeapSnapshot(SampleType::REAL_TIME, isVmMode, false, traceAllocation);
     if (snapshot == nullptr) {
         return false;
     }
-    
+
     heapTracker_ = std::make_unique<HeapTracker>(snapshot, timeInterval, stream);
     const_cast<EcmaVM *>(vm_)->StartHeapTracking(heapTracker_.get());
     heapTracker_->StartTracing();
@@ -150,7 +150,7 @@ bool HeapProfiler::ForceFullGC(const EcmaVM *vm)
     return false;
 }
 
-HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMode, bool isPrivate)
+HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMode, bool isPrivate, bool traceAllocation)
 {
     LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapshot";
     DISALLOW_GARBAGE_COLLECTION;
@@ -158,7 +158,7 @@ HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMod
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
             auto *snapshot = const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())
-                                ->New<HeapSnapshot>(vm_, isVmMode, isPrivate);
+                                ->New<HeapSnapshot>(vm_, isVmMode, isPrivate, traceAllocation);
             if (snapshot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -169,7 +169,7 @@ HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMod
         }
         case SampleType::REAL_TIME: {
             auto *snapshot = const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())
-                                ->New<HeapSnapshot>(vm_, isVmMode, isPrivate);
+                                ->New<HeapSnapshot>(vm_, isVmMode, isPrivate, traceAllocation);
             if (snapshot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();

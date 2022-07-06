@@ -33,6 +33,7 @@
 #include "ecmascript/property_attributes.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 
 namespace panda::ecmascript {
 CString *HeapSnapshot::GetString(const CString &as)
@@ -72,6 +73,11 @@ HeapSnapshot::~HeapSnapshot()
     }
     nodes_.clear();
     edges_.clear();
+    traceInfoStack_.clear();
+    stackInfo_.clear();
+    scriptIdMap_.clear();
+    methodToTraceNodeId_.clear();
+    traceNodeIndex_.clear();
 }
 
 bool HeapSnapshot::BuildUp()
@@ -91,6 +97,9 @@ bool HeapSnapshot::Verify()
 void HeapSnapshot::PrepareSnapshot()
 {
     FillNodes();
+    if (trackAllocations()) {
+        PrepareTraceInfo();
+    }
 }
 
 void HeapSnapshot::UpdateNode()
@@ -162,20 +171,23 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
     stream->UpdateLastSeenObjectId(sequenceId_);
 }
 
-void HeapSnapshot::AddNode(TaggedObject* address)
+Node *HeapSnapshot::AddNode(TaggedObject* address)
 {
-    GenerateNode(JSTaggedValue(address));
+    return GenerateNode(JSTaggedValue(address));
 }
 
 void HeapSnapshot::MoveNode(uintptr_t address, TaggedObject* forward_address)
 {
     int sequenceId = -1;
+    int traceNodeId = 0;
     Node *node = entryMap_.FindAndEraseNode(address);
     if (node != nullptr) {
         sequenceId = static_cast<int>(node->GetId());
+        traceNodeId = node->GetStackTraceId();
         EraseNodeUnique(node);
     }
-    GenerateNode(JSTaggedValue(forward_address), sequenceId);
+    node = GenerateNode(JSTaggedValue(forward_address), sequenceId);
+    node->SetTraceId(traceNodeId);
 }
 
 // NOLINTNEXTLINE(readability-function-size)
@@ -597,6 +609,157 @@ Node *HeapSnapshot::GenerateNode(JSTaggedValue entry, int sequenceId)
         InsertNodeUnique(node);
     }
     return node;
+}
+
+TraceNode::TraceNode(TraceTree* tree, uint32_t nodeIndex)
+    : tree_(tree),
+      nodeIndex_(nodeIndex),
+      totalSize_(0),
+      totalCount_(0),
+      id_(tree->GetNextNodeId())
+{
+}
+
+TraceNode::~TraceNode()
+{
+    for (TraceNode* node : children_) {
+        delete node;
+    }
+    children_.clear();
+}
+
+TraceNode* TraceTree::AddNodeToTree(CVector<uint32_t> traceNodeIndex)
+{
+    uint32_t len = traceNodeIndex.size();
+    if (len == 0) {
+        return nullptr;
+    }
+
+    TraceNode* node = GetRoot();
+    for (int i = len - 1; i >= 0; i--) {
+        node = node->FindOrAddChild(traceNodeIndex[i]);
+    }
+    return node;
+}
+
+TraceNode* TraceNode::FindOrAddChild(uint32_t nodeIndex)
+{
+    TraceNode* child = FindChild(nodeIndex);
+    if (child == nullptr) {
+        child = new TraceNode(tree_, nodeIndex);
+        children_.push_back(child);
+    }
+    return child;
+}
+
+TraceNode* TraceNode::FindChild(uint32_t nodeIndex)
+{
+    for (TraceNode* node : children_) {
+        if (node->GetNodeIndex() == nodeIndex) {
+            return node;
+        }
+    }
+    return nullptr;
+}
+
+void HeapSnapshot::AddTraceNodeId(JSMethod *method)
+{
+    uint32_t traceNodeId = 0;
+    auto result = methodToTraceNodeId_.find(method);
+    if (result == methodToTraceNodeId_.end()) {
+        traceNodeId = traceInfoStack_.size() - 1;
+        methodToTraceNodeId_.insert(std::make_pair(method, traceNodeId));
+    } else {
+        traceNodeId = result->second;
+    }
+    traceNodeIndex_.emplace_back(traceNodeId);
+}
+
+int HeapSnapshot::AddTraceNode(int sequenceId, int size)
+{
+    traceNodeIndex_.clear();
+    FrameHandler frameHandler(vm_->GetAssociatedJSThread());
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
+        if (!frameHandler.IsInterpretedFrame()) {
+            continue;
+        }
+        auto method = frameHandler.CheckAndGetMethod();
+        if (method == nullptr || method->IsNativeWithCallField()) {
+            continue;
+        }
+        if (stackInfo_.count(method) == 0) {
+            AddMethodInfo(method, frameHandler, sequenceId);
+        }
+        AddTraceNodeId(method);
+    }
+
+    TraceNode* topNode = traceTree_.AddNodeToTree(traceNodeIndex_);
+    if (topNode == nullptr) {
+        return -1;
+    }
+    int totalSize = topNode->GetTotalSize();
+    totalSize += size;
+    topNode->SetTotalSize(totalSize);
+    int totalCount = topNode->GetTotalCount();
+    topNode->SetTotalCount(++totalCount);
+    return topNode->GetId();
+}
+
+void HeapSnapshot::AddMethodInfo(JSMethod *method, const FrameHandler &frameHandler, int sequenceId)
+{
+    struct FunctionInfo codeEntry;
+    codeEntry.functionId = sequenceId;
+    const std::string &functionName = method->ParseFunctionName();
+    if (functionName.empty()) {
+        codeEntry.functionName = "anonymous";
+    } else {
+        codeEntry.functionName = functionName;
+    }
+    GetString(codeEntry.functionName.c_str());
+
+    // source file
+    tooling::JSPtExtractor *debugExtractor =
+        JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
+    const std::string &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
+    if (sourceFile.empty()) {
+        codeEntry.scriptName = "";
+    } else {
+        codeEntry.scriptName = sourceFile;
+        auto iter = scriptIdMap_.find(codeEntry.scriptName);
+        if (iter == scriptIdMap_.end()) {
+            scriptIdMap_.insert(std::make_pair(codeEntry.scriptName, scriptIdMap_.size() + 1));
+            codeEntry.scriptId = static_cast<int>(scriptIdMap_.size());
+        } else {
+            codeEntry.scriptId = iter->second;
+        }
+    }
+    GetString(codeEntry.scriptName.c_str());
+
+    // line number
+    int32_t lineNumber = 0;
+    int32_t columnNumber = 0;
+    auto callbackLineFunc = [&](int32_t line) -> bool {
+        lineNumber = line + 1;
+        return true;
+    };
+    auto callbackColumnFunc = [&](int32_t column) -> bool {
+        columnNumber = column + 1;
+        return true;
+    };
+    panda_file::File::EntityId methodId = method->GetMethodId();
+    uint32_t offset = frameHandler.GetBytecodeOffset();
+    if (!debugExtractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+        !debugExtractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
+        codeEntry.lineNumber = 0;
+        codeEntry.columnNumber = 0;
+    } else {
+        codeEntry.lineNumber = lineNumber;
+        codeEntry.columnNumber = columnNumber;
+    }
+
+    traceInfoStack_.emplace_back(codeEntry);
+    stackInfo_.insert(std::make_pair(method, codeEntry));
+    return;
 }
 
 Node *HeapSnapshot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
