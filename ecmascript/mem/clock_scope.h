@@ -18,7 +18,6 @@
 
 #include "time.h"
 #include "chrono"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 class ClockScope {

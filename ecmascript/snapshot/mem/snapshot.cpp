@@ -39,12 +39,12 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
 {
     std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG_ECMA(FATAL) << "snapshot file path error";
+        LOG_FULL(FATAL) << "snapshot file path error";
     }
     std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!writer.good()) {
         writer.close();
-        LOG_ECMA(FATAL) << "snapshot open file failed";
+        LOG_FULL(FATAL) << "snapshot open file failed";
     }
 
     SnapshotProcessor processor(vm_);
@@ -67,12 +67,12 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
 {
     std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG_ECMA(FATAL) << "snapshot file path error";
+        LOG_FULL(FATAL) << "snapshot file path error";
     }
     std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!writer.good()) {
         writer.close();
-        LOG_ECMA(FATAL) << "snapshot open file failed";
+        LOG_FULL(FATAL) << "snapshot open file failed";
     }
 
     SnapshotProcessor processor(vm_);
@@ -94,7 +94,7 @@ void Snapshot::SerializeBuiltins(const CString &fileName)
 {
     std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG_ECMA(FATAL) << "snapshot file path error";
+        LOG_FULL(FATAL) << "snapshot file path error";
     }
     // if builtins.snapshot file has exist, return directly
     if (!filePath.second.empty()) {
@@ -103,7 +103,7 @@ void Snapshot::SerializeBuiltins(const CString &fileName)
     std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!write.good()) {
         write.close();
-        LOG_ECMA(FATAL) << "snapshot open file failed";
+        LOG_FULL(FATAL) << "snapshot open file failed";
     }
 
     SnapshotProcessor processor(vm_);
@@ -129,17 +129,17 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
 {
     std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile, false);
     if (!filePath.first) {
-        LOG_ECMA(FATAL) << "snapshot file path error";
+        LOG_FULL(FATAL) << "snapshot file path error";
         UNREACHABLE();
     }
     int fd = open(filePath.second.c_str(), O_CLOEXEC);  // NOLINT(cppcoreguidelines-pro-type-vararg)
     if (UNLIKELY(fd == -1)) {
-        LOG_ECMA(FATAL) << "open file failed";
+        LOG_FULL(FATAL) << "open file failed";
         UNREACHABLE();
     }
     int32_t file_size = lseek(fd, 0, SEEK_END);
     if (file_size == -1) {
-        LOG_ECMA(FATAL) << "lseek failed";
+        LOG_FULL(FATAL) << "lseek failed";
         UNREACHABLE();
     }
 

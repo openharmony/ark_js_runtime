@@ -54,7 +54,7 @@ void ConcurrentMarker::EnableConcurrentMarking(EnableConcurrentMarkType type)
 
 void ConcurrentMarker::Mark()
 {
-    ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Marking Begin";
+    LOG_GC(DEBUG) << "ConcurrentMarker: Concurrent Marking Begin";
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "ConcurrentMarker::Mark");
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
@@ -73,7 +73,7 @@ void ConcurrentMarker::Finish()
 
 void ConcurrentMarker::ReMark()
 {
-    ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
+    LOG_GC(DEBUG) << "ConcurrentMarker: Remarking Begin";
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
     Marker *nonMovableMarker = heap_->GetNonMovableMarker();

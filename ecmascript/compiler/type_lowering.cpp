@@ -27,7 +27,7 @@ void TypeLowering::RunTypeLowering()
     }
 
     if (IsLogEnabled()) {
-        COMPILER_LOG(INFO) << "================== type lowering print all gates ==================";
+        LOG_COMPILER(INFO) << "================== type lowering print all gates ==================";
         circuit_->PrintAllGates(*bcBuilder_);
     }
 }

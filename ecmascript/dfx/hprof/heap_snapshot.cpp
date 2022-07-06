@@ -46,7 +46,7 @@ Node *Node::NewNode(const EcmaVM *vm, size_t id, size_t index, CString *name, No
     auto node = const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())
                     ->New<Node>(id, index, name, type, size, 0, NewAddress<TaggedObject>(entry), isLive);
     if (UNLIKELY(node == nullptr)) {
-        LOG_ECMA(FATAL) << "internal allocator failed";
+        LOG_FULL(FATAL) << "internal allocator failed";
         UNREACHABLE();
     }
     return node;
@@ -56,7 +56,7 @@ Edge *Edge::NewEdge(const EcmaVM *vm, uint64_t id, EdgeType type, Node *from, No
 {
     auto edge = const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())->New<Edge>(id, type, from, to, name);
     if (UNLIKELY(edge == nullptr)) {
-        LOG_ECMA(FATAL) << "internal allocator failed";
+        LOG_FULL(FATAL) << "internal allocator failed";
         UNREACHABLE();
     }
     return edge;
@@ -126,7 +126,7 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
 {
     CVector<HeapStat> statsBuffer;
     if (stream == nullptr) {
-        LOG(ERROR, DEBUGGER) << "HeapSnapshot::PushHeapStat::stream is nullptr";
+        LOG_DEBUGGER(ERROR) << "HeapSnapshot::PushHeapStat::stream is nullptr";
         return;
     }
     int32_t preChunkSize = stream->GetSize();
@@ -535,7 +535,7 @@ Node *HeapSnapshot::GenerateNode(JSTaggedValue entry, int sequenceId)
                 node = GenerateStringNode(entry, sequenceId);
             }
             if (node == nullptr) {
-                LOG(DEBUG, RUNTIME) << "string node nullptr";
+                LOG_ECMA(DEBUG) << "string node nullptr";
             }
             return node;
         }

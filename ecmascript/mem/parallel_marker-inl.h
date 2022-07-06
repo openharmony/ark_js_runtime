@@ -161,7 +161,7 @@ inline void MovableMarker::UpdateForwardAddressIfSuccess(uint32_t threadId, Tagg
 {
     if (memcpy_s(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
         size - HEAD_SIZE) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
     }
     workManager_->IncreaseAliveSize(threadId, size);
     if (isPromoted) {

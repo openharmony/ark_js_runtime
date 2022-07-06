@@ -82,11 +82,11 @@ void StubFileGenerator::RunAsmAssembler()
     auto currentOffset = modulePackage_[0].GetCodeSize();
     auto codeBuffer = modulePackage_[0].AllocaCodeSection(bufferSize, "asm code");
     if (codeBuffer == nullptr) {
-        LOG_ECMA(FATAL) << "AllocaCodeSection failed";
+        LOG_FULL(FATAL) << "AllocaCodeSection failed";
         return;
     }
     if (memcpy_s(codeBuffer, bufferSize, buffer, bufferSize) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         return;
     }
     asmModule_.SetCodeBufferOffset(currentOffset);

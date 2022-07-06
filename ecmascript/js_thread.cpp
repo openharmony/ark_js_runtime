@@ -163,7 +163,7 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 #endif
     });
 #if ECMASCRIPT_ENABLE_HANDLE_LEAK_CHECK
-    LOG(INFO, RUNTIME) << "Iterate root handle count:" << handleCount << ", global handle count:" << globalCount;
+    LOG_ECMA(INFO) << "Iterate root handle count:" << handleCount << ", global handle count:" << globalCount;
 #endif
 }
 
@@ -228,7 +228,7 @@ void JSThread::ShrinkHandleStorage(int prevIndex)
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
     if (memset_s(handleScopeStorageNext_, size, 0, size) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     for (int32_t i = currentHandleStorageIndex_ + 1; i < lastIndex; i++) {
@@ -236,7 +236,7 @@ void JSThread::ShrinkHandleStorage(int prevIndex)
                      NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
                      NODE_BLOCK_SIZE * sizeof(JSTaggedType)) !=
                      EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }
@@ -314,7 +314,7 @@ void JSThread::CheckJSTaggedType(JSTaggedType value) const
 {
     if (JSTaggedValue(value).IsHeapObject() &&
         !GetEcmaVM()->GetHeap()->IsAlive(reinterpret_cast<TaggedObject *>(value))) {
-        LOG(FATAL, RUNTIME) << "value:" << value << " is invalid!";
+        LOG_FULL(FATAL) << "value:" << value << " is invalid!";
     }
 }
 

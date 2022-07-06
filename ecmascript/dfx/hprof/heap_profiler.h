@@ -38,7 +38,7 @@ public:
         jsonSerializer_ =
             const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())->New<HeapSnapshotJSONSerializer>();
         if (UNLIKELY(jsonSerializer_ == nullptr)) {
-            LOG_ECMA(FATAL) << "alloc snapshot json serializer failed";
+            LOG_FULL(FATAL) << "alloc snapshot json serializer failed";
             UNREACHABLE();
         }
     }

@@ -17,6 +17,7 @@
 #define ECMASCRIPT_MEM_CHUNK_H
 
 #include "ecmascript/common.h"
+#include "ecmascript/log_wrapper.h"
 #include "ecmascript/mem/ecma_list.h"
 #include "ecmascript/mem/area.h"
 

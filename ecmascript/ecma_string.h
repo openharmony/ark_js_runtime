@@ -91,7 +91,7 @@ public:
 
     const uint16_t *GetDataUtf16() const
     {
-        LOG_IF(!IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf16 for utf8 string";
+        LOG_ECMA_IF(!IsUtf16(), FATAL) << "EcmaString: Read data as utf16 for utf8 string";
         return GetData();
     }
 
@@ -159,20 +159,20 @@ public:
         }
         if (!IsUtf16()) {
             if (length > std::numeric_limits<size_t>::max() / 2 - 1) {  // 2: half
-                LOG(FATAL, RUNTIME) << " length is higher than half of size_t::max";
+                LOG_FULL(FATAL) << " length is higher than half of size_t::max";
                 UNREACHABLE();
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             // Only memcpy_s maxLength number of chars into buffer if length > maxLength
             if (length > maxLength) {
                 if (memcpy_s(buf, maxLength, GetDataUtf8() + start, maxLength) != EOK) {
-                    LOG(FATAL, RUNTIME) << "memcpy_s failed when length > maxlength";
+                    LOG_FULL(FATAL) << "memcpy_s failed when length > maxlength";
                     UNREACHABLE();
                 }
                 return maxLength;
             }
             if (memcpy_s(buf, maxLength, GetDataUtf8() + start, length) != EOK) {
-                LOG(FATAL, RUNTIME) << "memcpy_s failed when length <= maxlength";
+                LOG_FULL(FATAL) << "memcpy_s failed when length <= maxlength";
                 UNREACHABLE();
             }
             return length;
@@ -201,7 +201,7 @@ public:
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(buf, ComputeDataSizeUtf16(maxLength), GetDataUtf16() + start, ComputeDataSizeUtf16(length)) !=
                 EOK) {
-                LOG(FATAL, RUNTIME) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             return length;
@@ -330,7 +330,7 @@ private:
 
     uint16_t *GetDataUtf16Writable()
     {
-        LOG_IF(!IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf16 for utf8 string";
+        LOG_ECMA_IF(!IsUtf16(), FATAL) << "EcmaString: Read data as utf16 for utf8 string";
         return GetData();
     }
 

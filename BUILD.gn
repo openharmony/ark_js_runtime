@@ -598,6 +598,11 @@ source_set("libark_jsruntime_set") {
       defines += [ "ENABLE_DUMP_IN_FAULTLOG" ]
       include_dirs += [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client" ]
     }
+    if (enable_hilog) {
+      defines += [ "ENABLE_HILOG" ]
+      include_dirs +=
+          [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
+    }
   }
 }
 
@@ -664,7 +669,8 @@ ohos_shared_library("libark_jsruntime") {
   }
 
   if (is_ohos && is_standard_system) {
-    if (enable_dump_in_faultlog || enable_bytrace || enable_hitrace) {
+    if (enable_dump_in_faultlog || enable_bytrace || enable_hitrace ||
+        enable_hilog) {
       external_deps = []
     }
     if (enable_dump_in_faultlog) {
@@ -675,6 +681,9 @@ ohos_shared_library("libark_jsruntime") {
     }
     if (enable_hitrace) {
       external_deps += [ "hitrace_native:libhitrace" ]
+    }
+    if (enable_hilog) {
+      external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
     }
   }
 

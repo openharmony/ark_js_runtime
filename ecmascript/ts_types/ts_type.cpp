@@ -43,7 +43,7 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
 
     uint32_t numOfProps = propType->NumberOfElements();
     if (numOfProps > PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES) {
-        LOG(ERROR, RUNTIME) << "TSobject type has too many keys and cannot create hclass";
+        LOG_ECMA(ERROR) << "TSobject type has too many keys and cannot create hclass";
         UNREACHABLE();
     }
 

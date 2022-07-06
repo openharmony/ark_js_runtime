@@ -48,7 +48,7 @@ namespace panda::ecmascript {
 MemMap MemMapAllocator::Allocate(size_t size, size_t alignment, bool isRegular)
 {
     if (UNLIKELY(memMapTotalSize_ + size > capacity_)) {
-        LOG(ERROR, RUNTIME) << "memory map overflow";
+        LOG_GC(ERROR) << "memory map overflow";
         return MemMap();
     }
     MemMap mem;
@@ -91,7 +91,7 @@ MemMap MemMapAllocator::PageMap(size_t size, size_t alignment)
 #else
     void *result = mmap(allocSize, -1, 0);
 #endif
-    LOG_IF(result == nullptr, FATAL, ECMASCRIPT);
+    LOG_ECMA_IF(result == nullptr, FATAL) << "mmap fail";
     auto alignResult = AlignUp(reinterpret_cast<uintptr_t>(result), alignment);
 #ifdef PANDA_TARGET_UNIX
     size_t leftSize = alignResult - reinterpret_cast<uintptr_t>(result);
@@ -118,7 +118,7 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
     int64_t size = 0;
     size_t bufferLength = sizeof(size);
     if (sysctl(mib, MIB_LENGTH, &size, &bufferLength, NULL, 0) != 0) {
-        LOG(FATAL, RUNTIME) << "sysctl error";
+        LOG_GC(FATAL) << "sysctl error";
     }
     size_t physSize = static_cast<size_t>(size);
 #else
@@ -134,6 +134,6 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
     } else if (capacity_ >= LOW_POOL_SIZE) {
         capacity_ = std::max<size_t>(capacity_, 128_MB);
     }
-    LOG(INFO, RUNTIME) << "Ark Auto adapter memory pool capacity:" << capacity_;
+    LOG_GC(INFO) << "Ark Auto adapter memory pool capacity:" << capacity_;
 }
 }  // namespace panda::ecmascript

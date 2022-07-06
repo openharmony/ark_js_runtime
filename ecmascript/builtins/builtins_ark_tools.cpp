@@ -27,7 +27,7 @@ JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *info)
 
     JSHandle<EcmaString> str = JSTaggedValue::ToString(thread, GetCallArg(info, 0));
     // The default log level of ace_engine and js_runtime is error
-    LOG(ERROR, RUNTIME) << ": " << base::StringHelper::ToStdString(*str);
+    LOG_ECMA(ERROR) << ": " << base::StringHelper::ToStdString(*str);
 
     uint32_t numArgs = info->GetArgsNumber();
     for (uint32_t i = 1; i < numArgs; i++) {
@@ -36,7 +36,7 @@ JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *info)
         obj->Dump(oss);
 
         // The default log level of ace_engine and js_runtime is error
-        LOG(ERROR, RUNTIME) << ": " << oss.str();
+        LOG_ECMA(ERROR) << ": " << oss.str();
     }
 
     return JSTaggedValue::Undefined();
@@ -56,7 +56,7 @@ JSTaggedValue BuiltinsArkTools::CompareHClass(EcmaRuntimeCallInfo *info)
     obj1Hclass->Dump(oss);
     bool res = (obj1Hclass == obj2Hclass);
     if (!res) {
-        LOG(ERROR, RUNTIME) << "These two object don't share the same hclass:" << oss.str();
+        LOG_ECMA(ERROR) << "These two object don't share the same hclass:" << oss.str();
     }
     return JSTaggedValue(res);
 }
@@ -72,7 +72,7 @@ JSTaggedValue BuiltinsArkTools::DumpHClass(EcmaRuntimeCallInfo *info)
     std::ostringstream oss;
     objHclass->Dump(oss);
 
-    LOG(ERROR, RUNTIME) << "hclass:" << oss.str();
+    LOG_ECMA(ERROR) << "hclass:" << oss.str();
     return JSTaggedValue::Undefined();
 }
 

@@ -17,7 +17,6 @@
 
 #include "ecmascript/tooling/backend/debugger_api.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 void DebuggerExecutor::Initialize(const EcmaVM *vm)

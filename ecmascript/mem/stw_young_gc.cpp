@@ -42,7 +42,7 @@ void STWYoungGC::RunPhases()
 
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::RunPhases");
     if (heap_->CheckOngoingConcurrentMarking()) {
-        ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
+        LOG_GC(DEBUG) << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
     Initialize();
@@ -51,7 +51,7 @@ void STWYoungGC::RunPhases()
     Finish();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticSTWYoungGC(clockScope.GetPauseTime(), semiCopiedSize_,
                                                               promotedSize_, commitSize_);
-    ECMA_GC_LOG() << "STWYoungGC::RunPhases " << clockScope.TotalSpentTime();
+    LOG_GC(DEBUG) << "STWYoungGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
 void STWYoungGC::Initialize()

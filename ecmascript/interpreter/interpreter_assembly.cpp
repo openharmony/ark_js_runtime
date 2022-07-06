@@ -48,7 +48,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define LOG_INST() LOG(DEBUG, INTERPRETER) << ": "
+#define LOG_INST() LOG_INTERPRETER(DEBUG)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ADVANCE_PC(offset) \
@@ -563,7 +563,7 @@ void InterpreterAssembly::HandleReturnDyn(
 {
     LOG_INST() << "returnla ";
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
-    LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+    LOG_INST() << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
@@ -591,7 +591,7 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
 {
     LOG_INST() << "return.undefined";
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
-    LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+    LOG_INST() << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
@@ -1999,7 +1999,7 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
-    LOG(DEBUG, INTERPRETER) << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
+    LOG_INST() << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     sp = state->base.prev;
     ASSERT(sp != nullptr);
@@ -3499,7 +3499,7 @@ void InterpreterAssembly::HandleOverflow(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    LOG(FATAL, INTERPRETER) << "opcode overflow";
+    LOG_INTERPRETER(FATAL) << "opcode overflow";
 }
 
 uint32_t InterpreterAssembly::FindCatchBlock(JSMethod *caller, uint32_t pc)

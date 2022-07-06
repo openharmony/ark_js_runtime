@@ -25,10 +25,9 @@
 #include "ecmascript/ecma_param_configuration.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/mem/mem.h"
-#include "libpandabase/utils/logger.h"
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage, bugprone-lambda-function-name)
-#define LOG_ECMA_MEM(type) LOG(type, ECMASCRIPT) << __func__ << " Line:" << __LINE__ << " "
+#define LOG_ECMA_MEM(level) LOG_GC(level) << __func__ << ":" << __LINE__ << " "
 
 namespace panda::ecmascript {
 enum class MemAlignment : uint8_t {

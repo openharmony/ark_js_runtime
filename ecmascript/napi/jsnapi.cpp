@@ -169,7 +169,7 @@ EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
     }
     auto config = ecmascript::EcmaParamConfiguration(options.IsWorker(),
         MemMapAllocator::GetInstance()->GetCapacity());
-    LOG(INFO, RUNTIME) << "CreateEcmaVM: isWorker = " << options.IsWorker() << ", vmCount = " << vmCount_;
+    LOG_ECMA(INFO) << "CreateEcmaVM: isWorker = " << options.IsWorker() << ", vmCount = " << vmCount_;
     MemMapAllocator::GetInstance()->IncreaseAndCheckReserved(config.GetMaxHeapSize());
     return EcmaVM::Create(options, config);
 }
@@ -233,7 +233,7 @@ bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode
 
     auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StartDebug");
     if (!sym) {
-        LOG(ERROR, RUNTIME) << sym.Error().ToString();
+        LOG_ECMA(ERROR) << sym.Error().ToString();
         return false;
     }
 
@@ -257,7 +257,7 @@ bool JSNApi::StopDebugger(EcmaVM *vm)
 
     auto sym = panda::os::library_loader::ResolveSymbol(handle, "StopDebug");
     if (!sym) {
-        LOG(ERROR, RUNTIME) << sym.Error().ToString();
+        LOG_ECMA(ERROR) << sym.Error().ToString();
         return false;
     }
 
@@ -359,7 +359,7 @@ uintptr_t JSNApi::ClearWeak(const EcmaVM *vm, uintptr_t localAddress)
     }
     if (JSTaggedValue(reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(localAddress)->GetObject())
         .IsUndefined()) {
-        LOG(ERROR, RUNTIME) << "The object of weak reference has been recycled!";
+        LOG_ECMA(ERROR) << "The object of weak reference has been recycled!";
         return 0;
     }
     return vm->GetJSThread()->GetEcmaGlobalStorage()->ClearWeak(localAddress);
@@ -1514,7 +1514,7 @@ double DateRef::GetTime()
 {
     JSHandle<JSDate> date(JSNApiHelper::ToJSHandle(this));
     if (!date->IsDate()) {
-        LOG(ERROR, RUNTIME) << "Not a Date Object";
+        LOG_ECMA(ERROR) << "Not a Date Object";
     }
     return date->GetTime().GetDouble();
 }

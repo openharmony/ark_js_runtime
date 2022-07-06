@@ -43,7 +43,7 @@ void SlowPathLowering::CallRuntimeLowering()
     }
 
     if (IsLogEnabled()) {
-        COMPILER_LOG(INFO) << "=========================================================";
+        LOG_COMPILER(INFO) << "=========================================================";
         circuit_->PrintAllGates(*bcBuilder_);
     }
 }

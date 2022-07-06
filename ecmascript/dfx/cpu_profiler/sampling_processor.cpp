@@ -46,16 +46,16 @@ bool SamplingProcessor::Run([[maybe_unused]] uint32_t threadIndex)
         if (!SamplesRecord::staticGcState_) {
             thread->SetGetStackSignal(true);
             if (sem_wait(&CpuProfiler::sem_[0]) != 0) {
-                LOG(ERROR, RUNTIME) << "sem_[0] wait failed";
+                LOG_ECMA(ERROR) << "sem_[0] wait failed";
             }
         }
 #else
         if (pthread_kill(pid_, SIGINT) != 0) {
-            LOG(ERROR, RUNTIME) << "pthread_kill signal failed";
+            LOG_ECMA(ERROR) << "pthread_kill signal failed";
             return false;
         }
         if (sem_wait(&CpuProfiler::sem_[0]) != 0) {
-            LOG(ERROR, RUNTIME) << "sem_[0] wait failed";
+            LOG_ECMA(ERROR) << "sem_[0] wait failed";
             return false;
         }
 #endif
@@ -82,7 +82,7 @@ bool SamplingProcessor::Run([[maybe_unused]] uint32_t threadIndex)
     uint64_t stopTime = GetMicrosecondsTimeStamp();
     generator_->SetThreadStopTime(stopTime);
     if (sem_post(&CpuProfiler::sem_[1]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[1] post failed";
+        LOG_ECMA(ERROR) << "sem_[1] post failed";
         return false;
     }
     return true;

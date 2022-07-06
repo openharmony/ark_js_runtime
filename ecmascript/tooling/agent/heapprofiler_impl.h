@@ -27,7 +27,6 @@
 #include "ecmascript/tooling/protocol_handler.h"
 #include "ecmascript/tooling/protocol_channel.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
-#include "libpandabase/utils/logger.h"
 
 static const double INTERVAL = 0.05;
 

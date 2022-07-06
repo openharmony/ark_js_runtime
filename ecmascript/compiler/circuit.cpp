@@ -62,7 +62,7 @@ GateRef Circuit::NewGate(OpCode opcode, MachineType bitValue, BitField bitfield,
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
-        COMPILER_LOG(ERROR) << "Invalid input list!"
+        LOG_COMPILER(ERROR) << "Invalid input list!"
                             << " op=" << opcode.Str() << " bitfield=" << bitfield
                             << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns;
         UNREACHABLE();
@@ -92,7 +92,7 @@ GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const 
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
-        COMPILER_LOG(ERROR) << "Invalid input list!"
+        LOG_COMPILER(ERROR) << "Invalid input list!"
                             << " op=" << opcode.Str() << " bitfield=" << bitfield
                             << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns;
         UNREACHABLE();

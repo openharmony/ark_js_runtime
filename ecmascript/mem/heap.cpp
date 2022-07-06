@@ -96,7 +96,7 @@ void Heap::Initialize()
     maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
         maxEvacuateTaskCount_ - 1);
 
-    LOG(INFO, RUNTIME) << "heap initialize: heap size = " << maxHeapSize
+    LOG_GC(INFO) << "heap initialize: heap size = " << maxHeapSize
         << ", semispace capacity = " << minSemiSpaceCapacity
         << ", nonmovablespace capacity = " << nonmovableSpaceCapacity
         << ", snapshotspace capacity = " << snapshotSpaceCapacity
@@ -305,7 +305,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     sweeper_->EnsureAllTaskFinished();
     auto failCount = Verification(this).VerifyAll();
     if (failCount > 0) {
-        LOG(FATAL, GC) << "Before gc heap corrupted and " << failCount << " corruptions";
+        LOG_GC(FATAL) << "Before gc heap corrupted and " << failCount << " corruptions";
     }
     isVerifying_ = false;
 #endif
@@ -318,8 +318,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
     size_t originalNewSpaceSize = activeSemiSpace_->GetHeapObjectSize();
     memController_->StartCalculationBeforeGC();
-    LOG(INFO, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType;
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << " global CommittedSize " << GetCommittedSize()
+    LOG_GC(INFO) << "Heap::CollectGarbage, gcType = " << gcType;
+    OPTIONAL_LOG(ecmaVm_, ERROR) << " global CommittedSize " << GetCommittedSize()
                                              << " global limit " << globalSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::YOUNG_GC:
@@ -367,7 +367,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         // Only when the gc type is not semiGC and after the old space sweeping has been finished,
         // the limits of old space and global space can be recomputed.
         RecomputeLimits();
-        OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << " GC after: is full mark" << IsFullMark()
+        OPTIONAL_LOG(ecmaVm_, ERROR) << " GC after: is full mark" << IsFullMark()
                                                  << " global CommittedSize " << GetCommittedSize()
                                                  << " global limit " << globalSpaceAllocLimit_;
         markType_ = MarkType::MARK_YOUNG;
@@ -386,7 +386,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     sweeper_->EnsureAllTaskFinished();
     failCount = Verification(this).VerifyAll();
     if (failCount > 0) {
-        LOG(FATAL, GC) << "After gc heap corrupted and " << failCount << " corruptions";
+        LOG_GC(FATAL) << "After gc heap corrupted and " << failCount << " corruptions";
     }
     isVerifying_ = false;
 #endif
@@ -453,7 +453,7 @@ void Heap::AdjustOldSpaceLimit()
     if (newGlobalSpaceAllocLimit < globalSpaceAllocLimit_) {
         globalSpaceAllocLimit_ = newGlobalSpaceAllocLimit;
     }
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "AdjustOldSpaceLimit oldSpaceAllocLimit_" << oldSpaceAllocLimit
+    OPTIONAL_LOG(ecmaVm_, ERROR) << "AdjustOldSpaceLimit oldSpaceAllocLimit_" << oldSpaceAllocLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
@@ -493,7 +493,7 @@ void Heap::RecomputeLimits()
                                                                    maxGlobalSize, newSpaceCapacity, growingFactor);
     globalSpaceAllocLimit_ = newGlobalSpaceLimit;
     oldSpace_->SetInitialCapacity(newOldSpaceLimit);
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "RecomputeLimits oldSpaceAllocLimit_" << newOldSpaceLimit
+    OPTIONAL_LOG(ecmaVm_, ERROR) << "RecomputeLimits oldSpaceAllocLimit_" << newOldSpaceLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
@@ -514,7 +514,7 @@ bool Heap::CheckOngoingConcurrentMarking()
             GetNonMovableMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
             WaitConcurrentMarkingFinished();
             ecmaVm_->GetEcmaGCStats()->StatisticConcurrentMarkWait(clockScope.GetPauseTime());
-            ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
+            LOG_GC(DEBUG) << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
         }
         memController_->RecordAfterConcurrentMark(IsFullMark(), concurrentMarker_);
         return true;
@@ -546,7 +546,7 @@ void Heap::TryTriggerConcurrentMarking()
     if (oldSpaceConcurrentMarkSpeed == 0 || oldSpaceAllocSpeed == 0) {
         if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit ||  globalHeapObjectSize >= globalSpaceAllocLimit_) {
             markType_ = MarkType::MARK_FULL;
-            OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first full mark";
+            OPTIONAL_LOG(ecmaVm_, ERROR) << "Trigger the first full mark";
             TriggerConcurrentMarking();
             return;
         }
@@ -571,7 +571,7 @@ void Heap::TryTriggerConcurrentMarking()
         if (activeSemiSpace_->GetCommittedSize() >= config.GetSemiSpaceTriggerConcurrentMark()) {
             markType_ = MarkType::MARK_YOUNG;
             TriggerConcurrentMarking();
-            OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first semi mark" << fullGCRequested_;
+            OPTIONAL_LOG(ecmaVm_, ERROR) << "Trigger the first semi mark" << fullGCRequested_;
         }
         return;
     }
@@ -586,18 +586,18 @@ void Heap::TryTriggerConcurrentMarking()
             && oldSpaceMarkDuration < oldSpaceAllocToLimitDuration) {
             markType_ = MarkType::MARK_FULL;
             TriggerConcurrentMarking();
-            OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger full mark by speed";
+            OPTIONAL_LOG(ecmaVm_, ERROR) << "Trigger full mark by speed";
         } else {
             if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit || globalHeapObjectSize >= globalSpaceAllocLimit_) {
                 markType_ = MarkType::MARK_FULL;
                 TriggerConcurrentMarking();
-                OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger full mark by limit";
+                OPTIONAL_LOG(ecmaVm_, ERROR) << "Trigger full mark by limit";
             }
         }
     } else if (newSpaceRemainSize < DEFAULT_REGION_SIZE) {
         markType_ = MarkType::MARK_YOUNG;
         TriggerConcurrentMarking();
-        OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger semi mark";
+        OPTIONAL_LOG(ecmaVm_, ERROR) << "Trigger semi mark";
     }
 }
 
@@ -620,13 +620,13 @@ void Heap::UpdateDerivedObjectInStack()
             uintptr_t baseOldObject = derived.second;
             uintptr_t *derivedAddr = reinterpret_cast<uintptr_t *>(derived.first.second);
 #ifndef NDEBUG
-            LOG_ECMA(DEBUG) << std::hex << "fix base before:" << baseAddr << " base old Value: " << baseOldObject <<
+            LOG_GC(DEBUG) << std::hex << "fix base before:" << baseAddr << " base old Value: " << baseOldObject <<
                 " derived:" << derivedAddr << " old Value: " << *derivedAddr << std::endl;
 #endif
             // derived is always bigger than base
             *derivedAddr = reinterpret_cast<uintptr_t>(base.GetTaggedObject()) + (*derivedAddr - baseOldObject);
 #ifndef NDEBUG
-            LOG_ECMA(DEBUG) << std::hex << "fix base after:" << baseAddr <<
+            LOG_GC(DEBUG) << std::hex << "fix base after:" << baseAddr <<
                 " base New Value: " << base.GetTaggedObject() <<
                 " derived:" << derivedAddr << " New Value: " << *derivedAddr << std::endl;
 #endif
@@ -671,20 +671,20 @@ void Heap::IncreaseTaskCount()
 void Heap::ChangeGCParams(bool inBackground)
 {
     if (inBackground) {
-        LOG(INFO, RUNTIME) << "app is inBackground";
+        LOG_GC(INFO) << "app is inBackground";
         if (GetMemGrowingType() != MemGrowingType::PRESSURE) {
             SetMemGrowingType(MemGrowingType::CONSERVATIVE);
-            LOG(INFO, RUNTIME) << "Heap Growing Type CONSERVATIVE";
+            LOG_GC(INFO) << "Heap Growing Type CONSERVATIVE";
         }
         concurrentMarker_->EnableConcurrentMarking(EnableConcurrentMarkType::DISABLE);
         sweeper_->EnableConcurrentSweep(EnableConcurrentSweepType::DISABLE);
         maxMarkTaskCount_ = 1;
         maxEvacuateTaskCount_ = 1;
     } else {
-        LOG(INFO, RUNTIME) << "app is not inBackground";
+        LOG_GC(INFO) << "app is not inBackground";
         if (GetMemGrowingType() != MemGrowingType::PRESSURE) {
             SetMemGrowingType(MemGrowingType::HIGH_THROUGHPUT);
-            LOG(INFO, RUNTIME) << "Heap Growing Type HIGH_THROUGHPUT";
+            LOG_GC(INFO) << "Heap Growing Type HIGH_THROUGHPUT";
         }
         concurrentMarker_->EnableConcurrentMarking(EnableConcurrentMarkType::ENABLE);
         sweeper_->EnableConcurrentSweep(EnableConcurrentSweepType::ENABLE);
@@ -697,10 +697,10 @@ void Heap::ChangeGCParams(bool inBackground)
 void Heap::NotifyMemoryPressure(bool inHighMemoryPressure)
 {
     if (inHighMemoryPressure) {
-        LOG(INFO, RUNTIME) << "app is inHighMemoryPressure";
+        LOG_GC(INFO) << "app is inHighMemoryPressure";
         SetMemGrowingType(MemGrowingType::PRESSURE);
     } else {
-        LOG(INFO, RUNTIME) << "app is not inHighMemoryPressure";
+        LOG_GC(INFO) << "app is not inHighMemoryPressure";
         SetMemGrowingType(MemGrowingType::CONSERVATIVE);
     }
 }
@@ -771,14 +771,14 @@ size_t Heap::GetArrayBufferSize() const
 bool Heap::IsAlive(TaggedObject *object) const
 {
     if (!ContainObject(object)) {
-        LOG(ERROR, RUNTIME) << "The region is already free";
+        LOG_GC(ERROR) << "The region is already free";
         return false;
     }
 
     bool isFree = object->GetClass() != nullptr && FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
     if (isFree) {
         Region *region = Region::ObjectAddressToRange(object);
-        LOG(ERROR, RUNTIME) << "The object " << object << " in "
+        LOG_GC(ERROR) << "The object " << object << " in "
                             << region->GetSpaceTypeName()
                             << " already free";
     }

@@ -36,9 +36,9 @@ bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progr
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(vm_);
     ASSERT(heapClean);
-    LOG(INFO, RUNTIME) << "HeapProfiler DumpSnapshot start";
+    LOG_ECMA(INFO) << "HeapProfiler DumpSnapshot start";
     size_t heapSize = vm_->GetHeap()->GetHeapObjectSize();
-    LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
+    LOG_ECMA(ERROR) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     int32_t heapCount = vm_->GetHeap()->GetHeapObjectCount();
     if (progress != nullptr) {
         progress->ReportProgress(0, heapCount);
@@ -121,7 +121,7 @@ CString HeapProfiler::GetTimeStamp()
     };
     struct tm *timeData = localtime_r(&timeSource, &tm);
     if (timeData == nullptr) {
-        LOG_ECMA(FATAL) << "localtime_r failed";
+        LOG_FULL(FATAL) << "localtime_r failed";
         UNREACHABLE();
     }
     CString stamp;
@@ -152,7 +152,7 @@ bool HeapProfiler::ForceFullGC(const EcmaVM *vm)
 
 HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMode, bool isPrivate)
 {
-    LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapshot";
+    LOG_ECMA(ERROR) << "HeapProfiler::MakeHeapSnapshot";
     DISALLOW_GARBAGE_COLLECTION;
     const_cast<Heap *>(vm_->GetHeap())->Prepare();
     switch (sampleType) {
@@ -160,7 +160,7 @@ HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMod
             auto *snapshot = const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())
                                 ->New<HeapSnapshot>(vm_, isVmMode, isPrivate);
             if (snapshot == nullptr) {
-                LOG_ECMA(FATAL) << "alloc snapshot failed";
+                LOG_FULL(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
             }
             snapshot->BuildUp();
@@ -171,7 +171,7 @@ HeapSnapshot *HeapProfiler::MakeHeapSnapshot(SampleType sampleType, bool isVmMod
             auto *snapshot = const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())
                                 ->New<HeapSnapshot>(vm_, isVmMode, isPrivate);
             if (snapshot == nullptr) {
-                LOG_ECMA(FATAL) << "alloc snapshot failed";
+                LOG_FULL(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
             }
             AddSnapshot(snapshot);

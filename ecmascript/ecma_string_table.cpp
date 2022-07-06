@@ -163,13 +163,13 @@ void EcmaStringTable::SweepWeakReference(const WeakRootVisitor &visitor)
         auto *object = it->second;
         auto fwd = visitor(object);
         if (fwd == nullptr) {
-            LOG(DEBUG, GC) << "StringTable: delete string " << std::hex << object
+            LOG_ECMA(DEBUG) << "StringTable: delete string " << std::hex << object
                            << ", val = " << ConvertToString(object);
             table_.erase(it++);
         } else if (fwd != object) {
             it->second = static_cast<EcmaString *>(fwd);
             ++it;
-            LOG(DEBUG, GC) << "StringTable: forward " << std::hex << object << " -> " << fwd;
+            LOG_ECMA(DEBUG) << "StringTable: forward " << std::hex << object << " -> " << fwd;
         } else {
             ++it;
         }

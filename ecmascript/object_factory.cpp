@@ -293,7 +293,7 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
         auto *pointer = JSNativePointer::Cast(data.GetTaggedObject());
         auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length * sizeof(uint8_t));
         if (memset_s(newData, length, 0, length) != EOK) {
-            LOG_ECMA(FATAL) << "memset_s failed";
+            LOG_FULL(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
         pointer->ResetExternalPointer(newData);
@@ -302,7 +302,7 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
 
     auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length * sizeof(uint8_t));
     if (memset_s(newData, length, 0, length) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
     JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
@@ -318,7 +318,7 @@ void ObjectFactory::NewJSSharedArrayBufferData(const JSHandle<JSArrayBuffer> &ar
     void *newData = nullptr;
     JSSharedMemoryManager::GetInstance()->CreateOrLoad(&newData, length);
     if (memset_s(newData, length, 0, length) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
     JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, JSSharedMemoryManager::RemoveSharedMemory,
@@ -337,7 +337,7 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
     if (length > 0) {
         auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length);
         if (memset_s(newData, length, 0, length) != EOK) {
-            LOG_ECMA(FATAL) << "memset_s failed";
+            LOG_FULL(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
         JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
@@ -426,7 +426,7 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
 
     auto newBuffer = vm_->GetNativeAreaAllocator()->AllocateBuffer(size);
     if (memcpy_s(newBuffer, size, buffer, size) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     JSTaggedValue data = regexp->GetByteCodeBuffer();
@@ -2772,7 +2772,7 @@ JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const u
         thread_->GlobalConstants()->GetMachineCodeClass().GetTaggedObject()), length + MachineCode::SIZE);
     MachineCode *code = MachineCode::Cast(obj);
     if (code == nullptr) {
-        LOG_ECMA(FATAL) << "machine code cast failed";
+        LOG_FULL(FATAL) << "machine code cast failed";
         UNREACHABLE();
     }
     code->SetInstructionSizeInBytes(static_cast<uint32_t>(length));

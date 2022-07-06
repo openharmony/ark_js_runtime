@@ -126,7 +126,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options, EcmaParamConfiguration config)
 
 bool EcmaVM::Initialize()
 {
-    LOG(INFO, RUNTIME) << "EcmaVM Initialize";
+    LOG_ECMA(INFO) << "EcmaVM Initialize";
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "EcmaVM::Initialize");
     Taskpool::GetCurrentTaskpool()->Initialize();
 #ifndef PANDA_TARGET_WINDOWS
@@ -139,7 +139,7 @@ bool EcmaVM::Initialize()
     gcStats_ = chunk_.New<GCStats>(heap_, options_.GetLongPauseTime());
     factory_ = chunk_.New<ObjectFactory>(thread_, heap_, &chunk_);
     if (UNLIKELY(factory_ == nullptr)) {
-        LOG_ECMA(FATAL) << "alloc factory_ failed";
+        LOG_FULL(FATAL) << "alloc factory_ failed";
         UNREACHABLE();
     }
     [[maybe_unused]] EcmaHandleScope scope(thread_);
@@ -223,7 +223,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
                   "Invalid runtime caller number");
     runtimeStat_ = chunk_.New<EcmaRuntimeStat>(runtimeCallerNames, ecmascript::RUNTIME_CALLER_NUMBER);
     if (UNLIKELY(runtimeStat_ == nullptr)) {
-        LOG_ECMA(FATAL) << "alloc runtimeStat_ failed";
+        LOG_FULL(FATAL) << "alloc runtimeStat_ failed";
         UNREACHABLE();
     }
 }
@@ -237,7 +237,7 @@ void EcmaVM::SetRuntimeStatEnable(bool flag)
             InitializeEcmaScriptRunStat();
         }
     } else {
-        LOG(INFO, RUNTIME) << "Runtime State duration:" << PandaRuntimeTimer::Now() - start << "(ns)";
+        LOG_ECMA(INFO) << "Runtime State duration:" << PandaRuntimeTimer::Now() - start << "(ns)";
         if (runtimeStat_->IsRuntimeStatEnabled()) {
             runtimeStat_->Print();
             runtimeStat_->ResetAllCount();
@@ -254,7 +254,7 @@ bool EcmaVM::InitializeFinish()
 
 EcmaVM::~EcmaVM()
 {
-    LOG(INFO, RUNTIME) << "Destruct ecma_vm, vm address is: " << this;
+    LOG_ECMA(INFO) << "Destruct ecma_vm, vm address is: " << this;
     vmInitialized_ = false;
     Taskpool::GetCurrentTaskpool()->Destroy();
 
@@ -459,7 +459,7 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPanda
                                             JSHandle<JSTaggedValue>(func),
                                             global, undefined, 5); // 5 : argument numbers
     if (info == nullptr) {
-        LOG(ERROR, RUNTIME) << "CJSExecution Stack overflow!";
+        LOG_ECMA(ERROR) << "CJSExecution Stack overflow!";
         return;
     }
     info->SetCallArg(cjsInfo.exportsHdl.GetTaggedValue(),
@@ -518,14 +518,14 @@ void EcmaVM::HandleUncaughtException(TaggedObject *exception)
         PrintJSErrorInfo(exceptionHandle);
         if (thread_->IsPrintBCOffset() && exceptionBCList_.size() != 0) {
             for (auto info : exceptionBCList_) {
-                LOG(ERROR, RUNTIME) << "Exception at function " << info.first << ": " << info.second;
+                LOG_ECMA(ERROR) << "Exception at function " << info.first << ": " << info.second;
             }
         }
         return;
     }
     JSHandle<EcmaString> result = JSTaggedValue::ToString(thread_, exceptionHandle);
     CString string = ConvertToString(*result);
-    LOG(ERROR, RUNTIME) << string;
+    LOG_ECMA(ERROR) << string;
 }
 
 void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)
@@ -540,7 +540,7 @@ void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)
     CString nameBuffer = ConvertToString(*name);
     CString msgBuffer = ConvertToString(*msg);
     CString stackBuffer = ConvertToString(*stack);
-    LOG(ERROR, RUNTIME) << nameBuffer << ": " << msgBuffer << "\n" << stackBuffer;
+    LOG_ECMA(ERROR) << nameBuffer << ": " << msgBuffer << "\n" << stackBuffer;
 }
 
 void EcmaVM::ProcessNativeDelete(const WeakRootVisitor &v0)
@@ -623,7 +623,7 @@ void EcmaVM::ClearBufferData()
 bool EcmaVM::ExecutePromisePendingJob()
 {
     if (isProcessingPendingJob_) {
-        LOG(ERROR, RUNTIME) << "EcmaVM::ExecutePromisePendingJob can not reentrant";
+        LOG_ECMA(ERROR) << "EcmaVM::ExecutePromisePendingJob can not reentrant";
         return false;
     }
     if (!thread_->HasPendingException()) {
@@ -689,7 +689,7 @@ void EcmaVM::LoadStubFile()
 void EcmaVM::LoadAOTFiles()
 {
     std::string file = options_.GetAOTOutputFile();
-    LOG(INFO, RUNTIME) << "Try to load aot file" << file.c_str();
+    LOG_ECMA(INFO) << "Try to load aot file" << file.c_str();
     fileLoader_->LoadAOTFile(file);
     fileLoader_->TryLoadSnapshotFile();
 }

@@ -44,7 +44,7 @@ Area *NativeAreaAllocator::AllocateArea(size_t capacity)
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(mem, capacity, 0, capacity) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif
@@ -68,7 +68,7 @@ void NativeAreaAllocator::FreeArea(Area *area)
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(area, size, INVALID_VALUE, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif
@@ -84,7 +84,7 @@ void NativeAreaAllocator::Free(void *mem, size_t size)
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(mem, size, INVALID_VALUE, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif
@@ -107,7 +107,7 @@ void *NativeAreaAllocator::AllocateBuffer(size_t size)
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(ptr, size, INVALID_VALUE, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif
@@ -130,7 +130,7 @@ void NativeAreaAllocator::FreeBuffer(void *mem)
 
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(mem, size, INVALID_VALUE, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
+        LOG_FULL(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
 #endif

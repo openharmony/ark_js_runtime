@@ -31,13 +31,13 @@ void VerifyObjectVisitor::VisitAllObjects(TaggedObject *obj)
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsWeak()) {
                     if (!heap_->IsAlive(value.GetTaggedWeakRef())) {
-                        LOG(ERROR, RUNTIME) << "Heap verify detected a dead weak object " << value.GetTaggedObject()
+                        LOG_GC(ERROR) << "Heap verify detected a dead weak object " << value.GetTaggedObject()
                                             << " at object:" << slot.SlotAddress();
                         ++(*failCount_);
                     }
                 } else if (value.IsHeapObject()) {
                     if (!heap_->IsAlive(value.GetTaggedObject())) {
-                        LOG(ERROR, RUNTIME) << "Heap verify detected a dead object at " << value.GetTaggedObject()
+                        LOG_GC(ERROR) << "Heap verify detected a dead object at " << value.GetTaggedObject()
                                             << " at object:" << slot.SlotAddress();
                         ++(*failCount_);
                     }
@@ -69,7 +69,7 @@ size_t Verification::VerifyRoot() const
     };
     objXRay_.VisitVMRoots(visit1, visit2);
     if (failCount > 0) {
-        LOG(ERROR, RUNTIME) << "VerifyRoot detects deadObject count is " << failCount;
+        LOG_GC(ERROR) << "VerifyRoot detects deadObject count is " << failCount;
     }
 
     return failCount;
@@ -79,7 +79,7 @@ size_t Verification::VerifyHeap() const
 {
     size_t failCount = heap_->VerifyHeapObjects();
     if (failCount > 0) {
-        LOG(ERROR, RUNTIME) << "VerifyHeap detects deadObject count is " << failCount;
+        LOG_GC(ERROR) << "VerifyHeap detects deadObject count is " << failCount;
     }
     return failCount;
 }

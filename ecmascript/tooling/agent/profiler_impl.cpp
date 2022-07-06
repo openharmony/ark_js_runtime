@@ -18,7 +18,6 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/protocol_channel.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -39,7 +38,7 @@ void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     };
 
     const std::string &method = request.GetMethod();
-    LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to ProfilerImpl";
+    LOG_DEBUGGER(DEBUG) << "dispatch [" << method << "] to ProfilerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
@@ -192,7 +191,7 @@ DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> *profile)
 {
     auto profileInfo = panda::DFXJSNApi::StopCpuProfilerForInfo();
     if (profileInfo == nullptr) {
-        LOG(ERROR, DEBUGGER) << "Transfer DFXJSNApi::StopCpuProfilerImpl is failure";
+        LOG_DEBUGGER(ERROR) << "Transfer DFXJSNApi::StopCpuProfilerImpl is failure";
         return DispatchResponse::Fail("Stop is failure");
     }
     *profile = Profile::FromProfileInfo(*profileInfo);
