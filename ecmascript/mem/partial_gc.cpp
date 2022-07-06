@@ -41,21 +41,21 @@ void PartialGC::RunPhases()
 
     markingInProgress_ = heap_->CheckOngoingConcurrentMarking();
 
-    ECMA_GC_LOG() << "markingInProgress_" << markingInProgress_;
+    LOG_GC(DEBUG) << "markingInProgress_" << markingInProgress_;
     Initialize();
     Mark();
     Sweep();
     Evacuate();
     Finish();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticPartialGC(markingInProgress_, clockScope.GetPauseTime(), freeSize_);
-    ECMA_GC_LOG() << "PartialGC::RunPhases " << clockScope.TotalSpentTime();
+    LOG_GC(DEBUG) << "PartialGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
 void PartialGC::Initialize()
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Initialize");
     if (!markingInProgress_) {
-        LOG(INFO, RUNTIME) << "No ongoing Concurrent marking. Initializing...";
+        LOG_GC(INFO) << "No ongoing Concurrent marking. Initializing...";
         heap_->Prepare();
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();

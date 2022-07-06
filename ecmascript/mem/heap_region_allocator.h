@@ -19,7 +19,6 @@
 #include <atomic>
 
 #include "ecmascript/mem/mem.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 class JSThread;

@@ -36,18 +36,18 @@ void BlockSignals()
 #if defined(PANDA_TARGET_UNIX)
     sigset_t set;
     if (sigemptyset(&set) == -1) {
-        COMPILER_LOG(ERROR) << "sigemptyset failed";
+        LOG_COMPILER(ERROR) << "sigemptyset failed";
         return;
     }
     int rc = 0;
 
     if (rc < 0) {
-        COMPILER_LOG(ERROR) << "sigaddset failed";
+        LOG_COMPILER(ERROR) << "sigaddset failed";
         return;
     }
 
     if (panda::os::native_stack::g_PandaThreadSigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        COMPILER_LOG(ERROR) << "g_PandaThreadSigmask failed";
+        LOG_COMPILER(ERROR) << "g_PandaThreadSigmask failed";
     }
 #endif  // PANDA_TARGET_UNIX
 }
@@ -99,13 +99,13 @@ int Main(const int argc, const char **argv)
     arg_list_t arguments = paParser.GetRemainder();
 
     if (runtimeOptions.IsStartupTime()) {
-        COMPILER_LOG(DEBUG) << "Startup start time: " << startTime;
+        LOG_COMPILER(DEBUG) << "Startup start time: " << startTime;
     }
 
     bool ret = true;
     EcmaVM *vm = JSNApi::CreateEcmaVM(runtimeOptions);
     if (vm == nullptr) {
-        COMPILER_LOG(ERROR) << "Cannot Create vm";
+        LOG_COMPILER(ERROR) << "Cannot Create vm";
         return -1;
     }
 
@@ -125,7 +125,7 @@ int Main(const int argc, const char **argv)
         AOTFileGenerator generator(&log, vm);
         PassManager passManager(vm, entry, triple, optLevel, &log);
         for (const auto &fileName : pandaFileNames) {
-            COMPILER_LOG(INFO) << "AOT start to execute ark file: " << fileName;
+            LOG_COMPILER(INFO) << "AOT start to execute ark file: " << fileName;
             if (passManager.Compile(fileName, generator) == false) {
                 ret = false;
                 break;
@@ -144,6 +144,6 @@ int Main(const int argc, const char **argv)
 int main(const int argc, const char **argv)
 {
     auto result = panda::ecmascript::kungfu::Main(argc, argv);
-    COMPILER_LOG(INFO) << (result == 0 ? "ts aot compile success" : "ts aot compile failed");
+    LOG_COMPILER(INFO) << (result == 0 ? "ts aot compile success" : "ts aot compile failed");
     return result;
 }

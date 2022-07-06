@@ -94,7 +94,7 @@ struct CodeInfo {
         size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
-            COMPILER_LOG(ERROR) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
+            LOG_COMPILER(ERROR) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
                       << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE;
             return nullptr;
         }

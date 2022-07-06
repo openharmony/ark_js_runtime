@@ -150,7 +150,7 @@ public:
                 return "Break on start";
             }
             default: {
-                LOG(ERROR, DEBUGGER) << "Unknown paused reason: " << reason;
+                LOG_DEBUGGER(ERROR) << "Unknown paused reason: " << reason;
             }
         }
         return "";

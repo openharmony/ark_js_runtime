@@ -71,7 +71,7 @@ double MemController::CalculateGrowingFactor(double gcSpeed, double mutatorSpeed
     double factor = (a < b * maxGrowingFactor) ? a / b : maxGrowingFactor;
     factor = std::min(maxGrowingFactor, factor);
     factor = std::max(factor, minGrowingFactor);
-    OPTIONAL_LOG(heap_->GetEcmaVM(), ERROR, ECMASCRIPT) << "CalculateGrowingFactor gcSpeed"
+    OPTIONAL_LOG(heap_->GetEcmaVM(), ERROR) << "CalculateGrowingFactor gcSpeed"
         << gcSpeed << " mutatorSpeed" << mutatorSpeed << " factor" << factor;
     return factor;
 }

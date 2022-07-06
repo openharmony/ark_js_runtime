@@ -157,7 +157,7 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
     auto globalConst = thread->GlobalConstants();
     if (!message->IsUndefined()) {
         JSHandle<EcmaString> handleStr = JSTaggedValue::ToString(thread, message);
-        LOG(DEBUG, ECMASCRIPT) << "Ark throw error: " << utf::Mutf8AsCString(handleStr->GetDataUtf8());
+        LOG_ECMA(DEBUG) << "Ark throw error: " << utf::Mutf8AsCString(handleStr->GetDataUtf8());
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSHandle<JSTaggedValue> msgKey = globalConst->GetHandledMessageString();
         PropertyDescriptor msgDesc(thread, JSHandle<JSTaggedValue>::Cast(handleStr), true, false, true);
@@ -187,7 +187,7 @@ JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 {
     std::string data = BuildJsStackTrace(thread, false);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    LOG(DEBUG, ECMASCRIPT) << data;
+    LOG_ECMA(DEBUG) << data;
     return factory->NewFromStdString(data);
 }
 

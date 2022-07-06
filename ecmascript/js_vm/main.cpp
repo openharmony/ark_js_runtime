@@ -37,18 +37,18 @@ void BlockSignals()
 #if defined(PANDA_TARGET_UNIX)
     sigset_t set;
     if (sigemptyset(&set) == -1) {
-        LOG(ERROR, RUNTIME) << "sigemptyset failed";
+        LOG_ECMA(ERROR) << "sigemptyset failed";
         return;
     }
     int rc = 0;
 
     if (rc < 0) {
-        LOG(ERROR, RUNTIME) << "sigaddset failed";
+        LOG_ECMA(ERROR) << "sigaddset failed";
         return;
     }
 
     if (panda::os::native_stack::g_PandaThreadSigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        LOG(ERROR, RUNTIME) << "g_PandaThreadSigmask failed";
+        LOG_ECMA(ERROR) << "g_PandaThreadSigmask failed";
     }
 #endif  // PANDA_TARGET_UNIX
 }

@@ -456,7 +456,7 @@ JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> n
     // Bit operations must be of integer type
     uint64_t bits = 0;
     if (memcpy_s(&bits, sizeof(bits), &num, sizeof(num)) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     // Take out bits 62-52 (11 bits in total) and subtract 1023
@@ -1122,7 +1122,7 @@ static JSTaggedNumber CalculateNumber(const uint64_t &sign, const uint64_t &mant
     uint64_t doubleBit = sign | exponent | mantissa;
     double res = 0;
     if (memcpy_s(&res, sizeof(res), &doubleBit, sizeof(doubleBit)) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     return JSTaggedNumber(res);
@@ -1255,7 +1255,7 @@ ComparisonResult BigInt::CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JST
     // Bit operations must be of integer type
     uint64_t bits = 0;
     if (memcpy_s(&bits, sizeof(bits), &num, sizeof(num)) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     int exponential = (bits >> base::DOUBLE_SIGNIFICAND_SIZE) & 0x7FF;

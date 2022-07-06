@@ -1107,7 +1107,7 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
                      copyBytes,
                      ToVoidPtr(copyFrom),
                      copyBytes) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
 
@@ -1154,7 +1154,7 @@ void SnapshotProcessor::DeserializeString(uintptr_t stringBegin, uintptr_t strin
                 LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OldLocalSpace OOM";
             }
             if (memcpy_s(ToVoidPtr(newObj), strSize, str, strSize) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
             str = reinterpret_cast<EcmaString *>(newObj);
@@ -1174,7 +1174,7 @@ void SnapshotProcessor::DeserializePandaMethod(uintptr_t begin, uintptr_t end, J
         pandaMethod_.emplace_back(begin);
         auto method = reinterpret_cast<JSMethod *>(begin);
         if (memcpy_s(methods + (--methodNums), METHOD_SIZE, method, METHOD_SIZE) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
         begin += METHOD_SIZE;
@@ -1230,7 +1230,7 @@ void SnapshotProcessor::SerializeObject(TaggedObject *objectHeader, CQueue<Tagge
     JSType objectType = hclass->GetObjectType();
     uintptr_t snapshotObj = 0;
     if (UNLIKELY(data->find(ToUintPtr(objectHeader)) == data->end())) {
-        LOG_ECMA(FATAL) << "Data map can not find object";
+        LOG_FULL(FATAL) << "Data map can not find object";
         UNREACHABLE();
     } else {
         snapshotObj = data->find(ToUintPtr(objectHeader))->second.first;
@@ -1443,7 +1443,7 @@ EncodeBit SnapshotProcessor::NativePointerToEncodeBit(void *nativePointer)
             index = SearchNativeMethodIndex(nativePointer);
         }
 
-        LOG_IF(index > Constants::MAX_C_POINTER_INDEX, FATAL, RUNTIME) << "MAX_C_POINTER_INDEX: " + ToCString(index);
+        LOG_ECMA_IF(index > Constants::MAX_C_POINTER_INDEX, FATAL) << "MAX_C_POINTER_INDEX: " << index;
         native.SetNativePointerOrObjectIndex(index);
     }
     return native;
@@ -1481,7 +1481,7 @@ size_t SnapshotProcessor::SearchNativeMethodIndex(void *nativePointer)
         }
     }
 
-    LOG_ECMA(FATAL) << "native method did not register in g_table, please register it first";
+    LOG_FULL(FATAL) << "native method did not register in g_table, please register it first";
     UNREACHABLE();
 }
 
@@ -1494,7 +1494,7 @@ uintptr_t SnapshotProcessor::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
     }
     size_t regionIndex = taggedBit.GetRegionIndex();
     if (UNLIKELY(regionIndexMap_.find(regionIndex) == regionIndexMap_.end())) {
-        LOG_ECMA(FATAL) << "Snapshot deserialize can not find region by index";
+        LOG_FULL(FATAL) << "Snapshot deserialize can not find region by index";
     }
     Region *region = regionIndexMap_.find(regionIndex)->second;
     size_t objectOffset  = taggedBit.GetObjectOffsetInRegion();
@@ -1526,7 +1526,7 @@ void SnapshotProcessor::SerializePandaFileMethod()
     // panda method space begin
     uintptr_t snapshotObj = factory->NewSpaceBySnapshotAllocator(sizeof(uint64_t));
     if (snapshotObj == 0) {
-        LOG(ERROR, RUNTIME) << "SnapshotAllocator OOM";
+        LOG_ECMA(ERROR) << "SnapshotAllocator OOM";
         return;
     }
     SetObjectEncodeField(snapshotObj, 0, encodeBit.GetValue());  // methods
@@ -1537,11 +1537,11 @@ void SnapshotProcessor::SerializePandaFileMethod()
         size_t methodObjSize = METHOD_SIZE;
         uintptr_t methodObj = factory->NewSpaceBySnapshotAllocator(methodObjSize);
         if (methodObj == 0) {
-            LOG(ERROR, RUNTIME) << "SnapshotAllocator OOM";
+            LOG_ECMA(ERROR) << "SnapshotAllocator OOM";
             return;
         }
         if (memcpy_s(ToVoidPtr(methodObj), methodObjSize, ToVoidPtr(it), METHOD_SIZE) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }
@@ -1600,7 +1600,7 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OOM";
     }
     if (memcpy_s(ToVoidPtr(newObj), objectSize, objectHeader, objectSize) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     auto currentRegion = Region::ObjectAddressToRange(newObj);

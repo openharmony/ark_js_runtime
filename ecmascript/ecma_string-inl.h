@@ -59,7 +59,7 @@ inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t 
         ASSERT(string != nullptr);
 
         if (memcpy_s(string->GetDataUtf8Writable(), utf8Len, utf8Data, utf8Len) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     } else {
@@ -85,7 +85,7 @@ inline EcmaString *EcmaString::CreateFromUtf8NonMovable(const EcmaVM *vm, const 
     EcmaString *string = AllocStringObjectNonMovable(vm, utf8Len);
     ASSERT(string != nullptr);
     if (memcpy_s(string->GetDataUtf8Writable(), utf8Len, utf8Data, utf8Len) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     ASSERT_PRINT(CanBeCompressed(string) == true, "Bad input canBeCompress!");
@@ -106,7 +106,7 @@ inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32
     } else {
         uint32_t len = utf16Len * (sizeof(uint16_t) / sizeof(uint8_t));
         if (memcpy_s(string->GetDataUtf16Writable(), len, utf16Data, len) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }
@@ -159,7 +159,7 @@ void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, u
         ASSERT(src->IsUtf8());
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (length != 0 && memcpy_s(GetDataUtf8Writable() + start, destSize, src->GetDataUtf8(), length) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     } else if (src->IsUtf8()) {
@@ -173,7 +173,7 @@ void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, u
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (length != 0 && memcpy_s(GetDataUtf16Writable() + start, ComputeDataSizeUtf16(destSize), src->GetDataUtf16(),
                                     ComputeDataSizeUtf16(length)) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }

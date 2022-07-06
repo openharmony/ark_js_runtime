@@ -175,7 +175,7 @@ std::unique_ptr<ProfileInfo> DFXJSNApi::StopCpuProfilerForInfo()
     CpuProfiler *singleton = CpuProfiler::GetInstance();
     auto profile = singleton->StopCpuProfilerForInfo();
     if (profile == nullptr) {
-        LOG(ERROR, DEBUGGER) << "Transfer CpuProfiler::StopCpuProfilerImpl is failure";
+        LOG_DEBUGGER(ERROR) << "Transfer CpuProfiler::StopCpuProfilerImpl is failure";
     }
     return profile;
 }

@@ -77,7 +77,7 @@ public:
             uint64_t length = 0;
             std::string funcName(LLVMGetValueName2(func, &length));
             assert(length != 0);
-            COMPILER_LOG(INFO) << "CollectCodeInfo for AOT func: " << funcName.c_str();
+            LOG_COMPILER(INFO) << "CollectCodeInfo for AOT func: " << funcName.c_str();
             addr2name[funcEntry] = funcName;
             int delta = assembler_->GetFpDeltaPrevFramSp(func, log);
             ASSERT(delta >= 0 && (delta % sizeof(uintptr_t) == 0));

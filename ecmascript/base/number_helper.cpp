@@ -749,14 +749,14 @@ void NumberHelper::GetBase(double d, int digits, int *decpt, char *buf, char *bu
 {
     int result = snprintf_s(bufTmp, size, size - 1, "%+.*e", digits - 1, d);
     if (result == -1) {
-        LOG_ECMA(FATAL) << "snprintf_s failed";
+        LOG_FULL(FATAL) << "snprintf_s failed";
         UNREACHABLE();
     }
     // mantissa
     buf[0] = bufTmp[1];
     if (digits > 1) {
         if (memcpy_s(buf + 1, digits, bufTmp + 2, digits) != EOK) { // 2 means add the point char to buf
-            LOG_ECMA(FATAL) << "memcpy_s failed";
+            LOG_FULL(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
     }

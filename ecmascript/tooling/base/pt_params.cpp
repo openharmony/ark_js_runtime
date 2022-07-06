@@ -31,7 +31,7 @@ std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "EnableParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "EnableParams::Create " << error;
         return nullptr;
     }
 
@@ -102,7 +102,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "EvaluateOnCallFrameParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "EvaluateOnCallFrameParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -147,7 +147,7 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "GetPossibleBreakpointsParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "GetPossibleBreakpointsParams::Create " << error;
         return nullptr;
     }
 
@@ -169,7 +169,7 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const PtJso
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "GetScriptSourceParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "GetScriptSourceParams::Create " << error;
         return nullptr;
     }
 
@@ -191,7 +191,7 @@ std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const PtJ
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RemoveBreakpointParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "RemoveBreakpointParams::Create " << error;
         return nullptr;
     }
 
@@ -213,7 +213,7 @@ std::unique_ptr<ResumeParams> ResumeParams::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ResumeParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "ResumeParams::Create " << error;
         return nullptr;
     }
 
@@ -235,7 +235,7 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SetAsyncCallStackDepthParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SetAsyncCallStackDepthParams::Create " << error;
         return nullptr;
     }
 
@@ -265,7 +265,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SetBlackboxPatternsParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SetBlackboxPatternsParams::Create " << error;
         return nullptr;
     }
 
@@ -321,7 +321,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         error += "Unknown 'condition';";
     }
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SetBreakpointByUrlParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SetBreakpointByUrlParams::Create " << error;
         return nullptr;
     }
 
@@ -343,7 +343,7 @@ std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(c
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SetPauseOnExceptionsParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SetPauseOnExceptionsParams::Create " << error;
         return nullptr;
     }
 
@@ -380,7 +380,7 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StepIntoParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StepIntoParams::Create " << error;
         return nullptr;
     }
 
@@ -410,7 +410,7 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StepOverParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StepOverParams::Create " << error;
         return nullptr;
     }
 
@@ -452,7 +452,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const PtJson &p
         error += "Unknown 'generatePreview';";
     }
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "GetPropertiesParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "GetPropertiesParams::Create " << error;
         return nullptr;
     }
 
@@ -564,7 +564,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const PtJson 
 
     // Check whether the error is empty.
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "CallFunctionOnParams::Create " << error;
         return nullptr;
     }
 
@@ -586,7 +586,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const PtJson &p
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StartSamplingParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -607,7 +607,7 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StartTrackingHeapObjectsParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -644,7 +644,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StopTrackingHeapObjectsParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StopTrackingHeapObjectsParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -665,7 +665,7 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "AddInspectedHeapObjectParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "AddInspectedHeapObjectParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -686,7 +686,7 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const PtJso
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "GetHeapObjectIdParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "GetHeapObjectIdParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -715,7 +715,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectIdParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "GetObjectByHeapObjectIdParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -752,7 +752,7 @@ std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(c
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StartPreciseCoverageParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -773,7 +773,7 @@ std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(con
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "SetSamplingIntervalParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
@@ -794,7 +794,7 @@ std::unique_ptr<RecordClockSyncMarkerParams> RecordClockSyncMarkerParams::Create
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RecordClockSyncMarkerParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "RecordClockSyncMarkerParams::Create " << error;
         return nullptr;
     }
 
@@ -828,7 +828,7 @@ std::unique_ptr<RequestMemoryDumpParams> RequestMemoryDumpParams::Create(const P
     }
     
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "RequestMemoryDumpParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "RequestMemoryDumpParams::Create " << error;
         return nullptr;
     }
 
@@ -935,7 +935,7 @@ std::unique_ptr<StartParams> StartParams::Create(const PtJson &params)
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StartParams::Create " << error;
+        LOG_DEBUGGER(ERROR) << "StartParams::Create " << error;
         return nullptr;
     }
 

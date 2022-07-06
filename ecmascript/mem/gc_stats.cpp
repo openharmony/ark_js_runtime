@@ -21,7 +21,7 @@
 namespace panda::ecmascript {
 void GCStats::PrintStatisticResult(bool force)
 {
-    LOG(INFO, RUNTIME) << "/******************* GCStats statistic: *******************/";
+    LOG_GC(INFO) << "/******************* GCStats statistic: *******************/";
     PrintSemiStatisticResult(force);
     PrintPartialStatisticResult(force);
     PrintCompressStatisticResult(force);
@@ -32,8 +32,8 @@ void GCStats::PrintSemiStatisticResult(bool force)
 {
     if ((force && semiGCCount_ != 0) || (!force && semiGCCount_ != lastSemiGCCount_)) {
         lastSemiGCCount_ = semiGCCount_;
-        LOG(INFO, RUNTIME) << " STWYoungGC statistic: total semi gc count " << semiGCCount_;
-        LOG(INFO, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
+        LOG_GC(INFO) << " STWYoungGC statistic: total semi gc count " << semiGCCount_;
+        LOG_GC(INFO) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(semiGCMaxPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(semiGCTotalPause_) << "ms"
                             << " average pause time: " << PrintTimeMilliseconds(semiGCTotalPause_ / semiGCCount_)
@@ -52,8 +52,8 @@ void GCStats::PrintPartialStatisticResult(bool force)
 {
     if ((force && partialGCCount_ != 0) || (!force && lastOldGCCount_ != partialGCCount_)) {
         lastOldGCCount_ = partialGCCount_;
-        LOG(INFO, RUNTIME) << " PartialGC with non-concurrent mark statistic: total old gc count " << partialGCCount_;
-        LOG(INFO, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(partialGCMinPause_)
+        LOG_GC(INFO) << " PartialGC with non-concurrent mark statistic: total old gc count " << partialGCCount_;
+        LOG_GC(INFO) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(partialGCMinPause_)
                             << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(partialGCMaxPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(partialGCTotalPause_) << "ms"
@@ -67,9 +67,9 @@ void GCStats::PrintPartialStatisticResult(bool force)
     if ((force && partialConcurrentMarkGCCount_ != 0) ||
             (!force && lastOldConcurrentMarkGCCount_ != partialConcurrentMarkGCCount_)) {
         lastOldConcurrentMarkGCCount_ = partialConcurrentMarkGCCount_;
-        LOG(INFO, RUNTIME) << " PartialCollector with concurrent mark statistic: total old gc count "
+        LOG_GC(INFO) << " PartialCollector with concurrent mark statistic: total old gc count "
                             << partialConcurrentMarkGCCount_;
-        LOG(INFO, RUNTIME) << " Pause time statistic:: Current GC pause time: "
+        LOG_GC(INFO) << " Pause time statistic:: Current GC pause time: "
                             << PrintTimeMilliseconds(partialConcurrentMarkGCPauseTime_) << "ms"
                             << " Concurrent mark pause time: " << PrintTimeMilliseconds(partialConcurrentMarkMarkPause_)
                             << "ms"
@@ -96,8 +96,8 @@ void GCStats::PrintCompressStatisticResult(bool force)
 {
     if ((force && fullGCCount_ != 0) || (!force && fullGCCount_ != lastFullGCCount_)) {
         lastFullGCCount_ = fullGCCount_;
-        LOG(INFO, RUNTIME) << " FullGC statistic: total compress gc count " << fullGCCount_;
-        LOG(INFO, RUNTIME)
+        LOG_GC(INFO) << " FullGC statistic: total compress gc count " << fullGCCount_;
+        LOG_GC(INFO)
             << " MIN pause time: " << PrintTimeMilliseconds(fullGCMinPause_) << "ms"
             << " MAX pause time: " << PrintTimeMilliseconds(fullGCMaxPause_) << "ms"
             << " total pause time: " << PrintTimeMilliseconds(fullGCTotalPause_) << "ms"
@@ -122,8 +122,8 @@ void GCStats::PrintHeapStatisticResult(bool force)
     if (force && heap_ != nullptr) {
         NativeAreaAllocator *nativeAreaAllocator = heap_->GetNativeAreaAllocator();
         HeapRegionAllocator *heapRegionAllocator = heap_->GetHeapRegionAllocator();
-        LOG(INFO, RUNTIME) << "/******************* Memory statistic: *******************/";
-        LOG(INFO, RUNTIME) << " Anno memory usage size: " << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
+        LOG_GC(INFO) << "/******************* Memory statistic: *******************/";
+        LOG_GC(INFO) << " Anno memory usage size: " << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
                             << "MB"
                             << " anno memory max usage size: " << sizeToMB(heapRegionAllocator->GetMaxAnnoMemoryUsage())
                             << "MB"
@@ -131,7 +131,7 @@ void GCStats::PrintHeapStatisticResult(bool force)
                             << "MB"
                             << " native memory max usage size: "
                             << sizeToMB(nativeAreaAllocator->GetMaxNativeMemoryUsage()) << "MB";
-        LOG(INFO, RUNTIME) << " Semi space commit size: " << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
+        LOG_GC(INFO) << " Semi space commit size: " << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
                             << " semi space heap object size: " << sizeToMB(heap_->GetNewSpace()->GetHeapObjectSize())
                             << "MB"
                             << " old space commit size: "
@@ -223,9 +223,9 @@ void GCStats::StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t
 void GCStats::CheckIfLongTimePause()
 {
     if (currentPauseTime_ > longPauseTime_) {
-        LOG(INFO, RUNTIME) << "Has checked a long time gc; gc type = " << currentGcType_ << "; pause time = "
+        LOG_GC(INFO) << "Has checked a long time gc; gc type = " << currentGcType_ << "; pause time = "
                             << currentPauseTime_ << "ms";
-        LOG(INFO, RUNTIME) << "/******************* GCStats statistic: *******************/";
+        LOG_GC(INFO) << "/******************* GCStats statistic: *******************/";
         PrintSemiStatisticResult(true);
         PrintPartialStatisticResult(true);
         PrintCompressStatisticResult(true);

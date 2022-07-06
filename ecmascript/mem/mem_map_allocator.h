@@ -53,6 +53,8 @@
 #endif
 #endif
 
+#include "ecmascript/log_wrapper.h"
+
 namespace panda::ecmascript {
 class MemMap {
 public:
@@ -228,17 +230,17 @@ public:
     void IncreaseAndCheckReserved(size_t size)
     {
         if (reserved_ + size > capacity_) {
-            LOG(ERROR, RUNTIME) << "pool is empty, reserved = " << reserved_ << ", capacity_ = "
+            LOG_GC(ERROR) << "pool is empty, reserved = " << reserved_ << ", capacity_ = "
                                 << capacity_ << ", size = " << size;
         }
         reserved_ += size;
-        LOG(DEBUG, RUNTIME) << "Ark IncreaseAndCheckReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
+        LOG_GC(DEBUG) << "Ark IncreaseAndCheckReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
     }
 
     void DecreaseReserved(size_t size)
     {
         reserved_ -= size;
-        LOG(DEBUG, RUNTIME) << "Ark DecreaseReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
+        LOG_GC(DEBUG) << "Ark DecreaseReserved reserved = " << reserved_ << ", capacity_ = " << capacity_;
     }
 
     static MemMapAllocator *GetInstance()

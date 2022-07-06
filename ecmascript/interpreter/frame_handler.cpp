@@ -178,7 +178,7 @@ JSTaggedValue FrameHandler::GetFunction() const
             case FrameType::BUILTIN_CALL_LEAVE_FRAME:
             case FrameType::OPTIMIZED_ENTRY_FRAME:
             default: {
-                LOG_ECMA(FATAL) << "frame type error!";
+                LOG_FULL(FATAL) << "frame type error!";
                 UNREACHABLE();
             }
         }
@@ -287,7 +287,7 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_BRIDGE_FRAME:
         default: {
-            LOG_ECMA(FATAL) << "frame type error!";
+            LOG_FULL(FATAL) << "frame type error!";
             UNREACHABLE();
         }
     }
@@ -406,7 +406,7 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
                 break;
             }
             default: {
-                LOG_ECMA(FATAL) << "frame type error!";
+                LOG_FULL(FATAL) << "frame type error!";
                 UNREACHABLE();
             }
         }
@@ -466,7 +466,7 @@ void FrameHandler::CollectBCOffsetInfo()
                 break;
             }
             default: {
-                LOG_ECMA(FATAL) << "frame type error!";
+                LOG_FULL(FATAL) << "frame type error!";
                 UNREACHABLE();
             }
         }

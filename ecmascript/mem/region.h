@@ -16,11 +16,11 @@
 #ifndef ECMASCRIPT_MEM_REGION_H
 #define ECMASCRIPT_MEM_REGION_H
 
-#include "libpandabase/utils/aligned_storage.h"
-
 #include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/remembered_set.h"
+#include "libpandabase/os/mutex.h"
+#include "libpandabase/utils/aligned_storage.h"
 #include "securec.h"
 
 namespace panda {

@@ -17,6 +17,7 @@
 #define ECMASCRIPT_ECMA_MACROS_H
 
 #include "ecmascript/common.h"
+#include "ecmascript/log_wrapper.h"
 #include "libpandabase/trace/trace.h"
 
 #if defined(ENABLE_BYTRACE)
@@ -25,16 +26,9 @@
 
 #if defined(__cplusplus)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define LOG_ECMA(type) \
-    LOG(type, ECMASCRIPT) << __func__ << " Line:" << __LINE__ << " "  // NOLINT(bugprone-lambda-function-name)
 
-#define ECMA_GC_LOG() LOG(DEBUG, ECMASCRIPT) << " ecmascript gc log: "
-
-#define OPTIONAL_LOG(ecmaVM, level, component) \
-    LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
-
-#define COMPILER_LOG(level) LOG(level, ECMASCRIPT)
-#define COMPILER_OPTIONAL_LOG(level) LOG_IF(IsLogEnabled(), level, ECMASCRIPT)
+#define OPTIONAL_LOG(vm, level) LOG_ECMA_IF(vm->IsOptionalLogEnabled(), level)
+#define OPTIONAL_LOG_COMPILER(level) LOG_ECMA_IF(IsLogEnabled(), level)
 
 #if !defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
@@ -523,19 +517,14 @@
         }
 #endif
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHECK_DUMP_FIELDS(begin, end, num)                                               \
-    LOG_IF((num) != ((end) - (begin)) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
-        << "Fields in obj are not in dump list. ";
-
-#define CHECK_OBJECT_SIZE(size)                                                                     \
-    if ((size) == 0) {                                                                              \
-        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " objectSize is " << (size); \
+#define CHECK_OBJECT_SIZE(size)                                                        \
+    if ((size) == 0) {                                                                 \
+        LOG_FULL(FATAL) << __func__ << ":" << __LINE__ << " objectSize is " << (size); \
     }
 
-#define CHECK_REGION_END(begin, end)                                                                               \
-    if ((begin) > (end)) {                                                                                         \
-        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " begin: " << (begin) << " end: " << (end); \
+#define CHECK_REGION_END(begin, end)                                                                  \
+    if ((begin) > (end)) {                                                                            \
+        LOG_FULL(FATAL) << __func__ << ":" << __LINE__ << " begin: " << (begin) << " end: " << (end); \
     }
 
 #define CHECK_JS_THREAD(vm) ASSERT(vm->GetJSThread()->GetThreadId() == JSThread::GetCurrentThreadId())

@@ -122,11 +122,11 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
     auto kind = ICKindToString(GetICKind());
     auto state = ProfileTypeAccessor::ICStateToString(icAccessor_.GetICState());
     if (key->IsString()) {
-        LOG(ERROR, RUNTIME) << kind << " miss key is: " << JSHandle<EcmaString>::Cast(key)->GetCString().get()
+        LOG_ECMA(ERROR) << kind << " miss key is: " << JSHandle<EcmaString>::Cast(key)->GetCString().get()
                             << ", receiver is " << receiver->GetTaggedObject()->GetClass()->IsDictionaryMode()
                             << ", state is " << state;
     } else {
-        LOG(ERROR, RUNTIME) << kind << " miss " << ", state is "
+        LOG_ECMA(ERROR) << kind << " miss " << ", state is "
                             << ", receiver is " << receiver->GetTaggedObject()->GetClass()->IsDictionaryMode()
                             << state;
     }

@@ -71,7 +71,7 @@ public:
     bool Run(StubPassData *data, [[maybe_unused]] bool enableLog)
     {
         auto stub = data->GetStub();
-        COMPILER_LOG(INFO) << "Stub Name: " << stub->GetMethodName();
+        LOG_COMPILER(INFO) << "Stub Name: " << stub->GetMethodName();
         stub->GenerateCircuit(data->GetCompilationConfig());
         return true;
     }
@@ -129,14 +129,14 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
     const CompilerLog *log = GetLog();
     StubFileGenerator generator(log);
     if (!stubFile.empty()) {
-        COMPILER_LOG(INFO) << "compiling bytecode handler stubs";
+        LOG_COMPILER(INFO) << "compiling bytecode handler stubs";
         LLVMModule bcStubModule("bc_stub", triple);
         LLVMAssembler bcStubAssembler(bcStubModule.GetModule(), LOptions(optLevel, false));
         bcStubModule.SetUpForBytecodeHandlerStubs();
         RunPipeline(&bcStubModule);
         generator.AddModule(&bcStubModule, &bcStubAssembler);
         res++;
-        COMPILER_LOG(INFO) << "compiling common stubs";
+        LOG_COMPILER(INFO) << "compiling common stubs";
         LLVMModule comStubModule("com_stub", triple);
         LLVMAssembler comStubAssembler(comStubModule.GetModule(), LOptions(optLevel, true));
         comStubModule.SetUpForCommonStubs();
@@ -181,7 +181,7 @@ int main(const int argc, const char **argv)
 
     panda::ecmascript::EcmaVM *vm = panda::JSNApi::CreateEcmaVM(runtimeOptions);
     if (vm == nullptr) {
-        COMPILER_LOG(INFO) << "Can't Create EcmaVM";
+        LOG_COMPILER(INFO) << "Can't Create EcmaVM";
         return -1;
     }
     std::string tripleString = runtimeOptions.GetTargetTriple();
@@ -192,7 +192,7 @@ int main(const int argc, const char **argv)
     panda::ecmascript::kungfu::StubCompiler compiler(&log);
 
     bool res = compiler.BuildStubModuleAndSave(tripleString, stubFile, optLevel);
-    COMPILER_LOG(INFO) << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res;
+    LOG_COMPILER(INFO) << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res;
     panda::JSNApi::DestroyJSVM(vm);
     return res ? 0 : -1;
 }

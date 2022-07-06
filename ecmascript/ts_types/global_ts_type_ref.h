@@ -18,7 +18,6 @@
 
 #include "ecmascript/ecma_macros.h"
 #include "libpandabase/utils/bit_field.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 enum class TSTypeKind : int {
@@ -117,7 +116,7 @@ public:
         uint32_t gcType = GetGCType();
         uint32_t moduleId = GetModuleId();
         uint32_t localId = GetLocalId();
-        LOG(ERROR, ECMASCRIPT) << "kind: " << kind << " gcType: " << gcType
+        LOG_ECMA(ERROR) << "kind: " << kind << " gcType: " << gcType
                                << " moduleId: " << moduleId << " localId: " << localId;
     }
 
