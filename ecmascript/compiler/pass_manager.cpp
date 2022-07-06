@@ -30,7 +30,7 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
     bool res = CollectInfoOfPandaFile(fileName, entry_, &translationInfo);
     if (!res) {
-        COMPILER_LOG(ERROR) << "Cannot execute panda file '" << fileName << "'";
+        LOG_COMPILER(ERROR) << "Cannot execute panda file '" << fileName << "'";
         return false;
     }
     auto aotModule = new LLVMModule("aot_" + fileName, triple_);
@@ -48,7 +48,7 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
         }
 
         if (enableLog) {
-            COMPILER_LOG(INFO) << "\033[34m" << "aot method [" << fileName << ":"
+            LOG_COMPILER(INFO) << "\033[34m" << "aot method [" << fileName << ":"
                                << methodName << "] log:" << "\033[0m";
         }
 
@@ -86,7 +86,7 @@ bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, std::strin
         TSLoader *tsLoader = vm_->GetTSLoader();
         tsLoader->DecodeTSTypes(jsPandaFile);
     } else {
-        COMPILER_LOG(INFO) << fileName << " has no type info";
+        LOG_COMPILER(INFO) << fileName << " has no type info";
     }
 
     auto program = PandaFileTranslator::GenerateProgram(vm_, jsPandaFile);

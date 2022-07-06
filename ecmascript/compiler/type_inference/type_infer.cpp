@@ -51,7 +51,7 @@ void TypeInfer::TraverseCircuit()
     }
 
     if (IsLogEnabled()) {
-        COMPILER_LOG(INFO) << "TypeInfer:======================================================";
+        LOG_COMPILER(INFO) << "TypeInfer:======================================================";
         circuit_->PrintAllGates(*builder_);
     }
 
@@ -76,7 +76,7 @@ void TypeInfer::TypeInferPrint() const
             log += type.GetTypeStr();
         }
     }
-    COMPILER_LOG(INFO) << std::dec << log;
+    LOG_COMPILER(INFO) << std::dec << log;
 }
 
 bool TypeInfer::UpdateType(GateRef gate, const GateType type)

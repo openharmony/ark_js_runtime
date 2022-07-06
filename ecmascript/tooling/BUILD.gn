@@ -58,6 +58,14 @@ source_set("libark_ecma_debugger_set") {
     "//third_party/cJSON:cjson_static",
   ]
 
+  if (is_ohos && is_standard_system) {
+    if (enable_hilog) {
+      defines = [ "ENABLE_HILOG" ]
+      include_dirs =
+          [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
+    }
+  }
+
   cflags_cc = [ "-fvisibility=hidden" ]
 }
 
@@ -68,6 +76,12 @@ ohos_shared_library("libark_ecma_debugger") {
   ]
 
   install_enable = true
+
+  if (is_ohos && is_standard_system) {
+    if (enable_hilog) {
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    }
+  }
 
   output_extension = "so"
   if (!is_standard_system) {
@@ -84,6 +98,14 @@ source_set("libark_ecma_debugger_test_set") {
 
   defines = [ "DEBUGGER_TEST" ]
 
+  if (is_ohos && is_standard_system) {
+    if (enable_hilog) {
+      defines += [ "ENABLE_HILOG" ]
+      include_dirs =
+          [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
+    }
+  }
+
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -98,11 +120,8 @@ ohos_shared_library("libark_ecma_debugger_test") {
   ]
 
   if (is_ohos && is_standard_system) {
-    if (build_public_version) {
-      external_deps = [
-        "hitrace_native:hitrace_meter",
-        "hitrace_native:libhitrace",
-      ]
+    if (enable_hilog) {
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
     }
   }
 

@@ -42,7 +42,7 @@ public:
     Register TempRegister()
     {
         if (tempInUse_) {
-            COMPILER_LOG(ERROR) << "temp register inuse.";
+            LOG_COMPILER(ERROR) << "temp register inuse.";
             UNREACHABLE();
         }
         tempInUse_ = true;

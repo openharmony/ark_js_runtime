@@ -37,8 +37,8 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
             reinterpret_cast<const Out *>(circuit->LoadGatePtrConst(GateRef(out)))->GetGateConst());
         if (gate < prevGate + static_cast<int64_t>(sizeof(Gate)) ||
             gate >= static_cast<int64_t>(circuit->GetCircuitDataSize())) {
-            COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (bad next gate)";
-            COMPILER_LOG(ERROR) << "at: " << std::dec << gate;
+            LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (bad next gate)";
+            LOG_COMPILER(ERROR) << "at: " << std::dec << gate;
             return false;
         }
         gatesList.push_back(gate);
@@ -51,8 +51,8 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
             break;
         }
         if (out > circuit->GetCircuitDataSize() || out < 0) {
-            COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (out of bound access)";
-            COMPILER_LOG(ERROR) << "at: " << std::dec << out;
+            LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (out of bound access)";
+            LOG_COMPILER(ERROR) << "at: " << std::dec << out;
             return false;
         }
     }
@@ -60,13 +60,13 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
         for (size_t idx = 0; idx < circuit->LoadGatePtrConst(gate)->GetNumIns(); idx++) {
             const In *curIn = circuit->LoadGatePtrConst(gate)->GetInConst(idx);
             if (!(circuit->GetSpaceDataStartPtrConst() < curIn && curIn < circuit->GetSpaceDataEndPtrConst())) {
-                COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted in list)";
-                COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted in list)";
+                LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                 return false;
             }
             if (gatesSet.count(circuit->SaveGatePtr(curIn->GetGateConst())) == 0) {
-                COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid in address)";
-                COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid in address)";
+                LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                 return false;
             }
         }
@@ -75,26 +75,26 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
             if (!curGate->IsFirstOutNull()) {
                 const Out *curOut = curGate->GetFirstOutConst();
                 if (!(circuit->GetSpaceDataStartPtrConst() < curOut && curOut < circuit->GetSpaceDataEndPtrConst())) {
-                    COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted out list)";
-                    COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                    LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted out list)";
+                    LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                     return false;
                 }
                 if (gatesSet.count(circuit->SaveGatePtr(curOut->GetGateConst())) == 0) {
-                    COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid out address)";
-                    COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                    LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid out address)";
+                    LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                     return false;
                 }
                 while (!curOut->IsNextOutNull()) {
                     curOut = curOut->GetNextOutConst();
                     if (!(circuit->GetSpaceDataStartPtrConst() < curOut &&
                         curOut < circuit->GetSpaceDataEndPtrConst())) {
-                        COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted out list)";
-                        COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                        LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (corrupted out list)";
+                        LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                         return false;
                     }
                     if (gatesSet.count(circuit->SaveGatePtr(curOut->GetGateConst())) == 0) {
-                        COMPILER_LOG(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid out address)";
-                        COMPILER_LOG(ERROR) << "id: " << std::dec << circuit->GetId(gate);
+                        LOG_COMPILER(ERROR) << "[Verifier][Error] Circuit data is corrupted (invalid out address)";
+                        LOG_COMPILER(ERROR) << "id: " << std::dec << circuit->GetId(gate);
                         return false;
                     }
                 }
@@ -122,12 +122,12 @@ bool Verifier::RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<Ga
         for (const auto &predGate : gateAcc.ConstIns(bbGate)) {
             if (circuit->GetOpCode(predGate).IsState() || circuit->GetOpCode(predGate) == OpCode::STATE_ENTRY) {
                 if (bbGatesAddrToIdx.count(predGate) == 0) {
-                    COMPILER_LOG(ERROR) << "[Verifier][Error] CFG is not sound";
-                    COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(predGate) << ") is pred of "
+                    LOG_COMPILER(ERROR) << "[Verifier][Error] CFG is not sound";
+                    LOG_COMPILER(ERROR) << "Proof:";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(predGate) << ") is pred of "
                               << "(id=" << circuit->GetId(bbGate) << ")";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(bbGate) << ") is reachable from entry";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(predGate) << ") is unreachable from entry";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(bbGate) << ") is reachable from entry";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(predGate) << ") is unreachable from entry";
                     return false;
                 }
             }
@@ -150,12 +150,12 @@ bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
             if (circuit->GetOpCode(*use).IsState() && use.GetIndex() < circuit->GetOpCode(*use).GetStateCount(
                 circuit->LoadGatePtrConst(*use)->GetBitField())) {
                 if (circuit->GetMark(*use) == MarkCode::VISITED) {
-                    COMPILER_LOG(ERROR) <<
+                    LOG_COMPILER(ERROR) <<
                         "[Verifier][Error] CFG without loop back edges is not a directed acyclic graph";
-                    COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(*use) << ") is succ of "
+                    LOG_COMPILER(ERROR) << "Proof:";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(*use) << ") is succ of "
                               << "(id=" << circuit->GetId(cur) << ")";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(cur) << ") is reachable from "
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(cur) << ") is reachable from "
                               << "(id=" << circuit->GetId(*use) << ") without loop back edges";
                     return false;
                 }
@@ -192,11 +192,11 @@ bool Verifier::RunCFGReducibilityCheck(const Circuit *circuit, const std::vector
                 ASSERT(circuit->LoadGatePtrConst(*use)->GetOpCode().IsState());
                 bool isDom = isAncestor(bbGatesAddrToIdx.at(*use), bbGatesAddrToIdx.at(curGate));
                 if (!isDom) {
-                    COMPILER_LOG(ERROR) << "[Verifier][Error] CFG is not reducible";
-                    COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(*use) << ") is loop back succ of "
+                    LOG_COMPILER(ERROR) << "[Verifier][Error] CFG is not reducible";
+                    LOG_COMPILER(ERROR) << "Proof:";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(*use) << ") is loop back succ of "
                               << "(id=" << circuit->GetId(curGate) << ")";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(*use) << ") does not dominate "
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(*use) << ") does not dominate "
                               << "(id=" << circuit->GetId(curGate) << ")";
                     return false;
                 }
@@ -230,13 +230,13 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
                 auto b = bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
                     static_cast<size_t>(cnt - 1)));
                 if (!isAncestor(a, b)) {
-                    COMPILER_LOG(ERROR) << "[Verifier][Error] Fixed gates relationship is not consistent";
-                    COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "Fixed gate (id="
+                    LOG_COMPILER(ERROR) << "[Verifier][Error] Fixed gates relationship is not consistent";
+                    LOG_COMPILER(ERROR) << "Proof:";
+                    LOG_COMPILER(ERROR) << "Fixed gate (id="
                                         << circuit->GetId(predGate)
                                         << ") is pred of fixed gate (id="
                                         << circuit->GetId(fixedGate) << ")";
-                    COMPILER_LOG(ERROR) << "BB_" << bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0))
+                    LOG_COMPILER(ERROR) << "BB_" << bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0))
                                         << " does not dominate BB_"
                                         << bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
                                             static_cast<size_t>(cnt - 1)));
@@ -285,12 +285,12 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *s
             const auto prev = circuit->GetIn(cur, idx);
             if (circuit->GetOpCode(prev).IsSchedulable()) {
                 if (circuit->GetMark(prev) == MarkCode::VISITED) {
-                    COMPILER_LOG(ERROR) <<
+                    LOG_COMPILER(ERROR) <<
                         "[Verifier][Error] Found a data or depend flow cycle without passing selectors";
-                    COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(prev) << ") is prev of "
+                    LOG_COMPILER(ERROR) << "Proof:";
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(prev) << ") is prev of "
                               << "(id=" << circuit->GetId(cur) << ")";
-                    COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(prev) << ") is reachable from "
+                    LOG_COMPILER(ERROR) << "(id=" << circuit->GetId(prev) << ") is reachable from "
                               << "(id=" << circuit->GetId(cur) << ") without passing selectors";
                     meet = prev;
                     cycleGatesList.push_back(cur);
@@ -315,7 +315,7 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *s
     for (const auto &startGate : startGateList) {
         if (circuit->GetMark(startGate) == MarkCode::NO_MARK) {
             if (!dfs(startGate)) {
-                COMPILER_LOG(ERROR) << "Path:";
+                LOG_COMPILER(ERROR) << "Path:";
                 for (const auto &cycleGate : cycleGatesList) {
                     circuit->Print(cycleGate);
                 }
@@ -376,10 +376,10 @@ bool Verifier::RunSchedulingBoundsCheck(const Circuit *circuit, const std::vecto
         ASSERT(upperBound.size() == lowerBound.size());
         for (const auto &item : lowerBound) {
             if (!isAncestor(upperBound.at(item.first), lowerBound.at(item.first))) {
-                COMPILER_LOG(ERROR) << "[Verifier][Error] Bounds of gate (id=" << item.first << ") is not consistent";
-                COMPILER_LOG(ERROR) << "Proof:";
-                COMPILER_LOG(ERROR) << "Upper bound is BB_" << upperBound.at(item.first);
-                COMPILER_LOG(ERROR) << "Lower bound is BB_" << lowerBound.at(item.first);
+                LOG_COMPILER(ERROR) << "[Verifier][Error] Bounds of gate (id=" << item.first << ") is not consistent";
+                LOG_COMPILER(ERROR) << "Proof:";
+                LOG_COMPILER(ERROR) << "Upper bound is BB_" << upperBound.at(item.first);
+                LOG_COMPILER(ERROR) << "Lower bound is BB_" << lowerBound.at(item.first);
             }
         }
     }
@@ -403,7 +403,7 @@ bool Verifier::Run(const Circuit *circuit, bool enableLog)
 {
     if (!RunDataIntegrityCheck(circuit)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] Circuit data integrity verifier failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] Circuit data integrity verifier failed";
         }
         return false;
     }
@@ -413,19 +413,19 @@ bool Verifier::Run(const Circuit *circuit, bool enableLog)
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
     if (!RunStateGatesCheck(circuit, bbGatesList)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunStateGatesCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunStateGatesCheck failed";
         }
         return false;
     }
     if (!RunCFGSoundnessCheck(circuit, bbGatesList, bbGatesAddrToIdx)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunCFGSoundnessCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunCFGSoundnessCheck failed";
         }
         return false;
     }
     if (!RunCFGIsDAGCheck(circuit)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunCFGIsDAGCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunCFGIsDAGCheck failed";
         }
         return false;
     }
@@ -473,51 +473,51 @@ bool Verifier::Run(const Circuit *circuit, bool enableLog)
     };
     if (!RunCFGReducibilityCheck(circuit, bbGatesList, bbGatesAddrToIdx, isAncestor)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunCFGReducibilityCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunCFGReducibilityCheck failed";
         }
         return false;
     }
     std::vector<GateRef> fixedGatesList = FindFixedGates(circuit, bbGatesList);
     if (!RunFixedGatesCheck(circuit, fixedGatesList)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunFixedGatesCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunFixedGatesCheck failed";
         }
         return false;
     }
     if (!RunFixedGatesRelationsCheck(circuit, fixedGatesList, bbGatesAddrToIdx, isAncestor)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunFixedGatesRelationsCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunFixedGatesRelationsCheck failed";
         }
         return false;
     }
     std::vector<GateRef> schedulableGatesList;
     if (!RunFlowCyclesFind(circuit, &schedulableGatesList, bbGatesList, fixedGatesList)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunFlowCyclesFind failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunFlowCyclesFind failed";
         }
         return false;
     }
     if (!RunSchedulableGatesCheck(circuit, fixedGatesList)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunSchedulableGatesCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunSchedulableGatesCheck failed";
         }
         return false;
     }
     if (!RunPrologGatesCheck(circuit, fixedGatesList)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunPrologGatesCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunPrologGatesCheck failed";
         }
         return false;
     }
     if (!RunSchedulingBoundsCheck(circuit, schedulableGatesList, bbGatesAddrToIdx, isAncestor, lowestCommonAncestor)) {
         if (enableLog) {
-            COMPILER_LOG(ERROR) << "[Verifier][Fail] RunSchedulingBoundsCheck failed";
+            LOG_COMPILER(ERROR) << "[Verifier][Fail] RunSchedulingBoundsCheck failed";
         }
         return false;
     }
 
     if (enableLog) {
-        COMPILER_LOG(INFO) << "[Verifier][Pass] Verifier success";
+        LOG_COMPILER(INFO) << "[Verifier][Pass] Verifier success";
     }
 
     return true;

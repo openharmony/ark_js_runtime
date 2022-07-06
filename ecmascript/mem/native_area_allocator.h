@@ -19,9 +19,9 @@
 #include <atomic>
 
 #include "ecmascript/common.h"
+#include "ecmascript/log_wrapper.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/area.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 class PUBLIC_API NativeAreaAllocator {

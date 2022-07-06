@@ -59,13 +59,13 @@ void LLVMStackMapParser::PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo,
     for (; j < callsiteInfo.size(); j += 2) { // 2: base and derived
         const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
         const DwarfRegAndOffsetType derivedInfo = callsiteInfo[j + 1];
-        COMPILER_LOG(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
-        COMPILER_LOG(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
+        LOG_COMPILER(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
+        LOG_COMPILER(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
                     << " OFFSET:" << baseInfo.second;
         uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
         uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
         if (base != derived) {
-            COMPILER_LOG(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
+            LOG_COMPILER(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
                 << " OFFSET:" << derivedInfo.second;
         }
     }
@@ -157,7 +157,7 @@ void LLVMStackMapParser::CalcCallSite()
             uintptr_t callsite = address + instructionOffset;
             uint64_t  patchPointID = recordHead.PatchPointID;
             if (loc.location == LocationTy::Kind::INDIRECT) {
-                COMPILER_OPTIONAL_LOG(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
+                OPTIONAL_LOG_COMPILER(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
                     << loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
                     instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
                     callsite;
@@ -190,7 +190,7 @@ void LLVMStackMapParser::CalcCallSite()
 bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr)
 {
     if (!stackMapAddr) {
-        COMPILER_LOG(ERROR) << "stackMapAddr nullptr error ! ";
+        LOG_COMPILER(ERROR) << "stackMapAddr nullptr error ! ";
         return false;
     }
     dataInfo_ = std::make_unique<DataInfo>(std::move(stackMapAddr));
@@ -244,13 +244,13 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
     }
 
     // update functionAddress from host side to device side
-    COMPILER_OPTIONAL_LOG(DEBUG) << "stackmap calculate update funcitonaddress ";
+    OPTIONAL_LOG_COMPILER(DEBUG) << "stackmap calculate update funcitonaddress ";
 
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
         uintptr_t hostAddr = llvmStackMap_.StkSizeRecords[i].functionAddress;
         uintptr_t deviceAddr = hostAddr - hostCodeSectionAddr + deviceCodeSectionAddr;
         llvmStackMap_.StkSizeRecords[i].functionAddress = deviceAddr;
-        COMPILER_OPTIONAL_LOG(DEBUG) << std::dec << i << "th function " << std::hex << hostAddr << " ---> "
+        OPTIONAL_LOG_COMPILER(DEBUG) << std::dec << i << "th function " << std::hex << hostAddr << " ---> "
                                      << deviceAddr;
     }
     CalcCallSite();

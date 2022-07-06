@@ -50,7 +50,6 @@
 
 #include "llvm/Support/Host.h"
 #include "securec.h"
-#include "utils/logger.h"
 
 namespace panda::ecmascript::kungfu {
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
@@ -245,7 +244,7 @@ void LLVMIRBuilder::Build()
                 continue;
             }
             if (illegalOpHandlers_.find(circuit_->GetOpCode(gate)) == illegalOpHandlers_.end()) {
-                COMPILER_OPTIONAL_LOG(ERROR) << "The gate below need to be translated ";
+                LOG_COMPILER(ERROR) << "The gate below need to be translated ";
                 circuit_->Print(gate);
                 UNREACHABLE();
             }
@@ -272,7 +271,7 @@ void LLVMIRBuilder::SetToCfg(BasicBlock *bb) const
     EnsureLBB(bb);
     BasicBlockImpl *impl = bb->GetImpl<BasicBlockImpl>();
     if ((impl == nullptr) || (impl->lBB_ == nullptr)) {
-        COMPILER_OPTIONAL_LOG(ERROR) << "SetToCfg failed ";
+        LOG_COMPILER(ERROR) << "SetToCfg failed ";
         return;
     }
     impl->started = true;
@@ -287,12 +286,12 @@ void LLVMIRBuilder::ProcessPhiWorkList()
         for (auto &e : impl->unmergedPhis_) {
             BasicBlock *pred = e.pred;
             if (impl->started == 0) {
-                COMPILER_OPTIONAL_LOG(ERROR) << " ProcessPhiWorkList error hav't start ";
+                OPTIONAL_LOG_COMPILER(ERROR) << " ProcessPhiWorkList error hav't start ";
                 return;
             }
             LLVMValueRef value = gate2LValue_[e.operand];
             if (LLVMTypeOf(value) != LLVMTypeOf(e.phi)) {
-                COMPILER_OPTIONAL_LOG(ERROR) << " ProcessPhiWorkList LLVMTypeOf don't match error ";
+                OPTIONAL_LOG_COMPILER(ERROR) << " ProcessPhiWorkList LLVMTypeOf don't match error ";
             }
             LLVMBasicBlockRef llvmBB = EnsureLBB(pred);
             LLVMAddIncoming(e.phi, &value, &llvmBB, 1);
@@ -380,7 +379,7 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
         LLVMAddTargetDependentFunctionAttr(function_, "frame-reserved-slots",
             std::to_string(reservedSlotsSize).c_str());
     } else {
-        COMPILER_OPTIONAL_LOG(FATAL) << "frameType interpret type error !";
+        LOG_COMPILER(FATAL) << "frameType interpret type error !";
         ASSERT_PRINT(static_cast<uintptr_t>(frameType), "is not support !");
     }
 
@@ -487,7 +486,7 @@ void LLVMIRBuilder::HandleCall(GateRef gate)
     if (callOp == OpCode::CALL || callOp == OpCode::NOGC_RUNTIME_CALL) {
         VisitCall(gate, ins, callOp);
     } else {
-        abort();
+        UNREACHABLE();
     }
 }
 
@@ -857,12 +856,12 @@ void LLVMIRBuilder::VisitPhi(GateRef gate, const std::vector<GateRef> &srcGates)
         if (cnt > 0) {
             BasicBlock *bb = bbID2BB_[bbIdx].get();
             if (bb == nullptr) {
-                COMPILER_OPTIONAL_LOG(ERROR) << "VisitPhi failed BasicBlock nullptr";
+                OPTIONAL_LOG_COMPILER(ERROR) << "VisitPhi failed BasicBlock nullptr";
                 return;
             }
             BasicBlockImpl *impl = bb->GetImpl<BasicBlockImpl>();
             if (impl == nullptr) {
-                COMPILER_OPTIONAL_LOG(ERROR) << "VisitPhi failed impl nullptr";
+                OPTIONAL_LOG_COMPILER(ERROR) << "VisitPhi failed impl nullptr";
                 return;
             }
             LLVMBasicBlockRef llvmBB = EnsureLBB(bb);  // The llvm bb
@@ -919,7 +918,7 @@ void LLVMIRBuilder::LinkToLLVMCfg(int bbId, const OperandsVector &predecessors)
 {
     BasicBlock *bb = EnsureBB(bbId);
     if (bb == nullptr) {
-        COMPILER_OPTIONAL_LOG(ERROR) << " block create failed ";
+        OPTIONAL_LOG_COMPILER(ERROR) << " block create failed ";
         return;
     }
     currentBb_ = bb;
@@ -928,7 +927,7 @@ void LLVMIRBuilder::LinkToLLVMCfg(int bbId, const OperandsVector &predecessors)
     for (int predecessor : predecessors) {
         BasicBlock *pre = EnsureBB(predecessor);
         if (pre == nullptr) {
-            COMPILER_OPTIONAL_LOG(ERROR) << " block setup failed, predecessor:%d nullptr" << predecessor;
+            OPTIONAL_LOG_COMPILER(ERROR) << " block setup failed, predecessor:%d nullptr" << predecessor;
             return;
         }
         LLVMBasicBlockRef preLBB = EnsureLBB(pre);
@@ -967,7 +966,7 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
     }
     BasicBlock *bb = EnsureBB(bbOut);
     if (bb == nullptr) {
-        COMPILER_OPTIONAL_LOG(ERROR) << " block is nullptr ";
+        OPTIONAL_LOG_COMPILER(ERROR) << " block is nullptr ";
         return;
     }
     llvm::BasicBlock *self = llvm::unwrap(EnsureLBB(bbID2BB_[block].get()));
@@ -1013,7 +1012,7 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
         } else if (LLVMGetTypeKind(type) == LLVMIntegerTypeKind) {
             // do nothing
         } else {
-            abort();
+            UNREACHABLE();
         }
     } else if (machineType == MachineType::F64) {
         auto doubleValue = bit_cast<double>(value.to_ullong()); // actual double value
@@ -1025,7 +1024,7 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
     } else if (machineType == MachineType::I1) {
         llvmValue = LLVMConstInt(LLVMInt1Type(), value.to_ulong(), 0);
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = llvmValue;
 }
@@ -1126,7 +1125,7 @@ void LLVMIRBuilder::VisitMod(GateRef gate, GateRef e1, GateRef e2)
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFRem(builder_, e1Value, e2Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }
@@ -1134,7 +1133,7 @@ void LLVMIRBuilder::VisitMod(GateRef gate, GateRef e1, GateRef e2)
 void LLVMIRBuilder::VisitBranch(GateRef gate, GateRef cmp, int btrue, int bfalse)
 {
     if (gate2LValue_.count(cmp) == 0) {
-        COMPILER_OPTIONAL_LOG(ERROR) << "Branch condition gate is nullptr!";
+        OPTIONAL_LOG_COMPILER(ERROR) << "Branch condition gate is nullptr!";
         return;
     }
     LLVMValueRef cond = gate2LValue_[cmp];
@@ -1225,8 +1224,8 @@ LLVMValueRef LLVMIRBuilder::CanonicalizeToInt(LLVMValueRef value)
     } else if (LLVMGetTypeKind(LLVMTypeOf(value)) == LLVMIntegerTypeKind) {
         return value;
     } else {
-        COMPILER_OPTIONAL_LOG(ERROR) << "can't Canonicalize to Int64: ";
-        abort();
+        LOG_COMPILER(ERROR) << "can't Canonicalize to Int64: ";
+        UNREACHABLE();
     }
 }
 
@@ -1242,8 +1241,8 @@ LLVMValueRef LLVMIRBuilder::CanonicalizeToPtr(LLVMValueRef value)
         LLVMValueRef tmp = LLVMBuildIntToPtr(builder_, value, LLVMPointerType(LLVMInt64Type(), 0), "");
         return LLVMBuildPointerCast(builder_, tmp, LLVMPointerType(LLVMInt8Type(), 0), "");
     } else {
-        COMPILER_OPTIONAL_LOG(ERROR) << "can't Canonicalize to Ptr: ";
-        abort();
+        LOG_COMPILER(ERROR) << "can't Canonicalize to Ptr: ";
+        UNREACHABLE();
     }
 }
 
@@ -1262,7 +1261,7 @@ void LLVMIRBuilder::VisitIntRev(GateRef gate, GateRef e1)
     if (machineType <= MachineType::I64 && machineType >= MachineType::I1) {
         result = LLVMBuildNot(builder_, e1Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }
@@ -1325,7 +1324,7 @@ LLVMTypeRef LLVMIRBuilder::ConvertLLVMTypeFromGate(GateRef gate) const
             }
         }
         default:
-            abort();
+            UNREACHABLE();
     }
 }
 
@@ -1352,9 +1351,9 @@ int64_t LLVMIRBuilder::GetBitWidthFromMachineType(MachineType machineType) const
             return 64; // 64: bit width
         case FLEX:
         case ANYVALUE:
-            abort();
+            UNREACHABLE();
         default:
-            abort();
+            UNREACHABLE();
     }
 }
 
@@ -1407,7 +1406,7 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFAdd(builder_, e1Value, e2Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }
@@ -1431,7 +1430,7 @@ void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFSub(builder_, e1Value, e2Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }
@@ -1466,7 +1465,7 @@ void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFMul(builder_, e1Value, e2Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }
@@ -1593,7 +1592,7 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
             break;
         }
         default: {
-            abort();
+            UNREACHABLE();
             break;
         }
     }
@@ -1604,7 +1603,7 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
     } else if (e1ValCode == MachineType::F64) {
         result = LLVMBuildFCmp(builder_, realOpcode, e1Value, e2Value, "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     gate2LValue_[gate] = result;
 }

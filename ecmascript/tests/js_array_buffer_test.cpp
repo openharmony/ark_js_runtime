@@ -64,7 +64,6 @@ HWTEST_F_L0(JsArrayBufferTest, CopyDataBlockBytes)
     JSHandle<JSNativePointer> toNativePointer = factory->NewJSNativePointer(toBuffer, nullptr, nullptr);
     uint8_t *data = static_cast<uint8_t *>(vm->GetNativeAreaAllocator()->AllocateBuffer(length));
     if (memset_s(data, length, value, length) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
     void *formBuffer = vm->GetNativeAreaAllocator()->AllocateBuffer(length);
@@ -98,7 +97,6 @@ HWTEST_F_L0(JsArrayBufferTest, Attach_Detach_IsDetach)
     void *buffer = vm->GetNativeAreaAllocator()->AllocateBuffer(100);
     uint8_t *data = static_cast<uint8_t *>(vm->GetNativeAreaAllocator()->AllocateBuffer(length));
     if (memset_s(data, length, value, length) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
     JSHandle<JSNativePointer> nativePointer =

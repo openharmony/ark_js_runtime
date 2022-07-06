@@ -43,7 +43,7 @@ public:
         if (iter != testMap_.end()) {
             return iter->second.get();
         }
-        LOG(FATAL, DEBUGGER) << "Test " << name << " not found";
+        LOG_DEBUGGER(FATAL) << "Test " << name << " not found";
         return nullptr;
     }
 
@@ -88,7 +88,7 @@ public:
 
     static void Event(DebugEvent event, JSPtLocation location = JSPtLocation("", EntityId(0), 0))
     {
-        LOG(DEBUG, DEBUGGER) << "Occurred event " << event;
+        LOG_DEBUGGER(DEBUG) << "Occurred event " << event;
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
         lastEventLocation_ = location;
@@ -173,7 +173,7 @@ private:
             constexpr uint64_t TIMEOUT_MSEC = 10000U;
             bool timeExceeded = eventCv_.TimedWait(&eventMutex_, TIMEOUT_MSEC);
             if (timeExceeded) {
-                LOG(FATAL, DEBUGGER) << "Time limit exceeded while waiting " << event;
+                LOG_DEBUGGER(FATAL) << "Time limit exceeded while waiting " << event;
                 return false;
             }
         }

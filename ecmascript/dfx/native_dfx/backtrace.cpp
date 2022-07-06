@@ -21,7 +21,6 @@
 #include <string>
 #include <unwind.h>
 
-#include "libpandabase/utils/logger.h"
 #include "mem/mem.h"
 
 namespace panda::ecmascript {
@@ -37,12 +36,12 @@ void PrintBacktrace(uintptr_t value)
     if (!unwBackTrace) {
         void *handle = dlopen(LIB_UNWIND_SO_NAME.c_str(), RTLD_NOW);
         if (handle == nullptr) {
-            LOG(ERROR, RUNTIME) << "dlopen libunwind.so failed";
+            LOG_ECMA(ERROR) << "dlopen libunwind.so failed";
             return;
         }
         unwBackTrace = reinterpret_cast<UnwBackTraceFunc>(dlsym(handle, "unw_backtrace"));
         if (unwBackTrace == nullptr) {
-            LOG(ERROR, RUNTIME) << "dlsym unw_backtrace failed";
+            LOG_ECMA(ERROR) << "dlsym unw_backtrace failed";
             return;
         }
     }
@@ -69,8 +68,8 @@ void PrintBacktrace(uintptr_t value)
         stack << "#" << std::setw(ALIGN_WIDTH) << std::dec << i << ":  "
               << file << "(" << "+" << std::hex << offset << ")" << std::endl;
     }
-    LOG(INFO, RUNTIME) << "=====================Backtrace(" << std::hex << value <<")========================";
-    LOG(INFO, RUNTIME) << stack.str();
+    LOG_ECMA(INFO) << "=====================Backtrace(" << std::hex << value <<")========================";
+    LOG_ECMA(INFO) << stack.str();
     stack.clear();
 }
 } // namespace panda::ecmascript

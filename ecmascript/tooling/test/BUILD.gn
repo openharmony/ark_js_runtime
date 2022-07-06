@@ -177,6 +177,14 @@ source_set("jsdebugtest_set") {
 
   defines = [ "DEBUGGER_ABC_DIR=\"${test_abc_dir}/\"" ]
 
+  if (is_ohos && is_standard_system) {
+    if (enable_hilog) {
+      defines += [ "ENABLE_HILOG" ]
+      include_dirs =
+          [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
+    }
+  }
+
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -189,11 +197,8 @@ ohos_shared_library("jsdebugtest") {
   deps = [ ":jsdebugtest_set" ]
 
   if (is_ohos && is_standard_system) {
-    if (build_public_version) {
-      external_deps = [
-        "hitrace_native:hitrace_meter",
-        "hitrace_native:libhitrace",
-      ]
+    if (enable_hilog) {
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
     }
   }
 

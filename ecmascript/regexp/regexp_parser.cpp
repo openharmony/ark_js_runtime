@@ -156,7 +156,7 @@ bool RegExpParser::ParseUnlimitedLengthHexNumber(uint32_t maxValue, uint32_t *va
     }
     while (d >= 0) {
         if (UNLIKELY(x > (std::numeric_limits<uint32_t>::max() - static_cast<uint32_t>(d)) / HEX_VALUE)) {
-            LOG_ECMA(FATAL) << "value overflow";
+            LOG_FULL(FATAL) << "value overflow";
             return false;
         }
         x = x * HEX_VALUE + static_cast<uint32_t>(d);
@@ -441,12 +441,12 @@ void RegExpParser::ParseAlternative(bool isBackward)
                           moveSize,
                           buffer_.buf_ + start,  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                           moveSize) != EOK) {
-                LOG_ECMA(FATAL) << "memmove_s failed";
+                LOG_FULL(FATAL) << "memmove_s failed";
                 UNREACHABLE();
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(buffer_.buf_ + start, termSize, buffer_.buf_ + end, termSize) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
+                LOG_FULL(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
         }
@@ -1398,7 +1398,7 @@ void RegExpParser::ParseError(const char *errorMessage)
     SetIsError();
     size_t length = strlen(errorMessage) + 1;
     if (memcpy_s(errorMsg_, length, errorMessage, length) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
 }

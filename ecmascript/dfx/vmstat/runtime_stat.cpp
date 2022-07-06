@@ -68,14 +68,14 @@ void EcmaRuntimeStat::ResetAllCount()
 
 void EcmaRuntimeStat::PrintAllStats() const
 {
-    LOG(INFO, RUNTIME) << "panda runtime stat:";
+    LOG_ECMA(INFO) << "panda runtime stat:";
     static constexpr int nameRightAdjustment = 45;
     static constexpr int numberRightAdjustment = 12;
-    LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << "InterPreter && GC && C++ Builtin Function"
+    LOG_ECMA(INFO) << std::right << std::setw(nameRightAdjustment) << "InterPreter && GC && C++ Builtin Function"
                        << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
                        << std::setw(numberRightAdjustment) << "MaxTime(ns)"
                        << std::setw(numberRightAdjustment) << "AvgTime(ns)";
-    LOG(INFO, RUNTIME) << "============================================================"
+    LOG_ECMA(INFO) << "============================================================"
                        << "=========================================================";
 
     CVector<PandaRuntimeCallerStat> callerStat;
@@ -92,7 +92,7 @@ void EcmaRuntimeStat::PrintAllStats() const
     for (auto &runCallerStat : callerStat) {
         if (runCallerStat.TotalCount() != 0) {
             totalTime += runCallerStat.TotalTime();
-            LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << runCallerStat.Name()
+            LOG_ECMA(INFO) << std::right << std::setw(nameRightAdjustment) << runCallerStat.Name()
                                << std::setw(numberRightAdjustment) << runCallerStat.TotalTime()
                                << std::setw(numberRightAdjustment) << runCallerStat.TotalCount()
                                << std::setw(numberRightAdjustment) << runCallerStat.MaxTime()
@@ -100,9 +100,9 @@ void EcmaRuntimeStat::PrintAllStats() const
                                << runCallerStat.TotalTime() / runCallerStat.TotalCount();
         }
     }
-    LOG(INFO, RUNTIME) << "------------------------------------------------------------"
+    LOG_ECMA(INFO) << "------------------------------------------------------------"
                        << "---------------------------------------------------------";
-    LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << "Total Time(ns)"
+    LOG_ECMA(INFO) << std::right << std::setw(nameRightAdjustment) << "Total Time(ns)"
                        << std::setw(numberRightAdjustment) << totalTime;
 }
 

@@ -20,7 +20,6 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/protocol_channel.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -34,13 +33,13 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     };
 
     const std::string &method = request.GetMethod();
-    LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to RuntimeImpl";
+    LOG_DEBUGGER(DEBUG) << "dispatch [" << method << "] to RuntimeImpl";
 
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end()) {
         (this->*(entry->second))(request);
     } else {
-        LOG(ERROR, DEBUGGER) << "unknown method: " << method;
+        LOG_DEBUGGER(ERROR) << "unknown method: " << method;
         SendResponse(request, DispatchResponse::Fail("unknown method: " + method));
     }
 }
@@ -79,7 +78,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
         &outPrivateProperties, &outExceptionDetails);
     if (outExceptionDetails) {
         ASSERT(outExceptionDetails.value() != nullptr);
-        LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
+        LOG_DEBUGGER(WARN) << "GetProperties thrown an exception";
     }
     GetPropertiesReturns result(std::move(outPropertyDesc),
         std::move(outInternalDescs),
@@ -101,7 +100,7 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     DispatchResponse response = runtime_->CallFunctionOn(*params, &outRemoteObject, &outExceptionDetails);
     if (outExceptionDetails) {
         ASSERT(outExceptionDetails.value() != nullptr);
-        LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
+        LOG_DEBUGGER(WARN) << "CallFunctionOn thrown an exception";
     }
     if (outRemoteObject == nullptr) {
         SendResponse(request, response);
@@ -179,12 +178,12 @@ DispatchResponse RuntimeImpl::GetProperties(const GetPropertiesParams &params,
     bool isAccessorOnly = params.GetAccessPropertiesOnly();
     auto iter = properties_.find(objectId);
     if (iter == properties_.end()) {
-        LOG(ERROR, DEBUGGER) << "RuntimeImpl::GetProperties Unknown object id: " << objectId;
+        LOG_DEBUGGER(ERROR) << "RuntimeImpl::GetProperties Unknown object id: " << objectId;
         return DispatchResponse::Fail("Unknown object id");
     }
     Local<JSValueRef> value = Local<JSValueRef>(vm_, iter->second);
     if (value.IsEmpty() || !value->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "RuntimeImpl::GetProperties should a js object";
+        LOG_DEBUGGER(ERROR) << "RuntimeImpl::GetProperties should a js object";
         return DispatchResponse::Fail("Not a object");
     }
     if (value->IsArrayBuffer()) {
@@ -347,7 +346,7 @@ void RuntimeImpl::GetAdditionalProperties(Local<JSValueRef> value,
         Local<TypedArrayRef> localTypedArrayRef(value);
         uint32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
         if (lengthTypedArray > lengthTypedArrayLimit) {
-            LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
+            LOG_DEBUGGER(ERROR) << "The length of the TypedArray is non-compliant or unsupported.";
             return;
         }
         for (uint32_t i = 0; i < lengthTypedArray; i++) {

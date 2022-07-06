@@ -21,7 +21,6 @@
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/work_manager.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 class Heap;
@@ -37,7 +36,7 @@ public:
 
     virtual void Initialize()
     {
-        ECMA_GC_LOG() << "Marker::Initialize do nothing";
+        LOG_GC(DEBUG) << "Marker::Initialize do nothing";
     }
 
     void MarkRoots(uint32_t threadId);
@@ -47,20 +46,20 @@ public:
 
     virtual void ProcessMarkStack([[maybe_unused]] uint32_t threadId)
     {
-        LOG(FATAL, ECMASCRIPT) << "can not call this method";
+        LOG_GC(FATAL) << "can not call this method";
     }
 
 protected:
     // non move
     virtual inline void MarkObject([[maybe_unused]] uint32_t threadId, [[maybe_unused]] TaggedObject *object)
     {
-        LOG(FATAL, ECMASCRIPT) << "can not call this method";
+        LOG_GC(FATAL) << "can not call this method";
     }
 
     virtual inline SlotStatus MarkObject([[maybe_unused]] uint32_t threadId, [[maybe_unused]] TaggedObject *object,
                                          [[maybe_unused]] ObjectSlot slot)  // move
     {
-        LOG(FATAL, ECMASCRIPT) << "can not call this method";
+        LOG_GC(FATAL) << "can not call this method";
         return SlotStatus::KEEP_SLOT;
     }
 
@@ -70,7 +69,7 @@ protected:
                                          ObjectSlot end) = 0;
     virtual inline void RecordWeakReference([[maybe_unused]] uint32_t threadId, [[maybe_unused]] JSTaggedType *ref)
     {
-        LOG(FATAL, ECMASCRIPT) << "can not call this method";
+        LOG_GC(FATAL) << "can not call this method";
     }
 
     Heap *heap_ {nullptr};

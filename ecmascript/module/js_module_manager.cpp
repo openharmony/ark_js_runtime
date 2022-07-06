@@ -43,7 +43,7 @@ JSTaggedValue ModuleManager::GetModuleValueInner(JSTaggedValue key)
 {
     JSTaggedValue currentModule = GetCurrentModule();
     if (currentModule.IsUndefined()) {
-        LOG_ECMA(FATAL) << "GetModuleValueInner currentModule failed";
+        LOG_FULL(FATAL) << "GetModuleValueInner currentModule failed";
     }
     return SourceTextModule::Cast(currentModule.GetTaggedObject())->GetModuleValue(vm_->GetJSThread(), key, false);
 }
@@ -53,7 +53,7 @@ JSTaggedValue ModuleManager::GetModuleValueOutter(JSTaggedValue key)
     JSThread *thread = vm_->GetJSThread();
     JSTaggedValue currentModule = GetCurrentModule();
     if (currentModule.IsUndefined()) {
-        LOG_ECMA(FATAL) << "GetModuleValueOutter currentModule failed";
+        LOG_FULL(FATAL) << "GetModuleValueOutter currentModule failed";
     }
     JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetTaggedObject())->GetEnvironment();
     ASSERT(!moduleEnvironment.IsUndefined());
@@ -79,7 +79,7 @@ void ModuleManager::StoreModuleValue(JSTaggedValue key, JSTaggedValue value)
     JSThread *thread = vm_->GetJSThread();
     JSHandle<SourceTextModule> currentModule(thread, GetCurrentModule());
     if (currentModule.GetTaggedValue().IsUndefined()) {
-        LOG_ECMA(FATAL) << "StoreModuleValue currentModule failed";
+        LOG_FULL(FATAL) << "StoreModuleValue currentModule failed";
     }
     JSHandle<JSTaggedValue> keyHandle(thread, key);
     JSHandle<JSTaggedValue> valueHandle(thread, value);
@@ -93,7 +93,7 @@ JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const CString &r
         JSHandle<JSTaggedValue>::Cast(factory->NewFromUtf8(referencingModule));
     int entry =
         NameDictionary::Cast(resolvedModules_.GetTaggedObject())->FindEntry(referencingHandle.GetTaggedValue());
-    LOG_IF(entry == -1, FATAL, ECMASCRIPT) << "cannot get module: " << referencingModule;
+    LOG_ECMA_IF(entry == -1, FATAL) << "cannot get module: " << referencingModule;
 
     return JSHandle<SourceTextModule>(vm_->GetJSThread(),
                                       NameDictionary::Cast(resolvedModules_.GetTaggedObject())->GetValue(entry));
@@ -164,7 +164,7 @@ JSTaggedValue ModuleManager::GetModuleNamespace(JSTaggedValue localName)
 {
     JSTaggedValue currentModule = GetCurrentModule();
     if (currentModule.IsUndefined()) {
-        LOG_ECMA(FATAL) << "GetModuleNamespace currentModule failed";
+        LOG_FULL(FATAL) << "GetModuleNamespace currentModule failed";
     }
     JSTaggedValue moduleEnvironment = SourceTextModule::Cast(currentModule.GetTaggedObject())->GetEnvironment();
     ASSERT(!moduleEnvironment.IsUndefined());

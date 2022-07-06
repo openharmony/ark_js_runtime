@@ -136,7 +136,7 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
     Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(start));
     auto set = region->GetFreeObjectSet(type);
     if (set == nullptr) {
-        LOG_ECMA(FATAL) << "The set of region is nullptr";
+        LOG_FULL(FATAL) << "The set of region is nullptr";
         return;
     }
     set->Free(start, size);

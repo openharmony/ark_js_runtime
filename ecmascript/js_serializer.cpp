@@ -135,7 +135,7 @@ bool JSSerializer::WriteRawData(const void *data, size_t length)
     errno_t rc;
     rc = memcpy_s(buffer_ + bufferSize_, bufferCapacity_ - bufferSize_, data, length);
     if (rc != EOK) {
-        LOG(ERROR, RUNTIME) << "Failed to memcpy_s Data";
+        LOG_FULL(ERROR) << "Failed to memcpy_s Data";
         return false;
     }
     bufferSize_ += length;
@@ -195,7 +195,7 @@ bool JSSerializer::ExpandBuffer(size_t requestedSize)
     errno_t rc;
     rc = memcpy_s(newBuffer, newCapacity, buffer_, bufferSize_);
     if (rc != EOK) {
-        LOG(ERROR, RUNTIME) << "Failed to memcpy_s Data";
+        LOG_FULL(ERROR) << "Failed to memcpy_s Data";
         free(newBuffer);
         return false;
     }
@@ -1167,7 +1167,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadNativeBindingObject()
     Local<JSValueRef> attachVal = attachFunc(
         engine_, reinterpret_cast<void *>(bufferPointer), reinterpret_cast<void *>(hint));
     if (attachVal.IsEmpty()) {
-        LOG(ERROR, RUNTIME) << "NativeBindingObject is empty";
+        LOG_ECMA(ERROR) << "NativeBindingObject is empty";
         attachVal = JSValueRef::Undefined(thread_->GetEcmaVM());
     }
     return JSNApiHelper::ToJSHandle(attachVal);

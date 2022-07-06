@@ -35,10 +35,10 @@ CpuProfiler::CpuProfiler()
 {
     generator_ = new SamplesRecord();
     if (sem_init(&sem_[0], 0, 0) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[0] init failed";
+        LOG_ECMA(ERROR) << "sem_[0] init failed";
     }
     if (sem_init(&sem_[1], 0, 0) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[1] init failed";
+        LOG_ECMA(ERROR) << "sem_[1] init failed";
     }
 }
 
@@ -65,13 +65,13 @@ void CpuProfiler::StartCpuProfilerForInfo(const EcmaVM *vm)
     struct sigaction sa;
     sa.sa_handler = &GetStackSignalHandler;
     if (sigemptyset(&sa.sa_mask) != 0) {
-        LOG(ERROR, RUNTIME) << "Parameter set signal set initialization and emptying failed";
+        LOG_ECMA(ERROR) << "Parameter set signal set initialization and emptying failed";
         isProfiling_ = false;
         return;
     }
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &sa, nullptr) != 0) {
-        LOG(ERROR, RUNTIME) << "sigaction failed to set signal";
+        LOG_ECMA(ERROR) << "sigaction failed to set signal";
         isProfiling_ = false;
         return;
     }
@@ -90,7 +90,7 @@ void CpuProfiler::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &f
     isProfiling_ = true;
     std::string absoluteFilePath("");
     if (!CheckFileName(fileName, absoluteFilePath)) {
-        LOG(ERROR, RUNTIME) << "The fileName contains illegal characters";
+        LOG_ECMA(ERROR) << "The fileName contains illegal characters";
         isProfiling_ = false;
         return;
     }
@@ -101,7 +101,7 @@ void CpuProfiler::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &f
     generator_->SetFileName(fileName_);
     generator_->fileHandle_.open(fileName_.c_str());
     if (generator_->fileHandle_.fail()) {
-        LOG(ERROR, RUNTIME) << "File open failed";
+        LOG_ECMA(ERROR) << "File open failed";
         isProfiling_ = false;
         return;
     }
@@ -110,13 +110,13 @@ void CpuProfiler::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &f
     struct sigaction sa;
     sa.sa_handler = &GetStackSignalHandler;
     if (sigemptyset(&sa.sa_mask) != 0) {
-        LOG(ERROR, RUNTIME) << "Parameter set signal set initialization and emptying failed";
+        LOG_ECMA(ERROR) << "Parameter set signal set initialization and emptying failed";
         isProfiling_ = false;
         return;
     }
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &sa, nullptr) != 0) {
-        LOG(ERROR, RUNTIME) << "sigaction failed to set signal";
+        LOG_ECMA(ERROR) << "sigaction failed to set signal";
         isProfiling_ = false;
         return;
     }
@@ -134,27 +134,27 @@ std::unique_ptr<struct ProfileInfo> CpuProfiler::StopCpuProfilerForInfo()
 {
     std::unique_ptr<struct ProfileInfo> profileInfo;
     if (!isProfiling_) {
-        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start\
+        LOG_ECMA(ERROR) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start\
                                 or the sampling thread is not started";
         return profileInfo;
     }
     if (outToFile_) {
-        LOG(ERROR, RUNTIME) << "Can not Stop a CpuProfiler sampling which is for file output by this stop method";
+        LOG_ECMA(ERROR) << "Can not Stop a CpuProfiler sampling which is for file output by this stop method";
         return profileInfo;
     }
     if (static_cast<long>(tid_) != syscall(SYS_gettid)) {
-        LOG(ERROR, RUNTIME) << "Thread attempted to close other sampling threads";
+        LOG_ECMA(ERROR) << "Thread attempted to close other sampling threads";
         return profileInfo;
     }
     isProfiling_ = false;
     SamplingProcessor::SetIsStart(false);
     generator_->SetLastSampleFlag();
     if (sem_post(&sem_[0]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+        LOG_ECMA(ERROR) << "sem_[0] post failed";
         return profileInfo;
     }
     if (sem_wait(&sem_[1]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[1] wait failed";
+        LOG_ECMA(ERROR) << "sem_[1] wait failed";
         return profileInfo;
     }
 
@@ -174,30 +174,30 @@ void CpuProfiler::SetCpuSamplingInterval(int interval)
 void CpuProfiler::StopCpuProfilerForFile()
 {
     if (!isProfiling_) {
-        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start\
+        LOG_ECMA(ERROR) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start\
                                 or the sampling thread is not started";
         return;
     }
 
     if (!outToFile_) {
-        LOG(ERROR, RUNTIME) << "Can not Stop a CpuProfiler sampling which is for return profile info by\
+        LOG_ECMA(ERROR) << "Can not Stop a CpuProfiler sampling which is for return profile info by\
                                 this stop method";
         return;
     }
 
     if (static_cast<long>(tid_) != syscall(SYS_gettid)) {
-        LOG(ERROR, RUNTIME) << "Thread attempted to close other sampling threads";
+        LOG_ECMA(ERROR) << "Thread attempted to close other sampling threads";
         return;
     }
     isProfiling_ = false;
     SamplingProcessor::SetIsStart(false);
     generator_->SetLastSampleFlag();
     if (sem_post(&sem_[0]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+        LOG_ECMA(ERROR) << "sem_[0] post failed";
         return;
     }
     if (sem_wait(&sem_[1]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[1] wait failed";
+        LOG_ECMA(ERROR) << "sem_[1] wait failed";
         return;
     }
     generator_->WriteMethodsAndSampleInfo(true);
@@ -213,10 +213,10 @@ void CpuProfiler::StopCpuProfilerForFile()
 CpuProfiler::~CpuProfiler()
 {
     if (sem_destroy(&sem_[0]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[0] destroy failed";
+        LOG_ECMA(ERROR) << "sem_[0] destroy failed";
     }
     if (sem_destroy(&sem_[1]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[1] destroy failed";
+        LOG_ECMA(ERROR) << "sem_[1] destroy failed";
     }
     if (generator_ != nullptr) {
         delete generator_;
@@ -254,7 +254,7 @@ void CpuProfiler::GetCurrentProcessInfo(struct CurrentProcessInfo &currentProces
     currentProcessInfo.nowTimeStamp = SamplingProcessor::GetMicrosecondsTimeStamp() % TIME_CHANGE;
     currentProcessInfo.pid = getpid();
     if (syscall(SYS_gettid) == -1) {
-        LOG_ECMA(FATAL) << "syscall failed";
+        LOG_FULL(FATAL) << "syscall failed";
         UNREACHABLE();
     }
     tid_ = currentProcessInfo.tid = static_cast<pthread_t>(syscall(SYS_gettid));
@@ -346,7 +346,7 @@ void CpuProfiler::IsNeedAndGetStack(JSThread *thread)
     if (thread->GetStackSignal()) {
         GetFrameStack(thread);
         if (sem_post(&sem_[0]) != 0) {
-            LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+            LOG_ECMA(ERROR) << "sem_[0] post failed";
             return;
         }
         thread->SetGetStackSignal(false);
@@ -358,7 +358,7 @@ void CpuProfiler::GetStackSignalHandler([[maybe_unused]] int signal)
     JSThread *thread = SamplingProcessor::GetJSThread();
     GetFrameStack(thread);
     if (sem_post(&sem_[0]) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+        LOG_ECMA(ERROR) << "sem_[0] post failed";
         return;
     }
 }
@@ -373,12 +373,12 @@ std::string CpuProfiler::GetProfileName() const
     size_t result = 0;
     result = strftime(time1, sizeof(time1), "%Y%m%d", &nowTime1);
     if (result == 0) {
-        LOG(ERROR, RUNTIME) << "get time failed";
+        LOG_ECMA(ERROR) << "get time failed";
         return "";
     }
     result = strftime(time2, sizeof(time2), "%H%M%S", &nowTime1);
     if (result == 0) {
-        LOG(ERROR, RUNTIME) << "get time failed";
+        LOG_ECMA(ERROR) << "get time failed";
         return "";
     }
     std::string profileName = "cpuprofile-";
@@ -402,7 +402,7 @@ bool CpuProfiler::CheckFileName(const std::string &fileName, std::string &absolu
     CVector<char> resolvedPath(PATH_MAX);
     auto result = realpath(fileName.c_str(), resolvedPath.data());
     if (result == nullptr) {
-        LOG(INFO, RUNTIME) << "The file path does not exist";
+        LOG_ECMA(INFO) << "The file path does not exist";
     }
     std::ofstream file(resolvedPath.data());
     if (!file.good()) {

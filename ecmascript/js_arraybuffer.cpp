@@ -30,7 +30,7 @@ void JSArrayBuffer::CopyDataBlockBytes(JSTaggedValue toBlock, JSTaggedValue from
     auto *from = static_cast<uint8_t *>(fromBuf);
     auto *to = static_cast<uint8_t *>(toBuf);
     if (memcpy_s(to, count, from + fromIndex, count) != EOK) {  // NOLINT
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
 }

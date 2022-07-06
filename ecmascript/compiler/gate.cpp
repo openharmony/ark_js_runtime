@@ -185,7 +185,7 @@ Properties OpCode::GetProperties() const
         case BITCAST:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         default:
-            COMPILER_LOG(ERROR) << "Please complete OpCode properties (OpCode=" << op_ << ")";
+            LOG_COMPILER(ERROR) << "Please complete OpCode properties (OpCode=" << op_ << ")";
             UNREACHABLE();
     }
 #undef STATE
@@ -654,9 +654,9 @@ bool Gate::Verify() const
         }
     }
     if (failed) {
-        COMPILER_LOG(ERROR) << "[Verifier][Error] Gate level input list schema verify failed";
+        LOG_COMPILER(ERROR) << "[Verifier][Error] Gate level input list schema verify failed";
         Print("", true, highlightIdx);
-        COMPILER_LOG(ERROR) << "Note: " << errorString;
+        LOG_COMPILER(ERROR) << "Note: " << errorString;
     }
     return !failed;
 }
@@ -936,7 +936,7 @@ In *Gate::GetIn(size_t idx)
 {
 #ifndef NDEBUG
     if (idx >= GetNumIns()) {
-        COMPILER_LOG(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
+        LOG_COMPILER(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
         Print();
         ASSERT(false);
     }
@@ -949,7 +949,7 @@ const In *Gate::GetInConst(size_t idx) const
 {
 #ifndef NDEBUG
     if (idx >= GetNumIns()) {
-        COMPILER_LOG(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
+        LOG_COMPILER(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
         Print();
         ASSERT(false);
     }
@@ -1117,7 +1117,7 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
         }
         log += "])";
         log += "\n";
-        COMPILER_LOG(INFO) << std::dec << log;
+        LOG_COMPILER(INFO) << std::dec << log;
     }
 }
 

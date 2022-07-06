@@ -43,9 +43,9 @@ struct Header {
     uint16_t Reserved1; // Reserved (expected to be 0)
     void Print() const
     {
-        COMPILER_LOG(DEBUG) << "----- head ----";
-        COMPILER_LOG(DEBUG) << "   version:" << static_cast<int>(stackmapversion);
-        COMPILER_LOG(DEBUG) << "+++++ head ++++";
+        LOG_COMPILER(DEBUG) << "----- head ----";
+        LOG_COMPILER(DEBUG) << "   version:" << static_cast<int>(stackmapversion);
+        LOG_COMPILER(DEBUG) << "+++++ head ++++";
     }
 };
 
@@ -56,9 +56,9 @@ struct StkSizeRecordTy {
     uint64_t recordCount;
     void Print() const
     {
-        COMPILER_LOG(DEBUG) << "               functionAddress:0x" << std::hex << functionAddress;
-        COMPILER_LOG(DEBUG) << "               stackSize:0x" << std::hex << stackSize;
-        COMPILER_LOG(DEBUG) << "               recordCount:" << std::hex << recordCount;
+        LOG_COMPILER(DEBUG) << "               functionAddress:0x" << std::hex << functionAddress;
+        LOG_COMPILER(DEBUG) << "               stackSize:0x" << std::hex << stackSize;
+        LOG_COMPILER(DEBUG) << "               recordCount:" << std::hex << recordCount;
     }
 };
 #pragma pack()
@@ -67,7 +67,7 @@ struct ConstantsTy {
     uintptr_t LargeConstant;
     void Print() const
     {
-        COMPILER_LOG(DEBUG) << "               LargeConstant:0x" << std::hex << LargeConstant;
+        LOG_COMPILER(DEBUG) << "               LargeConstant:0x" << std::hex << LargeConstant;
     }
 };
 
@@ -78,10 +78,10 @@ struct StkMapRecordHeadTy {
     uint16_t NumLocations;
     void Print() const
     {
-        COMPILER_LOG(DEBUG) << "               PatchPointID:0x" << std::hex << PatchPointID;
-        COMPILER_LOG(DEBUG) << "               instructionOffset:0x" << std::hex << InstructionOffset;
-        COMPILER_LOG(DEBUG) << "               Reserved:0x" << std::hex << Reserved;
-        COMPILER_LOG(DEBUG) << "               NumLocations:0x" << std::hex << NumLocations;
+        LOG_COMPILER(DEBUG) << "               PatchPointID:0x" << std::hex << PatchPointID;
+        LOG_COMPILER(DEBUG) << "               instructionOffset:0x" << std::hex << InstructionOffset;
+        LOG_COMPILER(DEBUG) << "               Reserved:0x" << std::hex << Reserved;
+        LOG_COMPILER(DEBUG) << "               NumLocations:0x" << std::hex << NumLocations;
     }
 };
 
@@ -105,10 +105,10 @@ struct  LocationTy {
 
     void Print() const
     {
-        COMPILER_LOG(DEBUG)  << TypeToString(location);
-        COMPILER_LOG(DEBUG) << ", size:" << std::dec << LocationSize;
-        COMPILER_LOG(DEBUG) << "\tDwarfRegNum:" << DwarfRegNum;
-        COMPILER_LOG(DEBUG) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant;
+        LOG_COMPILER(DEBUG)  << TypeToString(location);
+        LOG_COMPILER(DEBUG) << ", size:" << std::dec << LocationSize;
+        LOG_COMPILER(DEBUG) << "\tDwarfRegNum:" << DwarfRegNum;
+        LOG_COMPILER(DEBUG) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant;
     }
 };
 
@@ -118,9 +118,9 @@ struct LiveOutsTy {
     uint8_t SizeinBytes;
     void Print() const
     {
-        COMPILER_LOG(DEBUG) << "                  Dwarf RegNum:" << DwarfRegNum;
-        COMPILER_LOG(DEBUG) << "                  Reserved:" << Reserved;
-        COMPILER_LOG(DEBUG) << "                  SizeinBytes:" << SizeinBytes;
+        LOG_COMPILER(DEBUG) << "                  Dwarf RegNum:" << DwarfRegNum;
+        LOG_COMPILER(DEBUG) << "                  Reserved:" << Reserved;
+        LOG_COMPILER(DEBUG) << "                  SizeinBytes:" << SizeinBytes;
     }
 };
 
@@ -133,12 +133,12 @@ struct StkMapRecordTy {
         head.Print();
         auto size = Locations.size();
         for (size_t i = 0; i < size; i++) {
-            COMPILER_LOG(DEBUG) << "                   #" << std::dec << i << ":";
+            LOG_COMPILER(DEBUG) << "                   #" << std::dec << i << ":";
             Locations[i].Print();
         }
         size = LiveOuts.size();
         for (size_t i = 0; i < size; i++) {
-            COMPILER_LOG(DEBUG) << "               liveOuts[" << i << "] info:";
+            LOG_COMPILER(DEBUG) << "               liveOuts[" << i << "] info:";
         }
     }
 };
@@ -176,15 +176,15 @@ struct LLVMStackMap {
     {
         head.Print();
         for (size_t i = 0; i < StkSizeRecords.size(); i++) {
-            COMPILER_LOG(DEBUG) << "stkSizeRecord[" << i << "] info:";
+            LOG_COMPILER(DEBUG) << "stkSizeRecord[" << i << "] info:";
             StkSizeRecords[i].Print();
         }
         for (size_t i = 0; i < Constants.size(); i++) {
-            COMPILER_LOG(DEBUG) << "constants[" << i << "] info:";
+            LOG_COMPILER(DEBUG) << "constants[" << i << "] info:";
             Constants[i].Print();
         }
         for (size_t i = 0; i < StkMapRecord.size(); i++) {
-            COMPILER_LOG(DEBUG) << "StkMapRecord[" << i << "] info:";
+            LOG_COMPILER(DEBUG) << "StkMapRecord[" << i << "] info:";
             StkMapRecord[i].Print();
         }
     }

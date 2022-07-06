@@ -168,7 +168,7 @@ HWTEST_F_L0(JSAPILightWeightSetTest, EqualClearNotEqual)
     for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
         std::string iValue = myValue2 + std::to_string(i);
         if (i == 2) {
-            LOG(ERROR, RUNTIME) << " {} " << iValue;
+            LOG_ECMA(ERROR) << " {} " << iValue;
         } else {
             value2.Update(factory->NewFromStdString(iValue).GetTaggedValue());
             result = JSAPILightWeightSet::Add(thread, equalLws, value2);

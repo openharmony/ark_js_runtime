@@ -16,9 +16,10 @@
 #ifndef ECMASCRIPT_MEM_GC_STATS_H
 #define ECMASCRIPT_MEM_GC_STATS_H
 
+#include <chrono>
+#include <string>
 #include "time.h"
-#include "chrono"
-#include "libpandabase/utils/logger.h"
+#include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
 class Heap;

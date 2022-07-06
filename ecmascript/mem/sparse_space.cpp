@@ -373,7 +373,7 @@ void OldSpace::CheckRegionSize()
     size_t available = allocator_->GetAvailableSize();
     size_t wasted = allocator_->GetWastedSize();
     if (GetHeapObjectSize() + wasted + available != objectSize_) {
-        LOG(DEBUG, RUNTIME) << "Actual live object size:" << GetHeapObjectSize()
+        LOG_GC(DEBUG) << "Actual live object size:" << GetHeapObjectSize()
                             << ", free object size:" << available
                             << ", wasted size:" << wasted
                             << ", but exception totoal size:" << objectSize_;

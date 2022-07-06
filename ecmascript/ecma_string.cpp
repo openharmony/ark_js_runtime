@@ -383,7 +383,7 @@ bool EcmaString::StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, siz
     ASSERT(dstMax >= count);
     ASSERT(dst.Size() >= src.Size());
     if (memcpy_s(dst.data(), dstMax, src.data(), count) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
+        LOG_FULL(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
     return true;
