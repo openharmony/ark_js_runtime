@@ -4020,7 +4020,7 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
             GateRef newTarget = Undefined();
             GateRef thisValue = Undefined();
             GateRef lexEnv = builder_.GetLexicalEnv(func);
-            GateRef realNumArgs = Int32Add(actualNumArgs, Int32(NUM_MANDATORY_JSFUNC_ARGS));
+            GateRef realNumArgs = Int64Add(ZExtInt32ToInt64(actualNumArgs), Int64(NUM_MANDATORY_JSFUNC_ARGS));
             switch (mode) {
                 case JSCallMode::CALL_ARG0:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
@@ -4048,12 +4048,12 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                     [[fallthrough]];
                 case JSCallMode::CALL_WITH_ARGV:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCallWithArgV),
-                        { glue, actualNumArgs, func, newTarget, thisValue, data[1] });
+                        { glue, ZExtInt32ToInt64(actualNumArgs), func, newTarget, thisValue, data[1] });
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
                     result = CallNGCRuntime(glue, RTSTUB_ID(JSCallWithArgV),
-                        { glue, actualNumArgs, func, func, data[2], data[1]});
+                        { glue, ZExtInt32ToInt64(actualNumArgs), func, func, data[2], data[1]});
                     Jump(&exit);
                     break;
                 case JSCallMode::CALL_GETTER:

@@ -454,7 +454,7 @@ void JsProxyCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
     Label isNotUndefined(env);
 
     GateRef glue = PtrArgument(0);
-    GateRef argc = Int32Argument(1);
+    GateRef argc = Int64Argument(1);
     GateRef proxy = TaggedPointerArgument(2); // callTarget
     GateRef argv = PtrArgument(3);
 
@@ -487,7 +487,7 @@ void JsProxyCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
         {
             GateRef arrHandle = CallRuntime(glue, RTSTUB_ID(CreateArrayFromList), argc, argv);
             GateRef thisArg = Load(VariableType::JS_POINTER(), argv, IntPtr(2*sizeof(JSTaggedValue)));
-            GateRef numArgs = Int32(6);
+            GateRef numArgs = Int64(6);
             GateRef lexEnv = Load(VariableType::JS_POINTER(), method, IntPtr(JSFunction::LEXICAL_ENV_OFFSET));
             result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
                 {glue, lexEnv, numArgs, method, Undefined(), handler, target, thisArg, arrHandle});

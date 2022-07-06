@@ -25,7 +25,7 @@ DEF_CALL_SIGNATURE(FooAOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -45,7 +45,7 @@ DEF_CALL_SIGNATURE(Foo1AOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -65,7 +65,7 @@ DEF_CALL_SIGNATURE(Foo2AOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -85,7 +85,7 @@ DEF_CALL_SIGNATURE(FooNativeAOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -105,7 +105,7 @@ DEF_CALL_SIGNATURE(FooBoundAOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -125,7 +125,7 @@ DEF_CALL_SIGNATURE(Bar1AOT)
     std::array<VariableType, 9> params = { // 9 : 9 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -146,7 +146,7 @@ DEF_CALL_SIGNATURE(BarAOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexEnv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -166,7 +166,7 @@ DEF_CALL_SIGNATURE(FooProxyAOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexEnv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -186,7 +186,7 @@ DEF_CALL_SIGNATURE(FooProxy2AOT)
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexEnv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget
@@ -206,7 +206,7 @@ DEF_CALL_SIGNATURE(Bar2AOT)
     std::array<VariableType, 6> params = { // 6 : 6 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::JS_ANY(),     // lexenv
-        VariableType::INT32(),
+        VariableType::INT64(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
         VariableType::JS_ANY(),     // thisTarget

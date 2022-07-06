@@ -1660,9 +1660,9 @@ JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
-    for (int index = 0; index < argc; ++index) {
-        taggedArray->Set(thread, index, argvPtr[index]);
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc - NUM_MANDATORY_JSFUNC_ARGS);
+    for (int index = NUM_MANDATORY_JSFUNC_ARGS; index < argc; ++index) {
+        taggedArray->Set(thread, index - NUM_MANDATORY_JSFUNC_ARGS, argvPtr[index]);
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
     return arrHandle.GetTaggedValue().GetRawData();
