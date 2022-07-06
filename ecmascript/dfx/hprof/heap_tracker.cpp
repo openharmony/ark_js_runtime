@@ -33,8 +33,17 @@ void HeapTrackerSample::Run()
 
 void HeapTracker::AllocationEvent(TaggedObject* address)
 {
+    Node *node;
     if (snapshot_ != nullptr) {
-        snapshot_->AddNode(address);
+        node = snapshot_->AddNode(address);
+        if (node != nullptr && snapshot_->trackAllocations()) {
+            int size = node->GetSelfSize();
+            int sequenceId = node->GetId();
+            int traceId = snapshot_->AddTraceNode(sequenceId, size);
+            if (traceId != -1) {
+                node->SetTraceId(static_cast<uint64_t>(traceId));
+            }
+        }
     }
 }
 
