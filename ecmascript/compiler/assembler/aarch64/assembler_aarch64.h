@@ -60,7 +60,7 @@ public:
 
     inline bool operator !=(const Register &other)
     {
-        return reg_ != other.GetId();
+        return reg_ != other.GetId() || type_ != other.GetType();
     }
 
     inline bool operator ==(const Register &other)

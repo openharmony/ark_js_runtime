@@ -1999,7 +1999,7 @@ void AssemblerStubsX64::PushArgsWithArgV(ExtendedAssembler *assembler, Register 
     }
 }
 
-void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
+void AssemblerStubsX64::PopJSFunctionArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
 {
     __ Addq(1, expectedNumArgs);
     __ Andq(~1, expectedNumArgs);
@@ -2008,7 +2008,7 @@ void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expect
     __ Addq(8, rsp); // 8: skip expectedNumArgs
 }
 
-void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp)
+void AssemblerStubsX64::PushJSFunctionEntryFrame (ExtendedAssembler *assembler, Register prevFp)
 {
     __ PushCppCalleeSaveRegisters();
     __ Pushq(rdi);
@@ -2020,7 +2020,7 @@ void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register
     __ Pushq(prevFp);
 }
 
-void AssemblerStubsX64::PopAotEntryFrame(ExtendedAssembler *assembler, Register glue)
+void AssemblerStubsX64::PopJSFunctionEntryFrame(ExtendedAssembler *assembler, Register glue)
 {
     Register prevFp(rsi);
     __ Popq(prevFp);
@@ -2080,7 +2080,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Movq(glue, rax);
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
     __ Mov(Operand(sp, 0), actualNumArgs);
-    PopAotArgs(assembler, actualNumArgs);
+    PopJSFunctionArgs(assembler, actualNumArgs);
     PopOptimizedFrame(assembler);
     __ Ret();
 }
