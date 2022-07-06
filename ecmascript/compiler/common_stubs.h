@@ -341,6 +341,8 @@ public:
     NO_MOVE_SEMANTIC(JsProxyCallInternalStub);
     NO_COPY_SEMANTIC(JsProxyCallInternalStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
+private:
+    static constexpr int JSPROXY_NUM_ARGS = 3;
 };
 
 class CommonStubCSigns {

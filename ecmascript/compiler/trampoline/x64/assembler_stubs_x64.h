@@ -122,9 +122,9 @@ private:
     static void CopyArgumentWithArgV(ExtendedAssembler *assembler, Register argc, Register argV);
     static void PushMandatoryJSArgs(ExtendedAssembler *assembler, Register jsfunc,
                                     Register thisObj, Register newTarget);
-    static void PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs);
-    static void PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp);
-    static void PopAotEntryFrame(ExtendedAssembler *assembler, Register glue);
+    static void PopJSFunctionArgs(ExtendedAssembler *assembler, Register expectedNumArgs);
+    static void PushJSFunctionEntryFrame (ExtendedAssembler *assembler, Register prevFp);
+    static void PopJSFunctionEntryFrame(ExtendedAssembler *assembler, Register glue);
     static void PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp);
     static void PopOptimizedFrame(ExtendedAssembler *assembler);
 };

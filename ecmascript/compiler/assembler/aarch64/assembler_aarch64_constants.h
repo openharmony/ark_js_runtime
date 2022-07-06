@@ -44,14 +44,14 @@ enum VectorRegisterId : uint8_t {
 
 enum Extend : uint8_t {
     NO_EXTEND = 0xFF,
-    UXTB = 0,
-    UXTH = 1,
-    UXTW = 2,
-    UXTX = 3,
-    SXTB = 4,
-    SXTH = 5,
-    SXTW = 6,
-    SXTX = 7,
+    UXTB = 0,   /* zero extend to byte */
+    UXTH = 1,   /* zero extend to half word */
+    UXTW = 2,   /* zero extend to word */
+    UXTX = 3,   /* zero extend to 64bit */
+    SXTB = 4,   /* sign extend to byte */
+    SXTH = 5,   /* sign extend to half word */
+    SXTW = 6,   /* sign extend to word */
+    SXTX = 7,   /* sign extend to 64bit */
 };
 
 enum Shift : uint8_t {
