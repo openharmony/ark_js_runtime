@@ -22,10 +22,7 @@ namespace panda::ecmascript::tooling {
 void ProtocolHandler::WaitForDebugger()
 {
     waitingForDebugger_ = true;
-    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
-    while (waitingForDebugger_) {
-        usleep(DEBUGGER_WAIT_SLEEP_TIME);
-    }
+    ProcessCommand();
 }
 
 void ProtocolHandler::RunIfWaitingForDebugger()
@@ -33,13 +30,53 @@ void ProtocolHandler::RunIfWaitingForDebugger()
     waitingForDebugger_ = false;
 }
 
-void ProtocolHandler::ProcessCommand(const std::string &msg)
+void ProtocolHandler::DispatchCommand(std::string &&msg)
 {
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
-    [[maybe_unused]] LocalScope scope(vm_);
-    Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
-    dispatcher_.Dispatch(DispatchRequest(msg));
-    DebuggerApi::SetException(vm_, exception);
+    std::unique_lock<std::mutex> queueLock(requestLock_);
+    requestQueue_.push(std::move(msg));
+    requestQueueCond_.notify_one();
+}
+
+// called after DispatchCommand
+int32_t ProtocolHandler::GetDispatchStatus()
+{
+    if (isDispatchingMessage_ || waitingForDebugger_) {
+        return DispatchStatus::DISPATCHING;
+    }
+    std::unique_lock<std::mutex> queueLock(requestLock_);
+    if (requestQueue_.empty()) {
+        return DispatchStatus::DISPATCHED;
+    }
+    return DispatchStatus::UNKNOWN;
+}
+
+void ProtocolHandler::ProcessCommand()
+{
+    std::queue<std::string> dispatchingQueue;
+    do {
+        {
+            std::unique_lock<std::mutex> queueLock(requestLock_);
+            if (requestQueue_.empty()) {
+                if (!waitingForDebugger_) {
+                    return;
+                }
+                requestQueueCond_.wait(queueLock);
+            }
+            requestQueue_.swap(dispatchingQueue);
+        }
+
+        isDispatchingMessage_ = true;
+        while (!dispatchingQueue.empty()) {
+            std::string msg = std::move(dispatchingQueue.front());
+            dispatchingQueue.pop();
+
+            [[maybe_unused]] LocalScope scope(vm_);
+            auto exception = DebuggerApi::GetAndClearException(vm_);
+            dispatcher_.Dispatch(DispatchRequest(msg));
+            DebuggerApi::SetException(vm_, exception);
+        }
+        isDispatchingMessage_ = false;
+    } while (true);
 }
 
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
