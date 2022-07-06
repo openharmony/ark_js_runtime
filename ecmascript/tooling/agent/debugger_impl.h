@@ -38,6 +38,7 @@ public:
     bool NotifySingleStep(const JSPtLocation &location);
     void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyPendingJobEntry();
+    void NotifyHandleProtocolCommand();
 
     DispatchResponse Enable(const EnableParams &params, UniqueDebuggerId *id);
     DispatchResponse Disable();

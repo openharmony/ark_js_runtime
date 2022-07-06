@@ -32,12 +32,18 @@ extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
-PUBLIC_API void InitializeDebugger(const std::function<void(const void *, const std::string &)> &on_response,
-    ::panda::ecmascript::EcmaVM *vm);
+PUBLIC_API void InitializeDebugger(::panda::ecmascript::EcmaVM *vm,
+                                   const std::function<void(const void *, const std::string &)> &onResponse);
 
 PUBLIC_API void UninitializeDebugger(::panda::ecmascript::EcmaVM *vm);
 
-PUBLIC_API void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::string &message);
+PUBLIC_API void DispatchMessage(const ::panda::ecmascript::EcmaVM *vm, std::string &&message);
+
+PUBLIC_API void WaitForDebugger(const ::panda::ecmascript::EcmaVM *vm);
+
+PUBLIC_API void ProcessMessage(const ::panda::ecmascript::EcmaVM *vm);
+
+PUBLIC_API int32_t GetDispatchStatus(const ::panda::ecmascript::EcmaVM *vm);
 
 #ifdef __cplusplus
 #if __cplusplus
