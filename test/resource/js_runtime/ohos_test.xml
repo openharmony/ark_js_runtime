@@ -24,10 +24,13 @@
             <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/throwException.abc -> /data/test" src="out"/>
             <option name="push" value="test/test/libjsdebugtest.so -> /data/test" src="out"/>
             <option name="push" value="test/test/libdebugger_entry.so -> /data/test" src="out"/>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+            <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
     <target name="DebuggerTest">
         <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
         </preparer>
     </target>

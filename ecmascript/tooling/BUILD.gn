@@ -116,7 +116,7 @@ source_set("libark_ecma_debugger_test_set") {
 ohos_shared_library("libark_ecma_debugger_test") {
   deps = [
     ":libark_ecma_debugger_test_set",
-    "//ark/js_runtime:libark_jsruntime_test_set",
+    "//ark/js_runtime:libark_jsruntime_test",
   ]
 
   if (is_ohos && is_standard_system) {

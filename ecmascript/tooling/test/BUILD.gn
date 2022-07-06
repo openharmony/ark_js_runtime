@@ -166,7 +166,10 @@ source_set("jsdebugtest_set") {
     "utils/testcases/test_list.cpp",
   ]
 
-  public_configs = [ ":debug_api_test" ]
+  public_configs = [
+    ":debug_api_test",
+    "//ark/js_runtime/ecmascript/tooling:ark_ecma_debugger_config",
+  ]
 
   test_abc_dir = "/data/test/"
   target_label = get_label_info(":${target_name}", "label_with_toolchain")
@@ -188,8 +191,8 @@ source_set("jsdebugtest_set") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime:libark_jsruntime_test_set",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_set",
+    "//ark/js_runtime:libark_jsruntime_test",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
   ]
 }
 
@@ -227,6 +230,8 @@ host_unittest_action("DebuggerEntryTest") {
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime:libark_jsruntime_test",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
   ]
 }
 
@@ -249,6 +254,7 @@ host_unittest_action("DebuggerTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
