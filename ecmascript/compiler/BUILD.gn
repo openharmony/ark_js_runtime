@@ -286,6 +286,8 @@ if (!defined(ark_standalone_build)) {
       stub_option,
       "--expect-output",
       "0",
+      "--timeout-limit",
+      "300",
       "--env-path",
       rebase_path(root_out_dir_with_host_toolchain) + "/ark/ark:" +
           rebase_path(root_out_dir_with_host_toolchain) +
