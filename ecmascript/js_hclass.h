@@ -1162,17 +1162,17 @@ public:
         return GetObjectType() == JSType::SOURCE_TEXT_MODULE_RECORD;
     }
 
-    inline bool IsJSCjsExports() const
+    inline bool IsCjsExports() const
     {
         return GetObjectType() == JSType::JS_CJS_EXPORTS;
     }
 
-    inline bool IsJSCjsModule() const
+    inline bool IsCjsModule() const
     {
         return GetObjectType() == JSType::JS_CJS_MODULE;
     }
 
-    inline bool IsJSCjsRequire() const
+    inline bool IsCjsRequire() const
     {
         return GetObjectType() == JSType::JS_CJS_REQUIRE;
     }

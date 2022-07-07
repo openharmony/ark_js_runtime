@@ -23,9 +23,9 @@
 #include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
-#include "ecmascript/builtins/builtin_cjs_exports.h"
-#include "ecmascript/builtins/builtin_cjs_module.h"
-#include "ecmascript/builtins/builtin_cjs_require.h"
+#include "ecmascript/builtins/builtins_cjs_exports.h"
+#include "ecmascript/builtins/builtins_cjs_module.h"
+#include "ecmascript/builtins/builtins_cjs_require.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
@@ -151,9 +151,9 @@ using Promise = builtins::BuiltinsPromise;
 using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 using BuiltinsPromiseJob = builtins::BuiltinsPromiseJob;
 using ListFormat = builtins::BuiltinsListFormat;
-using CjsExports = builtins::BuiltinsCjsExports;
-using CjsModule = builtins::BuiltinsCjsModule;
-using CjsRequire = builtins::BuiltinsCjsRequire;
+using BuiltinsCjsExports = builtins::BuiltinsCjsExports;
+using BuiltinsCjsModule = builtins::BuiltinsCjsModule;
+using BuiltinsCjsRequire = builtins::BuiltinsCjsRequire;
 using ArkTools = builtins::BuiltinsArkTools;
 
 using ErrorType = base::ErrorType;
@@ -673,17 +673,17 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(ListFormat::Format),
     reinterpret_cast<uintptr_t>(ListFormat::FormatToParts),
     reinterpret_cast<uintptr_t>(ListFormat::ResolvedOptions),
-    reinterpret_cast<uintptr_t>(CjsExports::CjsExportsConstructor),
-    reinterpret_cast<uintptr_t>(CjsModule::CjsModuleConstructor),
-    reinterpret_cast<uintptr_t>(CjsModule::Compiler),
-    reinterpret_cast<uintptr_t>(CjsModule::Load),
-    reinterpret_cast<uintptr_t>(CjsModule::Require),
-    reinterpret_cast<uintptr_t>(CjsModule::GetExportsForCircularRequire),
-    reinterpret_cast<uintptr_t>(CjsModule::UpdateChildren),
-    reinterpret_cast<uintptr_t>(CjsModule::ResolveFilename),
-    reinterpret_cast<uintptr_t>(CjsRequire::CjsRequireConstructor),
-    reinterpret_cast<uintptr_t>(CjsRequire::Main),
-    reinterpret_cast<uintptr_t>(CjsRequire::Resolve),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsExports::CjsExportsConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::CjsModuleConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::Compiler),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::Load),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::Require),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::GetExportsForCircularRequire),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::UpdateChildren),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsModule::ResolveFilename),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsRequire::CjsRequireConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsRequire::Main),
+    reinterpret_cast<uintptr_t>(BuiltinsCjsRequire::Resolve),
     reinterpret_cast<uintptr_t>(ArkTools::ObjectDump),
     reinterpret_cast<uintptr_t>(ArkTools::CompareHClass),
     reinterpret_cast<uintptr_t>(ArkTools::DumpHClass),

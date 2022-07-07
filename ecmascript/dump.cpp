@@ -869,13 +869,13 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             JSAPIPlainArrayIterator::Cast(obj)->Dump(os);
             break;
         case JSType::JS_CJS_MODULE:
-            JSCjsModule::Cast(obj)->Dump(os);
+            CjsModule::Cast(obj)->Dump(os);
             break;
         case JSType::JS_CJS_REQUIRE:
-            JSCjsRequire::Cast(obj)->Dump(os);
+            CjsRequire::Cast(obj)->Dump(os);
             break;
         case JSType::JS_CJS_EXPORTS:
-            JSCjsExports::Cast(obj)->Dump(os);
+            CjsExports::Cast(obj)->Dump(os);
             break;
         default:
             UNREACHABLE();
@@ -3144,7 +3144,7 @@ void ModuleNamespace::Dump(std::ostream &os) const
     os << "\n";
 }
 
-void JSCjsModule::Dump(std::ostream &os) const
+void CjsModule::Dump(std::ostream &os) const
 {
     os << " - current module path: ";
     GetPath().Dump(os);
@@ -3154,13 +3154,13 @@ void JSCjsModule::Dump(std::ostream &os) const
     os << "\n";
 }
 
-void JSCjsRequire::Dump(std::ostream &os) const
+void CjsRequire::Dump(std::ostream &os) const
 {
-    os << " --- JSCjsRequire is JSFunction: ";
+    os << " --- CjsRequire is JSFunction: ";
     os << "\n";
 }
 
-void JSCjsExports::Dump(std::ostream &os) const
+void CjsExports::Dump(std::ostream &os) const
 {
     DISALLOW_GARBAGE_COLLECTION;
     JSHClass *jshclass = GetJSHClass();
@@ -3431,13 +3431,13 @@ static void DumpObject(TaggedObject *obj,
             JSNumberFormat::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_CJS_MODULE:
-            JSCjsModule::Cast(obj)->DumpForSnapshot(vec);
+            CjsModule::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_CJS_EXPORTS:
-            JSCjsExports::Cast(obj)->DumpForSnapshot(vec);
+            CjsExports::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_CJS_REQUIRE:
-            JSCjsRequire::Cast(obj)->DumpForSnapshot(vec);
+            CjsRequire::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_COLLATOR:
             JSCollator::Cast(obj)->DumpForSnapshot(vec);
@@ -4729,7 +4729,7 @@ void ModuleNamespace::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedVal
     vec.push_back(std::make_pair(CString("Exports"), GetExports()));
 }
 
-void JSCjsModule::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void CjsModule::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("Id"), GetId()));
     vec.push_back(std::make_pair(CString("Path"), GetPath()));
@@ -4737,12 +4737,12 @@ void JSCjsModule::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>>
     vec.push_back(std::make_pair(CString("Filename"), GetFilename()));
 }
 
-void JSCjsExports::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void CjsExports::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("Exports"), GetExports()));
 }
 
-void JSCjsRequire::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void CjsRequire::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("Cache"), GetCache()));
     vec.push_back(std::make_pair(CString("Parent"), GetParent()));

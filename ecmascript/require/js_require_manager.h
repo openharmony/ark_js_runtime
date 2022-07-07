@@ -25,19 +25,19 @@
 
 namespace panda::ecmascript {
 struct CJSInfo {
-    JSHandle<JSCjsModule> moduleHdl;
+    JSHandle<CjsModule> moduleHdl;
     JSHandle<JSTaggedValue> requireHdl;
-    JSHandle<JSCjsExports> exportsHdl;
+    JSHandle<CjsExports> exportsHdl;
     JSHandle<JSTaggedValue> filenameHdl;
     JSHandle<JSTaggedValue> dirnameHdl;
-    CJSInfo(JSHandle<JSCjsModule> &module,
+    CJSInfo(JSHandle<CjsModule> &module,
             JSHandle<JSTaggedValue> &require,
-            JSHandle<JSCjsExports> &exports,
+            JSHandle<CjsExports> &exports,
             JSHandle<JSTaggedValue> &filename,
             JSHandle<JSTaggedValue> &dirname) : moduleHdl(module), requireHdl(require), exportsHdl(exports),
                                                 filenameHdl(filename), dirnameHdl(dirname) {}
 };
-class JSRequireManager {
+class RequireManager {
 public:
 
     static void ResolveCurrentPath(JSThread *thread, JSMutableHandle<JSTaggedValue> &dirPath,

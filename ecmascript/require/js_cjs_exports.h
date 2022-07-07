@@ -20,9 +20,9 @@
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda::ecmascript {
-class JSCjsExports final : public JSObject {
+class CjsExports final : public JSObject {
 public:
-    CAST_CHECK(JSCjsExports, IsJSCjsExports);
+    CAST_CHECK(CjsExports, IsCjsExports);
 
     static constexpr size_t JS_CJS_EXPORTS_OFFSET = JSObject::SIZE;
     ACCESSORS(Exports, JS_CJS_EXPORTS_OFFSET, SIZE)

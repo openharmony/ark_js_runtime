@@ -68,12 +68,12 @@ class Program;
 class TSLoader;
 class FileLoader;
 class ModuleManager;
-class JSCjsModule;
-class JSCjsExports;
-class JSCjsRequire;
+class CjsModule;
+class CjsExports;
+class CjsRequire;
 class CjsModuleCache;
 class SlowRuntimeStub;
-class JSRequireManager;
+class RequireManager;
 struct CJSInfo;
 
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,

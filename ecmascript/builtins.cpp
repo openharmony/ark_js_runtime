@@ -32,9 +32,9 @@
 #include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
-#include "ecmascript/builtins/builtin_cjs_module.h"
-#include "ecmascript/builtins/builtin_cjs_require.h"
-#include "ecmascript/builtins/builtin_cjs_exports.h"
+#include "ecmascript/builtins/builtins_cjs_module.h"
+#include "ecmascript/builtins/builtins_cjs_require.h"
+#include "ecmascript/builtins/builtins_cjs_exports.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
@@ -170,9 +170,9 @@ using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using DisplayNames = builtins::BuiltinsDisplayNames;
 using ListFormat = builtins::BuiltinsListFormat;
-using CjsModule = builtins::BuiltinsCjsModule;
-using CjsExports = builtins::BuiltinsCjsExports;
-using CjsRequire = builtins::BuiltinsCjsRequire;
+using BuiltinsCjsModule = builtins::BuiltinsCjsModule;
+using BuiltinsCjsExports = builtins::BuiltinsCjsExports;
+using BuiltinsCjsRequire = builtins::BuiltinsCjsRequire;
 
 using ContainersPrivate = containers::ContainersPrivate;
 using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
@@ -3287,23 +3287,24 @@ void Builtins::InitializeCjsModule(const JSHandle<GlobalEnv> &env) const
 
     // CjsModule.prototype_or_dynclass
     JSHandle<JSHClass> cjsModuleDynclass =
-        factory_->NewEcmaDynClass(JSCjsModule::SIZE, JSType::JS_CJS_MODULE, cjsModulePrototypeValue);
+        factory_->NewEcmaDynClass(CjsModule::SIZE, JSType::JS_CJS_MODULE, cjsModulePrototypeValue);
 
     // CjsModule.prototype.Constructor
     JSHandle<JSObject> cjsModuleFunction(
-        NewBuiltinCjsCtor(env, cjsModulePrototype, CjsModule::CjsModuleConstructor, "Module", FunctionLength::TWO));
+        NewBuiltinCjsCtor(env, cjsModulePrototype, BuiltinsCjsModule::CjsModuleConstructor, "Module",
+                          FunctionLength::TWO));
 
     JSHandle<JSFunction>(cjsModuleFunction)->SetFunctionPrototype(thread_, cjsModuleDynclass.GetTaggedValue());
 
     // CjsModule method
-    SetFunction(env, cjsModuleFunction, "_load", CjsModule::Load, FunctionLength::ONE);
-    SetFunction(env, cjsModuleFunction, "_resolveFilename", CjsModule::ResolveFilename, FunctionLength::ONE);
+    SetFunction(env, cjsModuleFunction, "_load", BuiltinsCjsModule::Load, FunctionLength::ONE);
+    SetFunction(env, cjsModuleFunction, "_resolveFilename", BuiltinsCjsModule::ResolveFilename, FunctionLength::ONE);
 
     // CjsModule.prototype method
-    SetFunction(env, cjsModulePrototype, "require", CjsModule::Require, FunctionLength::ONE);
+    SetFunction(env, cjsModulePrototype, "require", BuiltinsCjsModule::Require, FunctionLength::ONE);
     SetFunction(env, cjsModulePrototype, "getExportsForCircularRequire",
-                CjsModule::GetExportsForCircularRequire, FunctionLength::ONE);
-    SetFunction(env, cjsModulePrototype, "updateChildren", CjsModule::UpdateChildren, FunctionLength::ONE);
+                BuiltinsCjsModule::GetExportsForCircularRequire, FunctionLength::ONE);
+    SetFunction(env, cjsModulePrototype, "updateChildren", BuiltinsCjsModule::UpdateChildren, FunctionLength::ONE);
 
     JSHandle<JSTaggedValue> id(thread_->GlobalConstants()->GetHandledEmptyString());
     JSHandle<JSTaggedValue> path(thread_->GlobalConstants()->GetHandledEmptyString());
@@ -3341,11 +3342,11 @@ void Builtins::InitializeCjsExports(const JSHandle<GlobalEnv> &env) const
 
     // CjsExports.prototype_or_dynclass
     JSHandle<JSHClass> cjsExportsDynclass =
-        factory_->NewEcmaDynClass(JSCjsExports::SIZE, JSType::JS_CJS_EXPORTS, cjsExportsPrototypeValue);
+        factory_->NewEcmaDynClass(CjsExports::SIZE, JSType::JS_CJS_EXPORTS, cjsExportsPrototypeValue);
 
     // CjsExports.prototype.Constructor
     JSHandle<JSObject> cjsExportsFunction(
-        NewBuiltinCjsCtor(env, cjsExportsPrototype, CjsExports::CjsExportsConstructor, "Exports",
+        NewBuiltinCjsCtor(env, cjsExportsPrototype, BuiltinsCjsExports::CjsExportsConstructor, "Exports",
                           FunctionLength::TWO));
 
     JSHandle<JSFunction>(cjsExportsFunction)->SetFunctionPrototype(thread_, cjsExportsDynclass.GetTaggedValue());
@@ -3363,15 +3364,16 @@ void Builtins::InitializeCjsRequire(const JSHandle<GlobalEnv> &env) const
 
     // CjsExports.prototype_or_dynclass
     JSHandle<JSHClass> cjsRequireDynclass =
-        factory_->NewEcmaDynClass(JSCjsRequire::SIZE, JSType::JS_CJS_REQUIRE, cjsRequirePrototypeValue);
+        factory_->NewEcmaDynClass(CjsRequire::SIZE, JSType::JS_CJS_REQUIRE, cjsRequirePrototypeValue);
 
     // CjsExports.prototype.Constructor
     JSHandle<JSFunction> cjsRequireFunction =
-        NewBuiltinCjsCtor(env, cjsRequirePrototype, CjsRequire::CjsRequireConstructor, "require", FunctionLength::ONE);
+        NewBuiltinCjsCtor(env, cjsRequirePrototype, BuiltinsCjsRequire::CjsRequireConstructor, "require",
+                          FunctionLength::ONE);
     JSHandle<JSFunction>(cjsRequireFunction)->SetFunctionPrototype(thread_, cjsRequireDynclass.GetTaggedValue());
 
     // CjsModule.prototype method
-    SetFunction(env, cjsRequirePrototype, "Main", builtins::BuiltinsCjsRequire::Main, FunctionLength::ONE);
+    SetFunction(env, cjsRequirePrototype, "Main", BuiltinsCjsRequire::Main, FunctionLength::ONE);
 
     env->SetCjsRequireFunction(thread_, cjsRequireFunction);
 }

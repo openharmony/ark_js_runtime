@@ -23,9 +23,9 @@
 
 namespace panda::ecmascript {
 enum class CjsModuleStatus : uint8_t { UNLOAD = 0x01, LOADED};
-class JSCjsModule final : public JSObject {
+class CjsModule final : public JSObject {
 public:
-    CAST_CHECK(JSCjsModule, IsJSCjsModule);
+    CAST_CHECK(CjsModule, IsCjsModule);
 
     // Instantiate member
     static constexpr size_t JS_CJS_MODULE_OFFSET = JSObject::SIZE;
@@ -44,16 +44,16 @@ public:
     DECL_DUMP()
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, JS_CJS_MODULE_OFFSET, BIT_FIELD_OFFSET)
 
-    static void InitializeModule(JSThread *thread, JSHandle<JSCjsModule> &module,
+    static void InitializeModule(JSThread *thread, JSHandle<CjsModule> &module,
                                               JSHandle<JSTaggedValue> &filename, JSHandle<JSTaggedValue> &dirname);
 
     static JSHandle<JSTaggedValue> SearchFromModuleCache(JSThread *thread, JSHandle<JSTaggedValue> &filename);
 
-    static void PutIntoCache(JSThread *thread, JSHandle<JSCjsModule> &module, JSHandle<JSTaggedValue> &filename);
+    static void PutIntoCache(JSThread *thread, JSHandle<CjsModule> &module, JSHandle<JSTaggedValue> &filename);
 
     static JSHandle<JSTaggedValue> Load(JSThread *thread, JSHandle<EcmaString> &request);
 
-    static JSTaggedValue Require(JSThread *thread, JSHandle<EcmaString> &request, JSHandle<JSCjsModule> &parent,
+    static JSTaggedValue Require(JSThread *thread, JSHandle<EcmaString> &request, JSHandle<CjsModule> &parent,
                                  bool isMain);
 
     static JSHandle<EcmaString> ResolveFilename(JSThread *thread, JSTaggedValue dirname, JSTaggedValue filename);
