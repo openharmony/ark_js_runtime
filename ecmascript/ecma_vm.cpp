@@ -357,11 +357,13 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 #endif
 }
 
-JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
+JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, JSHandle<JSTaggedValue> &thisArg,
+                                              const JSPandaFile *jsPandaFile)
 {
     fileLoader_->UpdateJSMethods(mainFunc, jsPandaFile);
     std::vector<JSTaggedType> args(7, JSTaggedValue::Undefined().GetRawData()); // 7: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
+    args[2] = thisArg.GetTaggedValue().GetRawData();  // 2: parameter of this
     auto entry = thread_->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
     JSTaggedValue env = mainFunc->GetLexicalEnv();
     args[6] = env.GetRawData(); // 6: last arg is env.
@@ -402,10 +404,10 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     if (jsPandaFile->IsLoadedAOT()) {
         thread_->SetPrintBCOffset(true);
-        result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
+        result = InvokeEcmaAotEntrypoint(func, global, jsPandaFile);
     } else {
         if (jsPandaFile->IsCjs()) {
-            CJSExecution(func, jsPandaFile);
+            CJSExecution(func, global, jsPandaFile);
         } else {
             JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
             EcmaRuntimeCallInfo *info =
@@ -436,7 +438,7 @@ JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
     return iter->second;
 }
 
-void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPandaFile)
+void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, JSHandle<JSTaggedValue> &thisArg, const JSPandaFile *jsPandaFile)
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     ObjectFactory *factory = GetFactory();
@@ -452,12 +454,11 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPanda
     JSRequireManager::InitializeCommonJS(thread_, cjsInfo);
 
     // Execute main function
-    JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread_,
                                             JSHandle<JSTaggedValue>(func),
-                                            global, undefined, 5); // 5 : argument numbers
+                                            thisArg, undefined, 5); // 5 : argument numbers
     if (info == nullptr) {
         LOG_ECMA(ERROR) << "CJSExecution Stack overflow!";
         return;
