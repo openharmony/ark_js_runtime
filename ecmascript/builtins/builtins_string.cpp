@@ -86,7 +86,7 @@ JSTaggedValue BuiltinsString::FromCharCode(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t argLength = argv->GetArgsNumber();
+    int32_t argLength = argv->GetArgsNumber();
     if (argLength == 0) {
         return factory->GetEmptyString().GetTaggedValue();
     }
@@ -100,7 +100,7 @@ JSTaggedValue BuiltinsString::FromCharCode(EcmaRuntimeCallInfo *argv)
     std::u16string u16str = base::StringHelper::Utf16ToU16String(&codePointValue, 1);
     CVector<uint16_t> valueTable;
     valueTable.reserve(argLength - 1);
-    for (uint32_t i = 1; i < argLength; i++) {
+    for (int32_t i = 1; i < argLength; i++) {
         JSHandle<JSTaggedValue> nextCp = BuiltinsString::GetCallArg(argv, i);
         uint16_t nextCv = JSTaggedValue::ToUint16(thread, nextCp);
         valueTable.emplace_back(nextCv);
@@ -123,13 +123,13 @@ JSTaggedValue BuiltinsString::FromCodePoint(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t argLength = argv->GetArgsNumber();
+    int32_t argLength = argv->GetArgsNumber();
     if (argLength == 0) {
         return factory->GetEmptyString().GetTaggedValue();
     }
     std::u16string u16str;
-    uint32_t u16strSize = argLength;
-    for (uint32_t i = 0; i < argLength; i++) {
+    int32_t u16strSize = argLength;
+    for (int32_t i = 0; i < argLength; i++) {
         JSHandle<JSTaggedValue> nextCpTag = BuiltinsString::GetCallArg(argv, i);
         JSTaggedNumber nextCpVal = JSTaggedValue::ToNumber(thread, nextCpTag);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -198,7 +198,7 @@ JSTaggedValue BuiltinsString::Raw(EcmaRuntimeCallInfo *argv)
     }
 
     std::u16string u16str;
-    int argc = static_cast<int>(argv->GetArgsNumber()) - 1;
+    int argc = argv->GetArgsNumber() - 1;
     bool canBeCompress = true;
     for (int i = 0, argsI = 1; i < length; ++i, ++argsI) {
         // Let nextSeg be ToString(Get(raw, nextKey)).
@@ -331,7 +331,7 @@ JSTaggedValue BuiltinsString::Concat(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> thisHandle = JSTaggedValue::ToString(thread, thisTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     uint32_t thisLen = thisHandle->GetLength();
-    uint32_t argLength = argv->GetArgsNumber();
+    int32_t argLength = argv->GetArgsNumber();
     if (argLength == 0) {
         return thisHandle.GetTaggedValue();
     }
@@ -344,7 +344,7 @@ JSTaggedValue BuiltinsString::Concat(EcmaRuntimeCallInfo *argv)
     } else {
         u16strThis = base::StringHelper::Utf8ToU16String(thisHandle->GetDataUtf8(), thisLen);
     }
-    for (uint32_t i = 0; i < argLength; i++) {
+    for (int32_t i = 0; i < argLength; i++) {
         JSHandle<JSTaggedValue> nextTag = BuiltinsString::GetCallArg(argv, i);
         JSHandle<EcmaString> nextHandle = JSTaggedValue::ToString(thread, nextTag);
         uint32_t nextLen = nextHandle->GetLength();
@@ -1106,7 +1106,7 @@ JSTaggedValue BuiltinsString::ReplaceAll(EcmaRuntimeCallInfo *argv)
     
     // 7. Let searchLength be the length of searchString.
     // 8. Let advanceBy be max(1, searchLength).
-    int32_t searchLength = searchString->GetLength();
+    int32_t searchLength = static_cast<int32_t>(searchString->GetLength());
     int32_t advanceBy =  std::max(1, searchLength);
     // 9. Let matchPositions be a new empty List.
     std::u16string stringBuilder;

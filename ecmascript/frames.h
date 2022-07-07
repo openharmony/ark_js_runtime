@@ -1016,7 +1016,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
         auto topAddress = ToUintPtr(this) +
             (static_cast<int>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
         auto numberArgs = GetNumArgs() + NUM_MANDATORY_JSFUNC_ARGS;
-        return topAddress - numberArgs * sizeof(uintptr_t);
+        return topAddress - static_cast<uint32_t>(numberArgs) * sizeof(uintptr_t);
     }
     JSTaggedValue GetFunction()
     {

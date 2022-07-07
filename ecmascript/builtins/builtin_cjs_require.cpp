@@ -33,7 +33,7 @@ JSTaggedValue BuiltinsCjsRequire::CjsRequireConstructor(EcmaRuntimeCallInfo *arg
     if (!newTarget->IsUndefined()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "newTarget is undefined", JSTaggedValue::Exception());
     }
-    uint32_t length = argv->GetArgsNumber();
+    int32_t length = argv->GetArgsNumber();
     JSHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
     if (length != 1) {  // strange arg's number
         LOG_ECMA(ERROR) << "BuiltinsCjsRequire::CjsRequireConstructor : can only accept one argument";

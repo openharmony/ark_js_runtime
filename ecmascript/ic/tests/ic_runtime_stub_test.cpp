@@ -302,7 +302,7 @@ HWTEST_F_L0(ICRuntimeStubTest, TryStoreICAndLoadIC_ByValue2)
 JSTaggedValue TestSetter(EcmaRuntimeCallInfo *argv)
 {
     // 2 : 2 arg value
-    if (argv->GetArgsNumber() == 1U && argv->GetCallArg(0).GetTaggedValue() == JSTaggedValue(2)) {
+    if (argv->GetArgsNumber() == 1 && argv->GetCallArg(0).GetTaggedValue() == JSTaggedValue(2)) {
         JSThread *thread = argv->GetThread();
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         JSHandle<JSObject> obj(BuiltinsBase::GetThis(argv));

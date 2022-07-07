@@ -45,7 +45,7 @@ public:
         JSHandle<JSTaggedValue> job(thread, pendingJob->GetJob());
         ASSERT(job->IsCallable());
         JSHandle<TaggedArray> argv(thread, pendingJob->GetArguments());
-        const int32_t argsLength = argv->GetLength();
+        const int32_t argsLength = static_cast<int32_t>(argv->GetLength());
         JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
         EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, job, undefined, undefined, argsLength);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
