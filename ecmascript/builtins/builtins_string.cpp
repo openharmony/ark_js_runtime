@@ -1029,39 +1029,8 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> prefixString(thread, EcmaString::FastSubString(thisString, 0, pos, ecmaVm));
     JSHandle<EcmaString> suffixString(
         thread, EcmaString::FastSubString(thisString, tailPos, thisString->GetLength() - tailPos, ecmaVm));
-    std::u16string stringBuilder;
-    bool canBeCompress = true;
-    if (prefixString->IsUtf16()) {
-        const uint16_t *data = prefixString->GetDataUtf16();
-        stringBuilder += base::StringHelper::Utf16ToU16String(data, prefixString->GetLength());
-        canBeCompress = false;
-    } else {
-        const uint8_t *data = prefixString->GetDataUtf8();
-        stringBuilder += base::StringHelper::Utf8ToU16String(data, prefixString->GetLength());
-    }
-
-    if (realReplaceStr->IsUtf16()) {
-        const uint16_t *data = realReplaceStr->GetDataUtf16();
-        stringBuilder += base::StringHelper::Utf16ToU16String(data, realReplaceStr->GetLength());
-        canBeCompress = false;
-    } else {
-        const uint8_t *data = realReplaceStr->GetDataUtf8();
-        stringBuilder += base::StringHelper::Utf8ToU16String(data, realReplaceStr->GetLength());
-    }
-
-    if (suffixString->IsUtf16()) {
-        const uint16_t *data = suffixString->GetDataUtf16();
-        stringBuilder += base::StringHelper::Utf16ToU16String(data, suffixString->GetLength());
-        canBeCompress = false;
-    } else {
-        const uint8_t *data = suffixString->GetDataUtf8();
-        stringBuilder += base::StringHelper::Utf8ToU16String(data, suffixString->GetLength());
-    }
-
-    auto *char16tData = const_cast<char16_t *>(stringBuilder.c_str());
-    auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    return canBeCompress ? factory->NewFromUtf16LiteralCompress(uint16tData, stringBuilder.size()).GetTaggedValue() :
-                           factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.size()).GetTaggedValue();
+    JSHandle<EcmaString> tempString = factory->ConcatFromString(prefixString, realReplaceStr);
+    return factory->ConcatFromString(tempString, suffixString).GetTaggedValue();
 }
 
 JSTaggedValue BuiltinsString::ReplaceAll(EcmaRuntimeCallInfo *argv)

@@ -1414,11 +1414,6 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
 
     JSHandle<RegExpExecResultCache> cacheTable(thread->GetEcmaVM()->GetRegExpCache());
     uint32_t length = static_cast<EcmaString *>(inputStr->GetTaggedObject())->GetLength();
-    uint8_t flagsBits = static_cast<uint8_t>(regexpObj->GetOriginalFlags().GetInt());
-    JSHandle<JSTaggedValue> flagsValue(thread, FlagsBitsToString(thread, flagsBits));
-    JSHandle<EcmaString> flagsStr = JSTaggedValue::ToString(thread, flagsValue);
-    JSHandle<EcmaString> uString(globalConst->GetHandledUString());
-    [[maybe_unused]] bool fullUnicode = base::StringHelper::Contains(*flagsStr, *uString);
     if (lastIndex > static_cast<int32_t>(length)) {
         FastRuntimeStub::FastSetPropertyByValue(thread, regexp.GetTaggedValue(), lastIndexHandle.GetTaggedValue(),
                                                 JSTaggedValue(0));
