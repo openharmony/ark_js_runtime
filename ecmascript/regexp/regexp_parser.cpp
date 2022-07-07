@@ -764,7 +764,7 @@ void RegExpParser::ParseQuantifier(size_t atomBcStart, int captureStart, int cap
 bool RegExpParser::ParseGroupSpecifier(const uint8_t **pp, CString &name)
 {
     const uint8_t *p = *pp;
-    uint32_t c ;
+    uint32_t c;
     char buffer[CACHE_SIZE] = {0};
     char *q = buffer;
     while (true) {
@@ -780,7 +780,7 @@ bool RegExpParser::ParseGroupSpecifier(const uint8_t **pp, CString &name)
         } else if (c == '>') {
             break;
         } else if (c > CACHE_SIZE) {
-            c = base::StringHelper::UnicodeFromUtf8(p, UTF8_CHAR_LEN_MAX, &p);
+            c = static_cast<uint32_t>(base::StringHelper::UnicodeFromUtf8(p, UTF8_CHAR_LEN_MAX, &p));
         } else {
             p++;
         }
@@ -1408,7 +1408,7 @@ int RegExpParser::IsIdentFirst(uint32_t c)
     if (c < CACHE_SIZE) {
         return (ID_START_TABLE_ASCII[c >> 5] >> (c & 31)) & 1; // 5: Shift five bits 31: and operation binary of 31
     } else {
-        return u_isIDStart(c);
+        return static_cast<int>(u_isIDStart(c));
     }
 }
 }  // namespace panda::ecmascript

@@ -81,7 +81,7 @@ public:
 
         static JSTaggedValue TestEveryFunc(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
                 if (GetCallArg(argv, 0)->GetInt() > 10) { // 10 : test case
                     return GetTaggedBoolean(true);
@@ -120,7 +120,7 @@ public:
 
         static JSTaggedValue TestFindFunc(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
                 // 10 : test case
                 if (GetCallArg(argv, 0)->GetInt() > 10) {
@@ -132,7 +132,7 @@ public:
 
         static JSTaggedValue TestFindIndexFunc(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
                 // 10 : test case
                 if (GetCallArg(argv, 0)->GetInt() > 10) {
@@ -158,7 +158,7 @@ public:
 
         static JSTaggedValue TestSomeFunc(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
                 if (GetCallArg(argv, 0)->GetInt() > 10) { // 10 : test case
                     return GetTaggedBoolean(true);

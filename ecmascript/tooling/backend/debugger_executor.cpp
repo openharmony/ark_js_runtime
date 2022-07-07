@@ -31,7 +31,7 @@ void DebuggerExecutor::Initialize(const EcmaVM *vm)
 Local<JSValueRef> DebuggerExecutor::DebuggerGetValue(JsiRuntimeCallInfo *runtimeCallInfo)
 {
     EcmaVM *vm = runtimeCallInfo->GetVM();
-    size_t argc = runtimeCallInfo->GetArgsNumber();
+    int32_t argc = runtimeCallInfo->GetArgsNumber();
     if (argc != NUM_ARGS) {
         return JSValueRef::Undefined(vm);
     }
@@ -62,7 +62,7 @@ Local<JSValueRef> DebuggerExecutor::DebuggerGetValue(JsiRuntimeCallInfo *runtime
 Local<JSValueRef> DebuggerExecutor::DebuggerSetValue(JsiRuntimeCallInfo *runtimeCallInfo)
 {
     EcmaVM *vm = runtimeCallInfo->GetVM();
-    size_t argc = runtimeCallInfo->GetArgsNumber();
+    int32_t argc = runtimeCallInfo->GetArgsNumber();
     if (argc != NUM_ARGS) {
         return JSValueRef::Undefined(vm);
     }
