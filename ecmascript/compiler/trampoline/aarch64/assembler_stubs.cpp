@@ -103,20 +103,20 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-void AssemblerStubs::IncreaseStackForArguments(ExtendedAssembler *assembler, Register argc, Register fp)
+void AssemblerStubs::IncreaseStackForArguments(ExtendedAssembler *assembler, Register argc, Register currentSp)
 {
     Register sp(SP);
-    __ Mov(fp, sp);
+    __ Mov(currentSp, sp);
     // add extra aguments, env and numArgs
     __ Add(argc, argc, Immediate(static_cast<int64_t>(CommonArgIdx::ACTUAL_ARGC)));
-    __ Sub(fp, fp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
+    __ Sub(currentSp, currentSp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
     Label aligned;
-    __ Tst(fp, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
+    __ Tst(currentSp, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
     __ B(Condition::EQ, &aligned);
-    __ Sub(fp, fp, Immediate(FRAME_SLOT_SIZE));
+    __ Sub(currentSp, currentSp, Immediate(FRAME_SLOT_SIZE));
     __ Bind(&aligned);
-    __ Mov(sp, fp);
-    __ Add(fp, fp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
+    __ Mov(sp, currentSp);
+    __ Add(currentSp, currentSp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
 }
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
@@ -569,6 +569,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
             Register boundTarget(X7);
             __ Ldr(thisObj, MemoryOperand(jsfunc, JSBoundFunction::BOUND_THIS_OFFSET));
             __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED));
+            // 2 : 2 means pair 
             __ Stp(newTarget, thisObj, MemoryOperand(fp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
             __ Ldr(boundTarget, MemoryOperand(jsfunc, JSBoundFunction::BOUND_TARGET_OFFSET));
             // 2 : 2 means pair
