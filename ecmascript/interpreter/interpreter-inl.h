@@ -52,8 +52,11 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#ifdef INTERPRETER_LOG
 #define LOG_INST() LOG_INTERPRETER(DEBUG)
+#else
+#define LOG_INST() false && LOG_INTERPRETER(DEBUG)
+#endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define HANDLE_OPCODE(handle_opcode) \
