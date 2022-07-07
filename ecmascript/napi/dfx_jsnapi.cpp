@@ -74,7 +74,7 @@ void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] const EcmaVM *vm, [[maybe_unus
 
 bool DFXJSNApi::BuildNativeAndJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
 {
-    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), true);
+    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetAssociatedJSThread(), true);
     if (stackTraceStr.empty()) {
         return false;
     }
@@ -83,7 +83,7 @@ bool DFXJSNApi::BuildNativeAndJsStackTrace(const EcmaVM *vm, std::string &stackT
 
 bool DFXJSNApi::BuildJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
 {
-    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), false);
+    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetAssociatedJSThread(), false);
     if (stackTraceStr.empty()) {
         return false;
     }
@@ -189,19 +189,19 @@ void DFXJSNApi::SetCpuSamplingInterval(int interval)
 
 bool DFXJSNApi::SuspendVM(const EcmaVM *vm)
 {
-    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetAssociatedJSThread()->GetVmThreadControl();
     return vmThreadControl->NotifyVMThreadSuspension();
 }
 
 void DFXJSNApi::ResumeVM(const EcmaVM *vm)
 {
-    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetAssociatedJSThread()->GetVmThreadControl();
     vmThreadControl->ResumeVM();
 }
 
 bool DFXJSNApi::IsSuspended(const EcmaVM *vm)
 {
-    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetAssociatedJSThread()->GetVmThreadControl();
     return vmThreadControl->IsSuspended();
 }
 

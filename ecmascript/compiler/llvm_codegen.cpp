@@ -272,6 +272,7 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
 {
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);
     bool logFlag = false;
+    unsigned pc = 0;
 
     for (auto it : codeInfo_.GetCodeInfo()) {
         uint8_t *byteSp;
@@ -279,7 +280,6 @@ void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2nam
         byteSp = it.first;
         numBytes = it.second;
 
-        unsigned pc = 0;
         const char outStringSize = 100;
         char outString[outStringSize];
         std::string methodName;
