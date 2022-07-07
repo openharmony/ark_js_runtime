@@ -569,7 +569,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
             Register boundTarget(X7);
             __ Ldr(thisObj, MemoryOperand(jsfunc, JSBoundFunction::BOUND_THIS_OFFSET));
             __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED));
-            // 2 : 2 means pair 
+            // 2 : 2 means pair
             __ Stp(newTarget, thisObj, MemoryOperand(fp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
             __ Ldr(boundTarget, MemoryOperand(jsfunc, JSBoundFunction::BOUND_TARGET_OFFSET));
             // 2 : 2 means pair
