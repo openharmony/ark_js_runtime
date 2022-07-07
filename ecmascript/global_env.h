@@ -188,7 +188,6 @@ public:
     }
 
     void Init(JSThread *thread);
-    void InitGlobalObject();
 
     static GlobalEnv *Cast(TaggedObject *object)
     {
@@ -205,7 +204,7 @@ public:
 #define GLOBAL_ENV_SLOT(type, name, index) index,
         GLOBAL_ENV_FIELDS(GLOBAL_ENV_SLOT)
 #undef GLOBAL_ENV_SLOT
-            FINAL_INDEX
+        FINAL_INDEX
     };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

@@ -3718,7 +3718,7 @@ void EcmaInterpreter::InitStackFrame(JSThread *thread)
     if (thread->IsAsmInterpreter()) {
         return InterpreterAssembly::InitStackFrame(thread);
     }
-    uint64_t *prevSp = const_cast<uint64_t *>(thread->GetCurrentSPFrame());
+    JSTaggedType *prevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrame *state = GET_FRAME(prevSp);
     state->pc = nullptr;
     state->function = JSTaggedValue::Hole();

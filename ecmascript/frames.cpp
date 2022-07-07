@@ -499,10 +499,4 @@ ARK_INLINE void InterpretedEntryFrame::GCIterate(const FrameIterator &it,
     uintptr_t end = prevIt.GetPrevFrame();
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
 }
-
-ARK_INLINE uintptr_t InterpretedEntryFrame::GetInterpretedEntryFrameEnd(const JSTaggedType *sp)
-{
-    ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_ENTRY_FRAME);
-    return ToUintPtr(sp + 2 + NUM_MANDATORY_JSFUNC_ARGS + sp[1]); // 2: numArgs & thread.
-}
 }  // namespace panda::ecmascript
