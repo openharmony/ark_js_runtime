@@ -298,7 +298,6 @@ void AssemblerStubsX64::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler
 //          current sp - 8:  type
 void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline));
     Register glueReg = rax;
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
@@ -475,7 +474,7 @@ void AssemblerStubsX64::JSProxyCallInternalWithArgV(ExtendedAssembler *assembler
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
+        CallBuiltinTrampoline(assembler);
     }
 
     __ Bind(&lJSBoundFunction);
@@ -741,7 +740,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
+        CallBuiltinTrampoline(assembler);
     }
 
     __ Bind(&lJSBoundFunction);
@@ -1955,41 +1954,6 @@ void AssemblerStubsX64::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *a
 {
 }
 
-void AssemblerStubsX64::CallOptimizedJSFunction(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunction));
-    Register glue(rdi);
-    Register prevFp(rsi);
-    Register jsfunc(rdx);
-    Register actualNumArgs(rcx);
-    Register thisObj(r8);
-    Register newTarget(r9);
-    Register codeAddr = __ AvailableRegister1();
-    Register expectedNumArgs(r14);
-    Label pushCallThis;
-    TempRegisterScope scope(assembler);
-    Register argV(prevFp);
-
-    __ Movq(rsp, rax);
-    __ Addq(8, rax);  // 8 : 8 means argV offset to rsp
-    PushAotEntryFrame(assembler, prevFp);
-    __ Movq(rax, argV);
-
-    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
-    __ Bind(&pushCallThis);
-    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, expectedNumArgs);  // r14
-    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
-    PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
-    __ Addq(NUM_MANDATORY_JSFUNC_ARGS, actualNumArgs);
-    __ Pushq(actualNumArgs);
-    __ Movq(glue, rax); // mov glue to rax
-    __ Movq(Operand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET), codeAddr);
-    __ Callq(codeAddr); // then call jsFunction
-    PopAotArgs(assembler, expectedNumArgs);
-    PopAotEntryFrame(assembler, glue);
-    __ Ret();
-}
-
 void AssemblerStubsX64::PushMandatoryJSArgs(ExtendedAssembler *assembler, Register jsfunc,
                                             Register thisObj, Register newTarget)
 {
@@ -2035,7 +1999,7 @@ void AssemblerStubsX64::PushArgsWithArgV(ExtendedAssembler *assembler, Register 
     }
 }
 
-void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
+void AssemblerStubsX64::PopJSFunctionArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
 {
     __ Addq(1, expectedNumArgs);
     __ Andq(~1, expectedNumArgs);
@@ -2044,7 +2008,7 @@ void AssemblerStubsX64::PopAotArgs(ExtendedAssembler *assembler, Register expect
     __ Addq(8, rsp); // 8: skip expectedNumArgs
 }
 
-void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp)
+void AssemblerStubsX64::PushJSFunctionEntryFrame (ExtendedAssembler *assembler, Register prevFp)
 {
     __ PushCppCalleeSaveRegisters();
     __ Pushq(rdi);
@@ -2056,7 +2020,7 @@ void AssemblerStubsX64::PushAotEntryFrame(ExtendedAssembler *assembler, Register
     __ Pushq(prevFp);
 }
 
-void AssemblerStubsX64::PopAotEntryFrame(ExtendedAssembler *assembler, Register glue)
+void AssemblerStubsX64::PopJSFunctionEntryFrame(ExtendedAssembler *assembler, Register glue)
 {
     Register prevFp(rsi);
     __ Popq(prevFp);
@@ -2116,7 +2080,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Movq(glue, rax);
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
     __ Mov(Operand(sp, 0), actualNumArgs);
-    PopAotArgs(assembler, actualNumArgs);
+    PopJSFunctionArgs(assembler, actualNumArgs);
     PopOptimizedFrame(assembler);
     __ Ret();
 }

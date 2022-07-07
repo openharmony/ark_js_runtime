@@ -222,7 +222,7 @@ host_unittest_action("CircuitOptimizerTest") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]

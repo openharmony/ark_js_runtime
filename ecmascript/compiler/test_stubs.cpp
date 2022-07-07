@@ -28,7 +28,7 @@ void FooAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -49,7 +49,7 @@ void BarAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     [[maybe_unused]] GateRef env = TaggedArgument(1);
-    [[maybe_unused]] GateRef argc = Int32Argument(2);
+    [[maybe_unused]] GateRef argc = Int64Argument(2);
     [[maybe_unused]] GateRef calltarget = TaggedArgument(3);
     [[maybe_unused]] GateRef newtarget = TaggedArgument(4);
     [[maybe_unused]] GateRef thisObj = TaggedArgument(5);
@@ -64,7 +64,7 @@ void Foo1AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -85,7 +85,7 @@ void Bar1AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -107,7 +107,7 @@ void Foo2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -115,7 +115,7 @@ void Foo2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(7);
     GateRef bcOffset = Int32(1);
     (void)calltarget;
-    GateRef actualArgC = Int32Add(argc, Int32(1));
+    GateRef actualArgC = Int64Add(argc, Int64(1));
     GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::BarAOT));
     GateRef numArgs = IntToTaggedTypeNGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
@@ -129,7 +129,7 @@ void FooNativeAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -137,7 +137,7 @@ void FooNativeAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(7);
     GateRef bcOffset = Int32(1);
     (void)calltarget;
-    GateRef actualArgC = Int32Add(argc, Int32(1));
+    GateRef actualArgC = Int64Add(argc, Int64(1));
     GateRef printfunc = CallRuntime(glue, RTSTUB_ID(GetPrintFunc), {});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, env, actualArgC, printfunc, newtarget, thisObj,
                                     a, b, Undefined(), bcOffset});
@@ -149,7 +149,7 @@ void FooBoundAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -162,7 +162,7 @@ void FooBoundAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef barIndex = IntToTaggedTypeNGC(Int32(CommonStubCSigns::BarAOT));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef bindfunc = CallRuntime(glue, RTSTUB_ID(GetBindFunc), {barfunc});
-    GateRef newjsfunc = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, env, Int32(5), bindfunc, newtarget, barfunc,
+    GateRef newjsfunc = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, env, Int64(5), bindfunc, newtarget, barfunc,
                                     Int64(0x02), bindArguments, bcOffset});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, env, argc, newjsfunc, newtarget, thisObj,
                                 a, b, bcOffset});
@@ -174,7 +174,7 @@ void FooProxyAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     [[maybe_unused]] GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -197,7 +197,7 @@ void FooProxy2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
     GateRef env = TaggedArgument(1);
-    GateRef argc = Int32Argument(2);
+    GateRef argc = Int64Argument(2);
     [[maybe_unused]] GateRef calltarget = TaggedArgument(3);
     GateRef newtarget = TaggedArgument(4);
     GateRef thisObj = TaggedArgument(5);
@@ -221,7 +221,7 @@ void Bar2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     [[maybe_unused]] GateRef glue = PtrArgument(0);
     [[maybe_unused]] GateRef env = TaggedArgument(1);
-    [[maybe_unused]] GateRef argc = Int32Argument(2);
+    [[maybe_unused]] GateRef argc = Int64Argument(2);
     [[maybe_unused]] GateRef calltarget = TaggedArgument(3);
     [[maybe_unused]] GateRef newtarget = TaggedArgument(4);
     [[maybe_unused]] GateRef thisObj = TaggedArgument(5);
