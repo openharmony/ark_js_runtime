@@ -31,8 +31,8 @@
 
 using panda::JSValueRef;
 namespace panda::ecmascript {
-typedef void* (*DetachFunc)(void *enginePointer, void *objPointer, void *hint);
-typedef Local<JSValueRef> (*AttachFunc)(void *enginePointer, void *buffer, void *hint);
+typedef void* (*DetachFunc)(void *enginePointer, void *objPointer, void *hint, void *detachData);
+typedef Local<JSValueRef> (*AttachFunc)(void *enginePointer, void *buffer, void *hint, void *attachData);
 
 enum class SerializationUID : uint8_t {
     // JS special values

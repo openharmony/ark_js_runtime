@@ -673,6 +673,7 @@ public:
     }
     static Local<ObjectRef> New(const EcmaVM *vm);
     static Local<ObjectRef> New(const EcmaVM *vm, void *attach, void *detach);
+    bool Set(const EcmaVM *vm, void *attach, void *detach);
     bool Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value);
     bool Set(const EcmaVM *vm, uint32_t key, Local<JSValueRef> value);
     bool SetAccessorProperty(const EcmaVM *vm, Local<JSValueRef> key, Local<FunctionRef> getter,
@@ -1117,6 +1118,7 @@ public:
                         const std::string &filename = "");
     static bool ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file);
     static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &key);
+    static Local<ObjectRef> GetExportObjectFromBuffer(EcmaVM *vm, const std::string &file, const std::string &key);
 
     // ObjectRef Operation
     static Local<ObjectRef> GetGlobalObject(const EcmaVM *vm);
