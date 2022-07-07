@@ -115,14 +115,14 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeApply(EcmaRuntimeCallInfo *argv
             JSObject::CreateListFromArrayLike(thread, arrayObj));
         // 4. ReturnIfAbrupt(argList).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        const int32_t argsLength = argList->GetLength();
+        const int32_t argsLength = static_cast<int32_t>(argList->GetLength());
         EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         info->SetCallArg(argsLength, argList);
         return JSFunction::Call(info);
     }
     // 6. Return Call(func, thisArg, argList).
-    const int32_t argsLength = argumentsList.second;
+    const int32_t argsLength = static_cast<int32_t>(argumentsList.second);
     EcmaRuntimeCallInfo *info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     info->SetCallArg(argsLength, argumentsList.first);
@@ -146,7 +146,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    size_t argsLength = 0;
+    int32_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }
@@ -154,7 +154,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     // 3. Let args be a new (possibly empty) List consisting of all of the argument
     //    values provided after thisArg in order.
     JSHandle<TaggedArray> argsArray = factory->NewTaggedArray(argsLength);
-    for (size_t index = 0; index < argsLength; ++index) {
+    for (int32_t index = 0; index < argsLength; ++index) {
         argsArray->Set(thread, index, GetCallArg(argv, index + 1));
     }
     // 4. Let F be BoundFunctionCreate(Target, thisArg, args).
@@ -236,7 +236,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeCall(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> func = GetThis(argv);
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    size_t argsLength = 0;
+    int32_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }

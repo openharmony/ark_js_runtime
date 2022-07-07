@@ -363,9 +363,9 @@ JSTaggedValue BuiltinsMath::Hypot(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     double result = 0;
     double value = 0;
-    uint32_t argLen = argv->GetArgsNumber();
+    int32_t argLen = argv->GetArgsNumber();
     auto numberValue = JSTaggedNumber(0);
-    for (uint32_t i = 0; i < argLen; i++) {
+    for (int32_t i = 0; i < argLen; i++) {
         JSHandle<JSTaggedValue> msg = GetCallArg(argv, i);
         numberValue = JSTaggedValue::ToNumber(thread, msg);
         value = numberValue.GetNumber();
@@ -482,13 +482,13 @@ JSTaggedValue BuiltinsMath::Max(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Math, Max);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    uint32_t argLen = argv->GetArgsNumber();
+    int32_t argLen = argv->GetArgsNumber();
     auto numberValue = JSTaggedNumber(-base::POSITIVE_INFINITY);
     // If no arguments are given, the result is -inf
     auto result = JSTaggedNumber(-base::POSITIVE_INFINITY);
     auto tmpMax = -base::POSITIVE_INFINITY;
     auto value = -base::POSITIVE_INFINITY;
-    for (uint32_t i = 0; i < argLen; i++) {
+    for (int32_t i = 0; i < argLen; i++) {
         JSHandle<JSTaggedValue> msg = GetCallArg(argv, i);
         numberValue = JSTaggedValue::ToNumber(thread, msg);
         value = numberValue.GetNumber();
@@ -516,13 +516,13 @@ JSTaggedValue BuiltinsMath::Min(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Math, Min);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    uint32_t argLen = argv->GetArgsNumber();
+    int32_t argLen = argv->GetArgsNumber();
     auto numberValue = JSTaggedNumber(base::POSITIVE_INFINITY);
     // If no arguments are given, the result is inf
     auto result = JSTaggedNumber(base::POSITIVE_INFINITY);
     auto tmpMin = base::POSITIVE_INFINITY;
     auto value = base::POSITIVE_INFINITY;
-    for (uint32_t i = 0; i < argLen; i++) {
+    for (int32_t i = 0; i < argLen; i++) {
         JSHandle<JSTaggedValue> msg = GetCallArg(argv, i);
         numberValue = JSTaggedValue::ToNumber(thread, msg);
         value = numberValue.GetNumber();

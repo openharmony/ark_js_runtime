@@ -484,7 +484,7 @@ int32_t JSAPILightWeightMap::Hash(JSTaggedValue key)
         return keyString->GetHashcode();
     }
     if (key.IsECMAObject()) {
-        int32_t hash = ECMAObject::Cast(key.GetTaggedObject())->GetHash();
+        uint32_t hash = ECMAObject::Cast(key.GetTaggedObject())->GetHash();
         if (hash == 0) {
             uint64_t keyValue = key.GetRawData();
             hash = GetHash32(reinterpret_cast<uint8_t *>(&keyValue), sizeof(keyValue) / sizeof(uint8_t));
@@ -508,12 +508,12 @@ int32_t JSAPILightWeightMap::BinarySearchHashes(JSHandle<TaggedArray> &array, in
         uint32_t mid = static_cast<uint32_t>(low + high) >> 1U;
         int32_t midHash = array->Get(mid).GetInt();
         if (midHash < hash) {
-            low = static_cast<uint32_t>(mid) + 1;
+            low = static_cast<int32_t>(mid) + 1;
         } else {
             if (midHash == hash) {
                 return mid;
             }
-            high = static_cast<uint32_t>(mid) - 1;
+            high = static_cast<int32_t>(mid) - 1;
         }
     }
     return -(low + 1);

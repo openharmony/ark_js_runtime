@@ -35,7 +35,7 @@ JSTaggedValue BuiltinsJson::Parse(EcmaRuntimeCallInfo *argv)
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    uint32_t argc = argv->GetArgsNumber();
+    int32_t argc = argv->GetArgsNumber();
     if (argc == 0) {
         JSHandle<JSObject> syntaxError = factory->GetJSError(base::ErrorType::SYNTAX_ERROR, "arg is empty");
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, syntaxError.GetTaggedValue(), JSTaggedValue::Exception());
@@ -83,7 +83,7 @@ JSTaggedValue BuiltinsJson::Stringify(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    uint32_t argc = argv->GetArgsNumber();
+    int32_t argc = argv->GetArgsNumber();
     JSTaggedValue value = GetCallArg(argv, 0).GetTaggedValue();
     JSTaggedValue replacer = JSTaggedValue::Undefined();
     JSTaggedValue gap = JSTaggedValue::Undefined();

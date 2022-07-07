@@ -34,7 +34,7 @@ JSTaggedValue SlowRuntimeHelper::CallBoundFunction(EcmaRuntimeCallInfo *info)
     }
 
     JSHandle<TaggedArray> boundArgs(thread, boundFunc->GetBoundArguments());
-    const int32_t boundLength = boundArgs->GetLength();
+    const int32_t boundLength = static_cast<int32_t>(boundArgs->GetLength());
     const int32_t argsLength = info->GetArgsNumber() + boundLength;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo *runtimeInfo = EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(targetFunc),

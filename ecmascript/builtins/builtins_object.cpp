@@ -66,7 +66,7 @@ JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    uint32_t numArgs = argv->GetArgsNumber();
+    int32_t numArgs = argv->GetArgsNumber();
     // 1.Let to be ToObject(target).
     JSHandle<JSTaggedValue> target = GetCallArg(argv, 0);
     JSHandle<JSObject> toAssign = JSTaggedValue::ToObject(thread, target);
@@ -82,7 +82,7 @@ JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
     //     ii.Let keys be from.[[OwnPropertyKeys]]().
     //     iii.ReturnIfAbrupt(keys).
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 1; i < numArgs; i++) {
+    for (int32_t i = 1; i < numArgs; i++) {
         JSHandle<JSTaggedValue> source = GetCallArg(argv, i);
         if (!source->IsNull() && !source->IsUndefined()) {
             JSHandle<JSObject> from = JSTaggedValue::ToObject(thread, source);

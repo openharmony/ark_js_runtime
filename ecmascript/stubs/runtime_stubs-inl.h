@@ -188,7 +188,7 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCallSpread(JSThread *thread, const JSHan
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, RuntimeGetCallSpreadArgs(thread, array.GetTaggedValue()));
-    const int32_t argsLength = argv->GetLength();
+    const int32_t argsLength = static_cast<int32_t>(argv->GetLength());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTarget, argsLength);
