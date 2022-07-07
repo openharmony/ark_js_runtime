@@ -376,9 +376,10 @@ private:
 
     Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
 
-    JSTaggedValue InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
+    JSTaggedValue InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, JSHandle<JSTaggedValue> &thisArg,
+                                          const JSPandaFile *jsPandaFile);
 
-    void CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPandaFile);
+    void CJSExecution(JSHandle<JSFunction> &func, JSHandle<JSTaggedValue> &thisArg, const JSPandaFile *jsPandaFile);
 
     void InitializeEcmaScriptRunStat();
 
