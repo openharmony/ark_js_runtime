@@ -737,8 +737,6 @@ struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedT
         return sizeof(InterpretedEntryFrame) / JSTaggedValue::TaggedTypeSize();
     }
 
-    static uintptr_t GetInterpretedEntryFrameEnd(const JSTaggedType *sp);
-
     void GCIterate(const FrameIterator &it, const RootVisitor &v0,
         const RootRangeVisitor &v1) const;
     alignas(EAS) const uint8_t *pc {nullptr};
