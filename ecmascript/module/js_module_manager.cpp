@@ -68,7 +68,7 @@ JSTaggedValue ModuleManager::GetModuleValueOutter(JSTaggedValue key)
     SourceTextModule *module = SourceTextModule::Cast(resolvedModule.GetTaggedObject());
     if (module->GetTypes() == ModuleTypes::CJSMODULE) {
         JSHandle<JSTaggedValue> cjsModuleName(thread, module->GetEcmaModuleFilename());
-        return JSCjsModule::SearchFromModuleCache(thread, cjsModuleName).GetTaggedValue();
+        return CjsModule::SearchFromModuleCache(thread, cjsModuleName).GetTaggedValue();
     }
     return SourceTextModule::Cast(resolvedModule.GetTaggedObject())->GetModuleValue(thread,
                                                                                     binding->GetBindingName(), false);

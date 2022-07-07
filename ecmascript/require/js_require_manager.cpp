@@ -20,10 +20,10 @@
 #include "ecmascript/ecma_string.h"
 
 namespace panda::ecmascript {
-void JSRequireManager::ResolveCurrentPath(JSThread *thread,
-                                          JSMutableHandle<JSTaggedValue> &dirPath,
-                                          JSMutableHandle<JSTaggedValue> &fileName,
-                                          const JSPandaFile *jsPandaFile)
+void RequireManager::ResolveCurrentPath(JSThread *thread,
+                                        JSMutableHandle<JSTaggedValue> &dirPath,
+                                        JSMutableHandle<JSTaggedValue> &fileName,
+                                        const JSPandaFile *jsPandaFile)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     CString fullName = CString(jsPandaFile->GetPandaFile()->GetFilename());
@@ -41,14 +41,14 @@ void JSRequireManager::ResolveCurrentPath(JSThread *thread,
     fileName.Update(cbFileName.GetTaggedValue());
 }
 
-void JSRequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
+void RequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
-    JSHandle<JSCjsModule> module = cjsInfo.moduleHdl;
+    JSHandle<CjsModule> module = cjsInfo.moduleHdl;
     JSHandle<JSTaggedValue> require = cjsInfo.requireHdl;
-    JSHandle<JSCjsExports> exports = cjsInfo.exportsHdl;
+    JSHandle<CjsExports> exports = cjsInfo.exportsHdl;
     JSHandle<JSTaggedValue> filename = cjsInfo.filenameHdl;
     JSHandle<JSTaggedValue> dirname = cjsInfo.dirnameHdl;
 
@@ -57,7 +57,7 @@ void JSRequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
     SlowRuntimeStub::StObjByName(thread, module.GetTaggedValue(), exportsKey.GetTaggedValue(),
                                  exports.GetTaggedValue());
     // initialize module
-    JSCjsModule::InitializeModule(thread, module, filename, dirname);
+    CjsModule::InitializeModule(thread, module, filename, dirname);
 
     // Set this.module ---> this.require.parent
     JSHandle<JSTaggedValue> parentKey(factory->NewFromASCII("parent"));
@@ -77,11 +77,11 @@ void JSRequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
                                  newCache.GetTaggedValue());
 }
 
-void JSRequireManager::CollectExecutedExp(JSThread *thread, CJSInfo cjsInfo)
+void RequireManager::CollectExecutedExp(JSThread *thread, CJSInfo cjsInfo)
 {
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
-    JSHandle<JSCjsModule> module = cjsInfo.moduleHdl;
+    JSHandle<CjsModule> module = cjsInfo.moduleHdl;
     JSHandle<JSTaggedValue> filename = cjsInfo.filenameHdl;
 
     // get Module from global env

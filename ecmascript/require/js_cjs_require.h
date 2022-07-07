@@ -21,9 +21,9 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 
 namespace panda::ecmascript {
-class JSCjsRequire final : public JSObject {
+class CjsRequire final : public JSObject {
 public:
-    CAST_CHECK(JSCjsRequire, IsJSCjsRequire);
+    CAST_CHECK(CjsRequire, IsCjsRequire);
 
     // Instantiate member
     static constexpr size_t JS_CJS_REQUIRE_OFFSET = JSObject::SIZE;
