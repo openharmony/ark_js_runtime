@@ -800,10 +800,14 @@ bool JSSerializer::WriteNativeBindingObject(const JSHandle<JSTaggedValue> &objVa
     void *enginePointer = nullptr;
     void *objPointer = nullptr;
     void *hint = nullptr;
-    if (paramCount == 3) { // 3 : enginePointer, objPointer, hint
+    void *detachData = nullptr;
+    void *attachData = nullptr;
+    if (paramCount == 5) { // 5 : enginePointer, objPointer, hint, detachData, attachData
         enginePointer = obj->GetNativePointerField(0);
         objPointer = obj->GetNativePointerField(1);
         hint = obj->GetNativePointerField(2); // 2 : hint
+        detachData = obj->GetNativePointerField(3); // 3 : detachData
+        attachData = obj->GetNativePointerField(4); // 4 : attachData
     }
     // Write custom object's values: AttachFunc*, buffer*
     JSHandle<JSTaggedValue> detachVal = JSObject::GetProperty(thread_, obj, detach).GetRawValue();
@@ -813,7 +817,7 @@ bool JSSerializer::WriteNativeBindingObject(const JSHandle<JSTaggedValue> &objVa
     if (detachNative == nullptr) {
         return false;
     }
-    void *buffer = detachNative(enginePointer, objPointer, hint);
+    void *buffer = detachNative(enginePointer, objPointer, hint, detachData);
     AttachFunc attachNative = reinterpret_cast<AttachFunc>(JSNativePointer::Cast(
         attackVal.GetTaggedValue().GetTaggedObject())->GetExternalPointer());
     if (!WriteRawData(&attachNative, sizeof(uintptr_t))) {
@@ -825,6 +829,10 @@ bool JSSerializer::WriteNativeBindingObject(const JSHandle<JSTaggedValue> &objVa
         return false;
     }
     if (!WriteRawData(&hint, sizeof(uintptr_t))) {
+        bufferSize_ = oldSize;
+        return false;
+    }
+    if (!WriteRawData(&attachData, sizeof(uintptr_t))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -1164,8 +1172,12 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadNativeBindingObject()
     if (!ReadNativePointer(&hint)) {
         return JSHandle<JSTaggedValue>();
     }
-    Local<JSValueRef> attachVal = attachFunc(
-        engine_, reinterpret_cast<void *>(bufferPointer), reinterpret_cast<void *>(hint));
+    uintptr_t attachData;
+    if (!ReadNativePointer(&attachData)) {
+        return JSHandle<JSTaggedValue>();
+    }
+    Local<JSValueRef> attachVal = attachFunc(engine_, reinterpret_cast<void *>(bufferPointer),
+        reinterpret_cast<void *>(hint), reinterpret_cast<void *>(attachData));
     if (attachVal.IsEmpty()) {
         LOG_ECMA(ERROR) << "NativeBindingObject is empty";
         attachVal = JSValueRef::Undefined(thread_->GetEcmaVM());
