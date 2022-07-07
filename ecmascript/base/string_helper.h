@@ -214,7 +214,7 @@ public:
 
     static int FromUtf8(int c, int l, const uint8_t *p, const uint8_t **pp)
     {
-        int b;
+        uint32_t b;
         c &= UTF8_FIRST_CODE[l - 1];
         for (int i = 0; i < l; i++) {
             b = *p++;

@@ -57,7 +57,7 @@ JSTaggedValue SlowRuntimeStub::CallSpreadDyn(JSThread *thread, JSTaggedValue fun
     JSHandle<JSTaggedValue> taggedObj(thread, obj);
 
     JSHandle<TaggedArray> coretypesArray(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));
-    const int32_t argsLength = coretypesArray->GetLength();
+    const uint32_t argsLength = coretypesArray->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(jsFunc), taggedObj, undefined, argsLength);
@@ -1900,7 +1900,7 @@ JSTaggedValue SlowRuntimeStub::SuperCallSpread(JSThread *thread, JSTaggedValue f
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));
-    const int32_t argsLength = argv->GetLength();
+    const uint32_t argsLength = argv->GetLength();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo *info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTargetHandle, argsLength);

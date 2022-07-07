@@ -27,7 +27,7 @@ namespace panda::ecmascript {
 JSTaggedValue JSStableArray::Push(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
 {
     JSThread *thread = argv->GetThread();
-    uint32_t argc = argv->GetArgsNumber();
+    uint32_t argc = static_cast<uint32_t>(argv->GetArgsNumber());
     uint32_t oldLength = receiver->GetArrayLength();
     uint32_t newLength = argc + oldLength;
 
@@ -72,7 +72,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
 {
     JSThread *thread = argv->GetThread();
     uint32_t len = receiver->GetArrayLength();
-    uint32_t argc = argv->GetArgsNumber();
+    uint32_t argc = static_cast<uint32_t>(argv->GetArgsNumber());
 
     JSHandle<JSObject> thisObjHandle(receiver);
     JSTaggedValue newArray = JSArray::ArraySpeciesCreate(thread, thisObjHandle, JSTaggedNumber(actualDeleteCount));

@@ -72,7 +72,7 @@ public:
     public:
         static JSTaggedValue TestForParse(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
             }
             JSTaggedValue key = GetCallArg(argv, 0).GetTaggedValue();
@@ -89,7 +89,7 @@ public:
 
         static JSTaggedValue TestForParse1(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
             }
             return JSTaggedValue::Undefined();
@@ -97,7 +97,7 @@ public:
 
         static JSTaggedValue TestForStringfy(EcmaRuntimeCallInfo *argv)
         {
-            uint32_t argc = argv->GetArgsNumber();
+            int32_t argc = argv->GetArgsNumber();
             if (argc > 0) {
                 JSTaggedValue key = GetCallArg(argv, 0).GetTaggedValue();
                 if (key.IsUndefined()) {

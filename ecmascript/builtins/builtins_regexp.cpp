@@ -947,7 +947,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
                 replacerArgs->Set(thread, index + 3, namedCaptures.GetTaggedValue()); // 3: position of groups
             }
             // iv. Let replValue be Call(replaceValue, undefined, replacerArgs).
-            const int32_t argsLength = replacerArgs->GetLength();
+            const int32_t argsLength = static_cast<int32_t>(replacerArgs->GetLength());
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
             EcmaRuntimeCallInfo *info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, inputReplaceValue, undefined, undefined, argsLength);

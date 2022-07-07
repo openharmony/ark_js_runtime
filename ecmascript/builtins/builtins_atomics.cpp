@@ -308,7 +308,7 @@ JSTaggedValue BuiltinsAtomics::AtomicReadModifyWriteCase(JSThread *thread, JSTag
     JSTaggedValue data = jsArrayBuffer->GetArrayBufferData();
     void *pointer = JSNativePointer::Cast(data.GetTaggedObject())->GetExternalPointer();
     auto *block = reinterpret_cast<uint8_t *>(pointer);
-    uint32_t size = argv->GetArgsNumber();
+    uint32_t size = static_cast<uint32_t>(argv->GetArgsNumber());
     switch (type) {
         case DataViewType::UINT8:
             return HandleWithUint8(thread, size, block, indexedPosition, argv, op);
