@@ -58,6 +58,7 @@ host_unittest_action("EcmaVm_001_Test") {
     "js_array_buffer_test.cpp",
     "js_array_iterator_test.cpp",
     "js_array_test.cpp",
+    "js_async_function_test.cpp",
     "js_bigint_test.cpp",
   ]
 

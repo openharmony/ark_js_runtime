@@ -1702,7 +1702,8 @@ void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Regis
     __ Add(pcRegister, pcRegister, Immediate(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
     // pc and fp
     __ Mov(operatorRegister, Register(SP));
-    __ Stp(operatorRegister, pcRegister, MemoryOperand(fpRegister, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX)); // 2 : 2 means pair
+    // 2 : 2 means pair
+    __ Stp(operatorRegister, pcRegister, MemoryOperand(fpRegister, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     // jumpSizeAfterCall
     __ Str(Register(Zero), MemoryOperand(fpRegister, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_LEXICALENV_OFFSET));
