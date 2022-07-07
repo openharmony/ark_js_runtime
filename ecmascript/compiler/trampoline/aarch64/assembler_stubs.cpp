@@ -16,6 +16,7 @@
 #include "assembler_stubs.h"
 
 #include "ecmascript/compiler/assembler/assembler.h"
+#include "ecmascript/compiler/argument_accessor.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -102,6 +103,22 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
     __ Ret();
 }
 
+void AssemblerStubs::IncreaseStackForArguments(ExtendedAssembler *assembler, Register argc, Register currentSp)
+{
+    Register sp(SP);
+    __ Mov(currentSp, sp);
+    // add extra aguments, env and numArgs
+    __ Add(argc, argc, Immediate(static_cast<int64_t>(CommonArgIdx::ACTUAL_ARGC)));
+    __ Sub(currentSp, currentSp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
+    Label aligned;
+    __ Tst(currentSp, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
+    __ B(Condition::EQ, &aligned);
+    __ Sub(currentSp, currentSp, Immediate(FRAME_SLOT_SIZE));
+    __ Bind(&aligned);
+    __ Mov(sp, currentSp);
+    __ Add(currentSp, currentSp, Operand(argc, UXTW, SHIFT_OF_FRAMESLOT));
+}
+
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr)
 // Input: %x0 - glue
@@ -131,84 +148,54 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     Register argV(X4);
     Register codeAddr(X5);
     Register sp(SP);
-    Register fp(X29);
+    Register currentSp(X6);
+    Label copyArguments;
 
     __ BindAssemblerStub(RTSTUB_ID(JSFunctionEntry));
-    __ Str(Register(X30), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ CalleeSave();
-    __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Mov(fp, sp);
-
-    Register frameType(X19);
-    // construct frame
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
-    __ Stp(prevFp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
-
-    Label copyUndefined;
-    Label copyArguments;
-    Register tmp(X19, W);
-    __ Mov(glue, Register(X0));
-    __ Mov(tmp, expectedNumArgs.W());
-    __ Cmp(tmp, actualNumArgs.W());
-    __ B(Condition::LS, &copyArguments);
-    Register count(X9, W);
-    Register undefValue(X8);
-    __ Mov(count, tmp.W());
-    __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
-
-    __ Bind(&copyUndefined);
-    __ Sub(count, count, Immediate(1));
-    __ Cmp(count, actualNumArgs.W());
-    __ Str(undefValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ B(Condition::HI, &copyUndefined);
+    PushJSFunctionEntryFrame (assembler, prevFp);
+    Register argC(X7);
+    __ Cmp(expectedNumArgs, actualNumArgs);
+    __ CMov(argC, expectedNumArgs, actualNumArgs, Condition::HI);
+    IncreaseStackForArguments(assembler, argC, currentSp);
 
     Label invokeCompiledJSFunction;
-    __ Bind(&copyArguments);
     {
-        Register argVEnd(X9);
-        Register argC(X8, W);
-        Register argValue(X10);
-        Register env(X11);
-        Label copyArgLoop;
-
-        // expectedNumArgs <= actualNumArgs
-        __ Cmp(tmp.W(),  actualNumArgs.W());
-        __ CMov(argC, tmp.W(), actualNumArgs.W(), Condition::LO);
-        __ Cbz(argC, &invokeCompiledJSFunction);
-        __ Sub(argVEnd.W(), argC, Immediate(1));
-        __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));
-        __ Ldr(env, MemoryOperand(argVEnd, FRAME_SLOT_SIZE));
-
-        __ Bind(&copyArgLoop);
-        __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-        __ Subs(argC, argC, Immediate(1));
-        __ Str(argValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        __ B(Condition::NE, &copyArgLoop);
+        TempRegister1Scope scope1(assembler);
+        TempRegister2Scope scope2(assembler);
+        Register argc = __ TempRegister1();
+        Register undefinedValue = __ TempRegister2();
+        __ Subs(argc, expectedNumArgs, Operand(actualNumArgs));
+        __ B(Condition::LS, &copyArguments);
+        PushUndefinedWithArgc(assembler, argc, undefinedValue, currentSp, nullptr);
+    }
+    __ Bind(&copyArguments);
+    __ Cbz(actualNumArgs, &invokeCompiledJSFunction);
+    {
+        TempRegister1Scope scope1(assembler);
+        TempRegister2Scope scope2(assembler);
+        Register argc = __ TempRegister1();
+        Register argValue = __ TempRegister2();
+        __ Mov(argc, actualNumArgs);
+        __ PushArgsWithArgv(argc, argV, argValue, currentSp, &invokeCompiledJSFunction);
     }
     __ Bind(&invokeCompiledJSFunction);
     {
-        Register env(X11);
-        __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        __ Str(env, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+        TempRegister1Scope scope1(assembler);
+        Register env = __ TempRegister1();
+        __ Mov(Register(X19), expectedNumArgs);
+        __ Ldr(env, MemoryOperand(argV, actualNumArgs, UXTW, SHIFT_OF_FRAMESLOT));
+        __ Str(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+        __ Str(env, MemoryOperand(sp, 0));
         __ Blr(codeAddr);
     }
 
     // pop argV
     // 3 : 3 means argC * 8
-    __ Add(sp, sp, Operand(tmp, UXTW, 3));
-    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE * 2)); // 2: pop argc and env
+    __ Ldr(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+    PopJSFunctionArgs(assembler, Register(X19), actualNumArgs);
 
     // pop prevLeaveFrameFp to restore thread->currentFrame_
-    __ Ldr(prevFp, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    __ Str(prevFp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-
-    // pop entry frame type and c-fp
-    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
-    __ Ldr(fp, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-
-    __ CalleeRestore();
-    // restore return address
-    __ Ldr(Register(X30), MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+    PopJSFunctionEntryFrame(assembler, glue);
     __ Ret();
 }
 
@@ -219,6 +206,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
 //         %w2 - actualNumArgs
 //         %x3 - codeAddr
 //         %x4 - argv
+//         %x5 - env
 
 //         sp[0 * 8]  -  argc
 //         sp[1 * 8]  -  argv[0]
@@ -235,71 +223,54 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(OptimizedCallOptimized));
     Register expectedNumArgs(X1);
-    Register sp(SP);
-    __ SaveFpAndLr();
-    // Construct frame
-    Register frameType(X6);
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
-    __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    Register env(X5);
-    __ Str(env, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-
-    // callee save
-    Register tmp(X19);
-    __ Str(tmp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-
-    Register count(X6, W);
     Register actualNumArgs(X2, W);
+    Register codeAddr(X3);
+    Register argV(X4);
+    Register env(X5);
+    Register currentSp(X6);
+    Register sp(SP);
     Label copyArguments;
-    __ Mov(count, expectedNumArgs);
-    __ Cmp(count, actualNumArgs);
-    __ B(Condition::LS, &copyArguments);
-
-    Register undefValue(X8);
-    __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
-    Label copyUndefined;
-    __ Bind(&copyUndefined);
-    __ Sub(count, count, Immediate(1));
-    __ Str(undefValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, PREINDEX));
-    __ Cmp(count, actualNumArgs);
-    __ B(Condition::HI, &copyUndefined);
-
     Label invokeCompiledJSFunction;
-    Register saveNumArgs(X19);
-    __ Bind(&copyArguments);
-    {
-        __ Cmp(expectedNumArgs.W(), actualNumArgs.W());
-        __ CMov(count, expectedNumArgs.W(), actualNumArgs.W(), Condition::LO);
-        __ Cbz(count, &invokeCompiledJSFunction);
 
-        Register argVEnd(X4);
-        Register argValue(X10);
-        Label copyArgLoop;
-        __ Mov(saveNumArgs, expectedNumArgs);
-        __ Subs(count, count, Immediate(1));
-        // 3 : 3 means count * 8
-        __ Add(argVEnd, argVEnd, Operand(count, UXTW, 3));
-        __ Bind(&copyArgLoop);
-        __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-        __ Subs(count, count, Immediate(1));
-        __ Str(argValue,  MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        __ B(Condition::PL, &copyArgLoop);
+    // construct frame
+    PushOptimizedJSFunctionFrame(assembler);
+    Register argC(X7);
+    __ Cmp(expectedNumArgs, actualNumArgs);
+    __ CMov(argC, expectedNumArgs, actualNumArgs, Condition::HI);
+    IncreaseStackForArguments(assembler, argC, currentSp);
+    {
+        TempRegister1Scope scope1(assembler);
+        TempRegister2Scope scope2(assembler);
+        Register tmp = __ TempRegister1();
+        Register undefinedValue = __ TempRegister2();
+        __ Subs(tmp, expectedNumArgs, actualNumArgs);
+        __ B(Condition::LS, &copyArguments);
+        PushUndefinedWithArgc(assembler, tmp, undefinedValue, currentSp, nullptr);
+    }
+    __ Bind(&copyArguments);
+    __ Cbz(actualNumArgs, &invokeCompiledJSFunction);
+    {
+        TempRegister1Scope scope1(assembler);
+        TempRegister2Scope scope2(assembler);
+        Register argc = __ TempRegister1();
+        Register argValue = __ TempRegister2();
+        __ Mov(argc, actualNumArgs);
+        __ PushArgsWithArgv(argc, argV, argValue, currentSp, &invokeCompiledJSFunction);
+    }
+    __ Bind(&invokeCompiledJSFunction);
+    {
+        __ Mov(Register(X19), expectedNumArgs);
+        __ Str(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+        __ Str(env, MemoryOperand(sp, 0));
+        __ Blr(codeAddr);
     }
 
-    Register codeAddr(X3);
-    __ Bind(&invokeCompiledJSFunction);
-    __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Str(env, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Blr(codeAddr);
-    // pop argv
-    // 3 : 3 means count * 8
-    __ Add(sp, sp, Operand(saveNumArgs, UXTW, 3));
-    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE * 2)); // 2: pop argc and env
-    // callee restore
-    __ Ldr(saveNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    // desconstruct frame
-    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE * 2)); // 2: skip type and env
-    __ RestoreFpAndLr();
+    // pop argV argC
+    // 3 : 3 means argC * 8
+    __ Ldr(actualNumArgs, MemoryOperand(sp, FRAME_SLOT_SIZE));
+    PopJSFunctionArgs(assembler, Register(X19), actualNumArgs);
+    // pop prevLeaveFrameFp to restore thread->currentFrame_
+    PopOptimizedJSFunctionFrame(assembler);
     __ Ret();
 }
 
@@ -314,6 +285,53 @@ void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
     {
         __ PushFpAndLr();
         JSCallCommonEntry(assembler, JSCallMode::CALL_FROM_AOT);
+    }
+}
+
+void AssemblerStubs::PushLeaveFrame(ExtendedAssembler *assembler, Register glue, bool isBuiltin)
+{
+    TempRegister2Scope temp2Scope(assembler);
+    Register frameType = __ TempRegister2();
+    Register currentSp(X6);
+    Register sp(SP);
+    Register prevfp(X29);
+    
+    // construct leave frame
+    if (isBuiltin) {
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::BUILTIN_CALL_LEAVE_FRAME)));
+        // current sp is not 16bytes aligned because native code address has pushed.
+        __ Mov(currentSp, sp);
+        __ Sub(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));   // 3 : 3 for 16bytes align
+        // 2 : 2 means pairs
+        __ Stp(prevfp, Register(X30), MemoryOperand(currentSp, -2 * FRAME_SLOT_SIZE, PREINDEX));
+        __ Str(frameType, MemoryOperand(currentSp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+        __ Add(prevfp, sp, Immediate(FRAME_SLOT_SIZE));
+    } else {
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
+        __ SaveFpAndLr();
+        // 2 : 2 means pairs
+        __ Stp(Register(X19), frameType, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    }
+    // save to thread currentLeaveFrame_;
+    __ Str(prevfp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+}
+
+
+void AssemblerStubs::PopLeaveFrame(ExtendedAssembler *assembler, bool isBuiltin)
+{
+    Register sp(SP);
+    Register currentSp(X6);
+    TempRegister2Scope temp2Scope(assembler);
+    Register frameType = __ TempRegister2();
+    if (isBuiltin) {
+        __ Add(currentSp, sp, Immediate(FRAME_SLOT_SIZE));  // skip frame type
+        __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));  // 3 : 3 means for 16bytes align
+        // 2 : 2 means pairs
+        __ Ldp(Register(X29), Register(X30), MemoryOperand(currentSp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+    } else {
+        // 2 : 2 means pairs
+        __ Ldp(Register(X19), frameType, MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+        __ RestoreFpAndLr();
     }
 }
 
@@ -350,33 +368,20 @@ void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
 
 void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline));
-    __ SaveFpAndLr();
-    // save to thread currentLeaveFrame_;
     Register fp(X29);
     Register glue(X0);
     Register sp(SP);
-    __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    Register nativeFuncAddr(X4);
 
-    Register nativeFuncAddr(X19);
+    PushLeaveFrame(assembler, glue, true);
 
-    // construct leave frame and callee save
-    Register frameType(X1);
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::BUILTIN_CALL_LEAVE_FRAME)));
-    // 2 : 2 means pair
-    __ Stp(nativeFuncAddr, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
-
-    // load runtime trampoline address
-    __ Ldr(nativeFuncAddr, MemoryOperand(fp, GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::CODE_ADDRESS)));
     __ Str(glue, MemoryOperand(fp, GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ENV))); // thread (instead of env)
-
     __ Add(Register(X0), fp, Immediate(GetStackArgOffSetToFp(BuiltinsLeaveFrameArgId::ENV)));
     __ Blr(nativeFuncAddr);
 
     // descontruct leave frame and callee save register
-    __ Ldp(nativeFuncAddr, frameType, MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    __ RestoreFpAndLr();
-    __ Add(sp, sp, Immediate(8)); // 8 : 8 skip native code address
+    PopLeaveFrame(assembler, true);
+    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE)); // skip native code address
     __ Ret();
 }
 
@@ -470,7 +475,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         __ Ldr(nativeFuncAddr, MemoryOperand(method, JSMethod::GetNativePointerOffset()));
         // -8 : -8 means sp increase step
         __ Str(nativeFuncAddr, MemoryOperand(sp, -8, AddrMode::PREINDEX));
-        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
+        CallBuiltinTrampoline(assembler);
     }
 
     __ Bind(&callOptimizedMethod);
@@ -481,6 +486,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         Register argV(X4);
         Register env(X5);
         Label directCallCodeEntry;
+        const int64_t argoffsetSlot = static_cast<int64_t>(CommonArgIdx::FUNC) - 1;
         __ Mov(Register(X5), jsfunc);
         __ Mov(arg2, actualArgC);
         __ Lsr(callField, callField, JSMethod::NumArgsBits::START_BIT);
@@ -488,8 +494,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
             LogicalImmediate::Create(JSMethod::NumArgsBits::Mask() >> JSMethod::NumArgsBits::START_BIT, RegWSize));
         __ Add(expectedNumArgs, callField.W(), Immediate(NUM_MANDATORY_JSFUNC_ARGS));
         __ Cmp(arg2.W(), expectedNumArgs);
-        // argV = sp + 16
-        __ Add(argV, sp, Immediate(DOUBLE_SLOT_SIZE));
+        __ Add(argV, sp, Immediate(argoffsetSlot * FRAME_SLOT_SIZE));  // skip env and numArgs
         __ Ldr(codeAddress, MemoryOperand(Register(X5), JSFunctionBase::CODE_ENTRY_OFFSET));
         __ Ldr(env, MemoryOperand(sp, 0));
         __ B(Condition::HS, &directCallCodeEntry);
@@ -512,85 +517,69 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
 
     __ Bind(&jsBoundFunction);
     {
-        __ SaveFpAndLr();
         // construct frame
-        Register frameType(X5);
-        Register fp(X29);
-        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
-        __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        Register argVEnd(X6);
-        __ Add(argVEnd, fp, Immediate(GetStackArgOffSetToFp(1)));
-        __ Ldr(actualArgC, MemoryOperand(argVEnd, 0));
-        Register envReg(X11);
-        __ Ldr(envReg, MemoryOperand(argVEnd, -8)); // -8: get env
-        // callee save
-        Register tmp(X19);
-        __ Str(tmp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+        PushOptimizedJSFunctionFrame(assembler);
+        Register basefp(X29);
+        Register fp = __ AvailableRegister1();
+        Register env(X5);
+
+        Register argV(X6);
+        __ Add(argV, basefp, Immediate(GetStackArgOffSetToFp(0)));
+        __ Ldr(actualArgC, MemoryOperand(argV, FRAME_SLOT_SIZE));
+        __ Ldr(env, MemoryOperand(argV, 0));
 
         Register boundLength(X2);
-        Register realArgC(X19, W);
+        Register realArgC(X7, W);
         Label copyBoundArgument;
-        Label copyArgument;
         Label pushCallTarget;
         // get bound arguments
         __ Ldr(boundLength, MemoryOperand(jsfunc, JSBoundFunction::BOUND_ARGUMENTS_OFFSET));
         //  get bound length
         __ Ldr(boundLength, MemoryOperand(boundLength, TaggedArray::LENGTH_OFFSET));
         __ Add(realArgC, boundLength.W(), actualArgC.W());
-        // 3 : 3 mean *8
-        __ Add(argVEnd, argVEnd, Operand(actualArgC.W(), UXTW, 3));
+        __ Mov(Register(X19), realArgC);
+        IncreaseStackForArguments(assembler, realArgC, fp);
         __ Sub(actualArgC.W(), actualArgC.W(), Immediate(NUM_MANDATORY_JSFUNC_ARGS));
         __ Cmp(actualArgC.W(), Immediate(0));
         __ B(Condition::EQ, &copyBoundArgument);
-        __ Bind(&copyArgument);
         {
-            Register argValue(X5);
-            __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-            __ Str(argValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-            __ Sub(actualArgC.W(), actualArgC.W(), Immediate(1));
-            __ Cmp(actualArgC.W(), Immediate(0));
-            __ B(Condition::NE, &copyArgument);
+            TempRegister1Scope scope1(assembler);
+            Register tmp = __ TempRegister1();
+            const int64_t argoffsetSlot = static_cast<int64_t>(CommonArgIdx::FUNC) - 1;
+            __ Add(argV, argV, Immediate((NUM_MANDATORY_JSFUNC_ARGS + argoffsetSlot) *FRAME_SLOT_SIZE));
+            __ PushArgsWithArgv(actualArgC, argV, tmp, fp, nullptr);
         }
         __ Bind(&copyBoundArgument);
         {
             Register boundArgs(X4);
-            Label copyBoundArgumentLoop;
             __ Ldr(boundArgs, MemoryOperand(jsfunc, JSBoundFunction::BOUND_ARGUMENTS_OFFSET));
             __ Add(boundArgs, boundArgs, Immediate(TaggedArray::DATA_OFFSET));
             __ Cmp(boundLength.W(), Immediate(0));
             __ B(Condition::EQ, &pushCallTarget);
-            __ Sub(boundLength.W(), boundLength.W(), Immediate(1));
-            // 3 : 3 means 2^3 = 8
-            __ Add(boundArgs, boundArgs, Operand(boundLength.W(), UXTW, 3));
-            __ Bind(&copyBoundArgumentLoop);
             {
-                Register boundargValue(X5);
-                __ Ldr(boundargValue, MemoryOperand(boundArgs, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-                __ Str(boundargValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-                __ Subs(boundLength.W(), boundLength.W(), Immediate(1));
-                __ B(Condition::PL, &copyBoundArgumentLoop);
+                TempRegister1Scope scope1(assembler);
+                Register tmp = __ TempRegister1();
+                __ PushArgsWithArgv(boundLength, boundArgs, tmp, fp, nullptr);
             }
         }
         __ Bind(&pushCallTarget);
         {
-            Register thisObj(X5);
+            Register thisObj(X4);
             Register newTarget(X6);
             Register boundTarget(X7);
             __ Ldr(thisObj, MemoryOperand(jsfunc, JSBoundFunction::BOUND_THIS_OFFSET));
             __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED));
-            __ Stp(newTarget, thisObj, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+            // 2 : 2 means pair
+            __ Stp(newTarget, thisObj, MemoryOperand(fp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
             __ Ldr(boundTarget, MemoryOperand(jsfunc, JSBoundFunction::BOUND_TARGET_OFFSET));
             // 2 : 2 means pair
-            __ Stp(realArgC.X(), boundTarget, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
-            __ Str(envReg, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+            __ Stp(Register(X19), boundTarget, MemoryOperand(fp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+            __ Str(env, MemoryOperand(fp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
         }
         __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
-        __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE * 2)); // 2: skip argc and env
-        // 3 : 3 means 2^3 = 8
-        __ Add(sp, sp, Operand(realArgC, UXTW, 3));
-        __ Ldr(tmp, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-        __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
-        __ RestoreFpAndLr();
+
+        PopJSFunctionArgs(assembler, Register(X19), Register(X19));
+        PopOptimizedJSFunctionFrame(assembler);
         __ Ret();
     }
     __ Bind(&jsProxy);
@@ -605,8 +594,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         Register codeAddress(X10);
         __ Mov(proxyCallInternalId, Immediate(CommonStubCSigns::JsProxyCallInternal));
         __ Add(codeAddress, X0, Immediate(JSThread::GlueData::GetCOStubEntriesOffset(false)));
-        // 3 : 3 means 2 << 3 = 8
-        __ Ldr(codeAddress, MemoryOperand(codeAddress, proxyCallInternalId, UXTW, 3));
+        __ Ldr(codeAddress, MemoryOperand(codeAddress, proxyCallInternalId, UXTW, SHIFT_OF_FRAMESLOT));
         __ Br(codeAddress);
     }
     __ Bind(&nonCallable);
@@ -1212,7 +1200,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Bind(&dispatch);
     {
         __ Mov(rsp, fp);  // resume rsp
-        __ Add(bcStub, glueRegister, Operand(opcode, UXTW, 3));  // 3： bc * 8
+        __ Add(bcStub, glueRegister, Operand(opcode, UXTW, SHIFT_OF_FRAMESLOT));
         __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
         __ Br(bcStub);
     }
@@ -1233,7 +1221,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         __ Ldur(ret, MemoryOperand(rsp, thisOffset));  // update acc
         __ Add(pc, pc, Immediate(jumpSize));
         __ Ldrb(opcode, MemoryOperand(pc, 0));
-        __ Add(bcStub, glueRegister, Operand(opcode, UXTW, 3));  // 3： bc * 8
+        __ Add(bcStub, glueRegister, Operand(opcode, UXTW, SHIFT_OF_FRAMESLOT));
         __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
         __ Br(bcStub);
     }
@@ -1337,7 +1325,7 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
     __ Bind(&dispatch);
     {
         __ Ldrb(opcode, MemoryOperand(pc, 0));
-        __ Add(bcStub, glue, Operand(opcode, UXTW, 3));  // 3： bc * 8
+        __ Add(bcStub, glue, Operand(opcode, UXTW, SHIFT_OF_FRAMESLOT));
         __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
         __ Br(bcStub);
     }
@@ -1563,7 +1551,7 @@ void AssemblerStubs::DispatchCall(ExtendedAssembler *assembler, Register pcRegis
     Register bcIndexRegister = __ AvailableRegister1();
     Register tempRegister = __ AvailableRegister2();
     __ Ldrb(bcIndexRegister.W(), MemoryOperand(pcRegister, 0));
-    __ Add(tempRegister, glueRegister, Operand(bcIndexRegister.W(), UXTW, 3));  // 3： bc * 8
+    __ Add(tempRegister, glueRegister, Operand(bcIndexRegister.W(), UXTW, SHIFT_OF_FRAMESLOT));
     __ Ldr(tempRegister, MemoryOperand(tempRegister, JSThread::GlueData::GetBCStubEntriesOffset(false)));
     __ Br(tempRegister);
 }
@@ -1740,7 +1728,7 @@ void AssemblerStubs::CallBCStub(ExtendedAssembler *assembler, Register &newSp, R
     // call the first bytecode handler
     __ Ldrb(temp.W(), MemoryOperand(pc, 0));
     // 3 : 3 means *8
-    __ Add(temp, glue, Operand(temp.W(), UXTW, 3));
+    __ Add(temp, glue, Operand(temp.W(), UXTW, SHIFT_OF_FRAMESLOT));
     __ Ldr(temp, MemoryOperand(temp, JSThread::GlueData::GetBCStubEntriesOffset(false)));
     __ Br(temp);
 }
@@ -1813,7 +1801,7 @@ void AssemblerStubs::CopyArgumentWithArgV(ExtendedAssembler *assembler, Register
     Label copyArgLoop;
     Register arg = __ TempRegister2();
     __ Sub(argVEnd.W(), argc, Immediate(1));
-    __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));  // 3 : 3 means *8
+    __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, SHIFT_OF_FRAMESLOT));
     __ Bind(&copyArgLoop);
     __ Ldr(arg, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     __ Subs(argc, argc, Immediate(1));
@@ -1830,88 +1818,80 @@ void AssemblerStubs::PushMandatoryJSArgs(ExtendedAssembler *assembler, Register 
     __ Str(jsfunc, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 }
 
-void AssemblerStubs::PopAotArgs(ExtendedAssembler *assembler, Register expectedNumArgs)
+void AssemblerStubs::PopJSFunctionArgs(ExtendedAssembler *assembler, Register expectedNumArgs, Register actualNumArgs)
 {
     Register sp(SP);
-    __ Add(sp, sp, Operand(expectedNumArgs, UXTW, 3));  // 3 : 3 means *8
+    Register fp(X6);
+    Label aligned;
+    const int64_t argoffsetSlot = static_cast<int64_t>(CommonArgIdx::FUNC) - 1;
+    if (expectedNumArgs != actualNumArgs) {
+        TempRegister1Scope scop1(assembler);
+        Register tmp = __ TempRegister1();
+        __ Cmp(expectedNumArgs, actualNumArgs);
+        __ CMov(tmp, expectedNumArgs, actualNumArgs, Condition::HI);
+        __ Add(sp, sp, Operand(tmp, UXTW, SHIFT_OF_FRAMESLOT));
+    } else {
+        __ Add(sp, sp, Operand(expectedNumArgs, UXTW, SHIFT_OF_FRAMESLOT));
+    }
+    __ Add(sp, sp, Immediate(argoffsetSlot * FRAME_SLOT_SIZE));
+    __ Mov(fp, sp);
+    __ Tst(fp, LogicalImmediate::Create(0xf, RegXSize));  // 0xf: 0x1111
+    __ B(Condition::EQ, &aligned);
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
+    __ Bind(&aligned);
 }
 
-void AssemblerStubs::PushAotEntryFrame(ExtendedAssembler *assembler, Register prevFp)
+void AssemblerStubs::PushJSFunctionEntryFrame (ExtendedAssembler *assembler, Register prevFp)
 {
     Register fp(X29);
     Register sp(SP);
     TempRegister2Scope temp2Scope(assembler);
-    __ Str(Register(X30), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ CalleeSave();
-    __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Mov(fp, sp);
-
+    __ SaveFpAndLr();
     Register frameType = __ TempRegister2();
     // construct frame
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
     // 2 : 2 means pairs
     __ Stp(prevFp, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+    __ CalleeSave();
 }
 
-void AssemblerStubs::PopAotEntryFrame(ExtendedAssembler *assembler, Register glue)
+void AssemblerStubs::PopJSFunctionEntryFrame(ExtendedAssembler *assembler, Register glue)
 {
     Register fp(X29);
     Register sp(SP);
     Register prevFp(X1);
+    __ CalleeRestore();
+
     // pop prevLeaveFrameFp to restore thread->currentFrame_
     __ Ldr(prevFp, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     __ Str(prevFp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
 
-    // pop entry frame type and c-fp
+    // pop entry frame type
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
-    __ Ldr(fp, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-
-    __ CalleeRestore();
     // restore return address
-    __ Ldr(Register(X30), MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+    __ RestoreFpAndLr();
 }
 
-void AssemblerStubs::CallOptimizedJSFunction(ExtendedAssembler *assembler)
+void AssemblerStubs::PushOptimizedJSFunctionFrame(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallOptimizedJSFunction));
     Register sp(SP);
-    Register glue(X0);
-    Register prevFp(X1);
-    Register jsfunc(X2);
-    Register actualNumArgs(X3);
-    Register thisObj(X4);
-    Register newTarget(X5);
-    Register arg0(X6);
-    Register arg1(X7);
-    Register codeAddr = __ AvailableRegister1();
-    Register expectedNumArgs(X19);
-    Label pushCallThis;
-    Register argV(prevFp);
-    // save arg0, arg1 to stack
-    // 2 : 2 means pairs
-    __ Stp(arg0, arg1, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    {
-        TempRegister1Scope temp1Scope(assembler);
-        Register tmp = __ TempRegister1();
-        __ Mov(tmp, sp);
-        PushAotEntryFrame(assembler, prevFp);
-        __ Mov(argV, tmp);
-    }
+    TempRegister2Scope temp2Scope(assembler);
+    Register frameType = __ TempRegister2();
+    __ SaveFpAndLr();
+    // construct frame
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
+    // 2 : 2 means pairs. X19 means calleesave and 16bytes align
+    __ Stp(Register(X19), frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
+}
 
-    PushArgsWithArgV(assembler, jsfunc, actualNumArgs, argV, &pushCallThis);
-    __ Bind(&pushCallThis);
-    __ Add(expectedNumArgs, expectedNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
-    __ Add(actualNumArgs, actualNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
-    PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
-    __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Ldr(codeAddr, MemoryOperand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET));
-    __ Blr(codeAddr); // then call jsFunction
-    PopAotArgs(assembler, expectedNumArgs);
-    PopAotEntryFrame(assembler, glue);
-    // pop arg0, arg1 from stack
-    __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE)); // 2 : 2 means pairs
-    __ Ret();
+void AssemblerStubs::PopOptimizedJSFunctionFrame(ExtendedAssembler *assembler)
+{
+    TempRegister2Scope temp2Scope(assembler);
+    Register sp(SP);
+    Register frameType = __ TempRegister2();
+    // 2 : 2 means pop call site sp and type
+    __ Ldp(Register(X19), frameType, MemoryOperand(sp, FRAME_SLOT_SIZE * 2, AddrMode::POSTINDEX));
+    __ RestoreFpAndLr();
 }
 
 void AssemblerStubs::PushOptimizedFrame(ExtendedAssembler *assembler, Register callSiteSp)
@@ -1928,9 +1908,7 @@ void AssemblerStubs::PushOptimizedFrame(ExtendedAssembler *assembler, Register c
 
 void AssemblerStubs::PopOptimizedFrame(ExtendedAssembler *assembler)
 {
-    Register fp(X29);
     Register sp(SP);
-    Register prevFp(X1);
     // 2 : 2 means pop call site sp and type
     __ Add(sp, sp, Immediate(2 * FRAME_SLOT_SIZE));
     __ RestoreFpAndLr();
@@ -1952,10 +1930,12 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Mov(callsiteSp, sp);
     PushOptimizedFrame(assembler, callsiteSp);
     __ Cbz(actualNumArgs, &pushCallThis);
-    TempRegister1Scope scope1(assembler);
-    Register tmp = __ TempRegister1();
-    __ Mov(tmp, actualNumArgs);
-    CopyArgumentWithArgV(assembler, tmp, argV);
+    {
+        TempRegister1Scope scope1(assembler);
+        Register tmp = __ TempRegister1();
+        __ Mov(tmp, actualNumArgs);
+        CopyArgumentWithArgV(assembler, tmp, argV);
+    }
     __ Bind(&pushCallThis);
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Add(actualNumArgs, actualNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
@@ -1963,7 +1943,7 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
 
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
     __ Ldr(actualNumArgs, MemoryOperand(sp, 0));
-    PopAotArgs(assembler, actualNumArgs);
+    PopJSFunctionArgs(assembler, actualNumArgs, actualNumArgs);
     PopOptimizedFrame(assembler);
     __ Ret();
 }

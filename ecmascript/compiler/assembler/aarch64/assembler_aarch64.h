@@ -57,6 +57,17 @@ public:
     {
         return reg_ != RegisterId::INVALID_REG;
     }
+
+    inline bool operator !=(const Register &other)
+    {
+        return reg_ != other.GetId() || type_ != other.GetType();
+    }
+
+    inline bool operator ==(const Register &other)
+    {
+        return reg_ == other.GetId() && type_ == other.GetType();
+    }
+
 private:
     RegisterId reg_;
     RegisterType type_;

@@ -520,7 +520,7 @@ DEF_CALL_SIGNATURE(CallRuntimeWithArgv)
     std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
         VariableType::NATIVE_POINTER(), // glue
         VariableType::INT64(),   // runtimeId
-        VariableType::INT32(),   // argc
+        VariableType::INT64(),   // argc
         VariableType::NATIVE_POINTER(), // argv
     };
     callSign->SetVariadicArgs(false);
@@ -537,8 +537,8 @@ DEF_CALL_SIGNATURE(OptimizedCallOptimized)
     *callSign = runtimeCallTrampoline;
     std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
         VariableType::NATIVE_POINTER(),
-        VariableType::INT32(),
-        VariableType::INT32(),
+        VariableType::INT64(),
+        VariableType::INT64(),
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetVariadicArgs(true);
@@ -556,7 +556,7 @@ DEF_CALL_SIGNATURE(JSCall)
     std::array<VariableType, 6> params = { // 6 : 6 input parameters
         VariableType::NATIVE_POINTER(),     // glue
         VariableType::JS_ANY(),      // lexenv
-        VariableType::INT32(),       // actual argC
+        VariableType::INT64(),       // actual argC
         VariableType::JS_ANY(),      // call target
         VariableType::JS_ANY(),      // new target
         VariableType::JS_ANY(),      // thisobj
@@ -575,7 +575,7 @@ DEF_CALL_SIGNATURE(JSProxyCallInternalWithArgV)
     *callSign = jSProxyCallInternalWithArgV;
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::NATIVE_POINTER(),     // glue
-        VariableType::INT32(),       // actual argC
+        VariableType::INT64(),       // actual argC
         VariableType::JS_ANY(),      // call target
         VariableType::NATIVE_POINTER(),    // argv
     };
@@ -594,28 +594,11 @@ DEF_CALL_SIGNATURE(JSFunctionEntry)
     std::array<VariableType, 6> params = {  // 6 : 6 input parameters
         VariableType::NATIVE_POINTER(),     // glue
         VariableType::NATIVE_POINTER(),     // prev fp
-        VariableType::INT32(),              // expectedNumArgs
-        VariableType::INT32(),              // actualNumArgs
+        VariableType::INT64(),              // expectedNumArgs
+        VariableType::INT64(),              // actualNumArgs
         VariableType::NATIVE_POINTER(),     // argv
         VariableType::NATIVE_POINTER(),     // codeAddr
     };
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
-DEF_CALL_SIGNATURE(CallBuiltinTrampoline)
-{
-    /* 3 : 3 input parameters */
-    CallSignature CallBuiltinTrampoline("CallBuiltinTrampoline", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = CallBuiltinTrampoline;
-    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
-        VariableType::NATIVE_POINTER(),   // glue
-        VariableType::NATIVE_POINTER(),   // codeAddress
-        VariableType::INT32(),            // argc
-    };
-    callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
@@ -808,27 +791,6 @@ DEF_CALL_SIGNATURE(CallSetter)
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallSetter)
 }
 
-DEF_CALL_SIGNATURE(CallOptimizedJSFunction)
-{
-    // 6 : 6 input parameters
-    CallSignature CallOptimizedJSFunction("CallOptimizedJSFunction", 0, 6,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = CallOptimizedJSFunction;
-    // 6 : 6 input parameters
-    std::array<VariableType, 6> params = {
-        VariableType::NATIVE_POINTER(),   // glue
-        VariableType::NATIVE_POINTER(),   // prevFp
-        VariableType::JS_ANY(),           // jsfunc
-        VariableType::INT32(),            // actualNumArgs
-        VariableType::JS_ANY(),           // this
-        VariableType::JS_ANY(),           // new_target
-    };
-    callSign->SetVariadicArgs(true);
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
 DEF_CALL_SIGNATURE(JSCallWithArgV)
 {
     // 6 : 6 input parameters
@@ -838,7 +800,7 @@ DEF_CALL_SIGNATURE(JSCallWithArgV)
     // 6 : 6 input parameters
     std::array<VariableType, 6> params = {
         VariableType::NATIVE_POINTER(),   // glue
-        VariableType::INT32(),            // actualNumArgs
+        VariableType::INT64(),            // actualNumArgs
         VariableType::JS_ANY(),           // jsfunc
         VariableType::JS_ANY(),           // newTarget
         VariableType::JS_ANY(),           // this
@@ -1062,7 +1024,7 @@ DEF_CALL_SIGNATURE(JsProxyCallInternal)
     *callSign = proxyCallInternal;
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::NATIVE_POINTER(),    // glue
-        VariableType::INT32(),      // actual argC
+        VariableType::INT64(),      // actual argC
         VariableType::JS_POINTER(), // callTarget
         VariableType::NATIVE_POINTER(),    // argv
     };

@@ -804,7 +804,7 @@ void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
 
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG0DYN_PREF_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLARG0DYN_PREF_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     GateRef func = acc_.GetValueIn(gate, 0);
@@ -818,7 +818,7 @@ void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     // 2: func and bcoffset
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG1DYN_PREF_V8_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLARG1DYN_PREF_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     GateRef func = acc_.GetValueIn(gate, 0);
@@ -832,7 +832,7 @@ void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
     // 4: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 4);
     // 2: func and bcoffset
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     GateRef func = acc_.GetValueIn(gate, 0);
@@ -846,7 +846,7 @@ void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
 {
     // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     GateRef func = acc_.GetValueIn(gate, 0);
@@ -862,7 +862,7 @@ void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
     // The first register input is callTarget, second is thisObj and other inputs are common args.
     size_t fixedInputsNum = 2;
     ASSERT(acc_.GetNumValueIn(gate) - fixedInputsNum >= 0);
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8));
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef thisObj = acc_.GetValueIn(gate, 1);
     GateRef newTarget = builder_.Undefined();
@@ -896,7 +896,7 @@ void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> vec;
     size_t numArgs = acc_.GetNumValueIn(gate);
-    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8));
+    GateRef actualArgc = builder_.Int64(ComputeCallArgc(gate, EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8));
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
