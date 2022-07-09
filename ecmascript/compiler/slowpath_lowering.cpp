@@ -332,7 +332,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCreateIterResultObj(gate, glue);
             break;
         case SUSPENDGENERATOR_PREF_V8_V8:
-            LowerSuspendGenerator(gate, glue);
+            LowerSuspendGenerator(gate, glue, jsFunc);
             break;
         case ASYNCFUNCTIONAWAITUNCAUGHT_PREF_V8_V8:
             LowerAsyncFunctionAwaitUncaught(gate, glue);
@@ -656,12 +656,85 @@ void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
     ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
+// When executing to SUSPENDGENERATOR instruction, save contextual information to GeneratorContext,
+// including registers, acc, etc.
+void SlowPathLowering::SaveFrameToContext(GateRef gate, GateRef glue, GateRef jsFunc)
 {
+    GateRef genObj = acc_.GetValueIn(gate, 1);
+    GateRef saveRegister = acc_.GetDep(gate);
+    ASSERT(acc_.GetOpCode(saveRegister) == OpCode::SAVE_REGISTER);
+    std::vector<GateRef> saveRegisterGates {};
+    while (acc_.GetOpCode(saveRegister) == OpCode::SAVE_REGISTER) {
+        saveRegisterGates.emplace_back(saveRegister);
+        saveRegister = acc_.GetDep(saveRegister);
+    }
+    acc_.SetDep(gate, saveRegister);
+    builder_.SetDepend(saveRegister);
+    GateRef context =
+        builder_.Load(VariableType::JS_POINTER(), genObj, builder_.IntPtr(JSGeneratorObject::GENERATOR_CONTEXT_OFFSET));
+    // new tagged array
+    const size_t arrLength = 65536; // 65536: Maximum number of virtual registers
+    GateRef length = builder_.Int32((arrLength));
+    GateRef taggedLength = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(length));
+    const int arrayId = RTSTUB_ID(NewTaggedArray);
+    GateRef taggedArray = LowerCallRuntime(glue, arrayId, {taggedLength});
+    // setRegsArrays
+    for (auto item : saveRegisterGates) {
+        auto index = acc_.GetBitField(item);
+        auto valueGate = acc_.GetValueIn(item);
+        builder_.SetValueToTaggedArray(VariableType::JS_ANY(), glue, taggedArray, builder_.Int32(index), valueGate);
+        acc_.DeleteGate(item);
+    }
+
+    // setRegsArrays
+    GateRef regsArrayOffset = builder_.IntPtr(GeneratorContext::GENERATOR_REGS_ARRAY_OFFSET);
+    builder_.Store(VariableType::JS_POINTER(), glue, context, regsArrayOffset, taggedArray);
+
+    // set method
+    GateRef methodOffset = builder_.IntPtr(GeneratorContext::GENERATOR_METHOD_OFFSET);
+    builder_.Store(VariableType::JS_ANY(), glue, context, methodOffset, jsFunc);
+
+    // set acc
+    GateRef accOffset = builder_.IntPtr(GeneratorContext::GENERATOR_ACC_OFFSET);
+    GateRef curAccGate = acc_.GetValueIn(gate, 3); // get current acc
+    builder_.Store(VariableType::JS_ANY(), glue, context, accOffset, curAccGate);
+
+    // set generator object
+    GateRef generatorObjectOffset = builder_.IntPtr(GeneratorContext::GENERATOR_GENERATOR_OBJECT_OFFSET);
+    builder_.Store(VariableType::JS_ANY(), glue, context, generatorObjectOffset, genObj);
+
+    // set lexical env
+    const int id = RTSTUB_ID(GetAotLexicalEnv);
+    GateRef lexicalEnvGate = LowerCallRuntime(glue, id, {jsFunc});
+    GateRef lexicalEnvOffset = builder_.IntPtr(GeneratorContext::GENERATOR_LEXICALENV_OFFSET);
+    builder_.Store(VariableType::JS_ANY(), glue, context, lexicalEnvOffset, lexicalEnvGate);
+
+    // set nregs
+    GateRef nregsOffset = builder_.IntPtr(GeneratorContext::GENERATOR_NREGS_OFFSET);
+    builder_.Store(VariableType::INT32(), glue, context, nregsOffset, length);
+
+    // set bc size
+    GateRef bcSizeOffset = builder_.IntPtr(GeneratorContext::GENERATOR_BC_OFFSET_OFFSET);
+    GateRef bcSizeGate = acc_.GetValueIn(gate, 0); // saved bc_offset
+    bcSizeGate = builder_.TruncInt64ToInt32(bcSizeGate);
+    builder_.Store(VariableType::INT32(), glue, context, bcSizeOffset, bcSizeGate);
+
+    // set context to generator object
+    GateRef contextOffset = builder_.IntPtr(JSGeneratorObject::GENERATOR_CONTEXT_OFFSET);
+    builder_.Store(VariableType::JS_POINTER(), glue, genObj, contextOffset, context);
+
+    // set generator object to context
+    builder_.Store(VariableType::JS_POINTER(), glue, context, generatorObjectOffset, genObj);
+}
+
+void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue, [[maybe_unused]]GateRef jsFunc)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    SaveFrameToContext(gate, glue, jsFunc);
+    acc_.SetDep(gate, builder_.GetDepend());
     const int id = RTSTUB_ID(SuspendAotGenerator);
-    // 2: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = LowerCallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    GateRef newGate = LowerCallRuntime(glue, id, {acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
     ReplaceHirToCall(gate, newGate);
 }
 
@@ -789,7 +862,6 @@ void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
     }
     ReplaceHirToSubCfg(gate, value, successControl, failControl);
 }
-
 
 void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args)
 {
@@ -2858,13 +2930,52 @@ void SlowPathLowering::LowerTypeOfDyn(GateRef gate, GateRef glue)
     ReplaceHirToSubCfg(gate, *result, successControl, failControl, true);
 }
 
+GateRef SlowPathLowering::GetValueFromTaggedArray(GateRef arrayGate, GateRef indexOffset)
+{
+    GateRef offset = builder_.PtrMul(builder_.ChangeInt32ToIntPtr(indexOffset),
+                                     builder_.IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = builder_.PtrAdd(offset, builder_.IntPtr(TaggedArray::DATA_OFFSET));
+    GateRef value = builder_.Load(VariableType::JS_ANY(), arrayGate, dataOffset);
+    return value;
+}
+
 void SlowPathLowering::LowerResumeGenerator(GateRef gate)
 {
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef restoreGate = acc_.GetDep(gate);
+    std::vector<GateRef> registerGates {};
+
+    while (acc_.GetOpCode(restoreGate) == OpCode::RESTORE_REGISTER) {
+        registerGates.emplace_back(restoreGate);
+        restoreGate = acc_.GetDep(restoreGate);
+    }
+
+    acc_.SetDep(gate, restoreGate);
+    builder_.SetDepend(restoreGate);
+    GateRef contextOffset = builder_.IntPtr(JSGeneratorObject::GENERATOR_CONTEXT_OFFSET);
+    GateRef contextGate = builder_.Load(VariableType::JS_POINTER(), obj, contextOffset);
+    GateRef arrayOffset = builder_.IntPtr(GeneratorContext::GENERATOR_REGS_ARRAY_OFFSET);
+    GateRef arrayGate = builder_.Load(VariableType::JS_POINTER(), contextGate, arrayOffset);
+
+    for (auto item : registerGates) {
+        auto index = acc_.GetBitField(item);
+        auto indexOffset = builder_.Int32(index);
+        GateRef value = GetValueFromTaggedArray(arrayGate, indexOffset);
+        auto uses = acc_.Uses(item);
+        for (auto use = uses.begin(); use != uses.end(); use++) {
+            size_t valueStartIndex = acc_.GetStateCount(*use) + acc_.GetDependCount(*use);
+            size_t valueEndIndex = valueStartIndex + acc_.GetInValueCount(*use);
+            if (use.GetIndex() >= valueStartIndex && use.GetIndex() < valueEndIndex) {
+                acc_.ReplaceIn(use, value);
+            }
+        }
+        acc_.DeleteGate(item);
+    }
+
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef obj = acc_.GetValueIn(gate, 0);
     GateRef resumeResultOffset = builder_.IntPtr(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
     GateRef result = builder_.Load(VariableType::JS_ANY(), obj, resumeResultOffset);
     successControl.emplace_back(builder_.GetState());

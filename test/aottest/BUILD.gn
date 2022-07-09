@@ -121,9 +121,13 @@ group("ark_aot_test") {
 
     #"supercall:supercallAotAction",
     #"supercallspread:supercallspreadAotAction",
-    #"suspendgenerator:suspendgeneratorAotAction",
-    #"suspendgenerator_branch:suspendgenerator_branchAotAction",
-    #"suspendgenerator_phi:suspendgenerator_phiAotAction",
+    "suspendgenerator:suspendgeneratorAotAction",
+    "suspendgeneratorbranch:suspendgeneratorbranchAotAction",
+
+    #"suspendgeneratorfor:suspendgeneratorforAotAction",
+    "suspendgeneratorphi:suspendgeneratorphiAotAction",
+    "suspendgeneratorreturn:suspendgeneratorreturnAotAction",
+    "suspendgeneratorthrow:suspendgeneratorthrowAotAction",
     "throw:throwAotAction",
     "throwifsupernotcorrectcall:throwifsupernotcorrectcallAotAction",
     "throwundefindeifhole:throwundefindeifholeAotAction",
