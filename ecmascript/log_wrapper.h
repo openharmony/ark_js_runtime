@@ -20,7 +20,7 @@
 
 #include "ecmascript/log.h"
 
-#define LOG_ECMA(level) HILOG(level)
+#define LOG_ECMA(level) HILOG_ECMA(level)
 
 #else  // ENABLE_HILOG
 
@@ -28,6 +28,8 @@
 
 // HILOG use WARN, but panda use WARNING
 #define _LOG_WARN(component, p) _LOG_WARNING(component, p)
+// print Verbose log as Debug in host
+#define _LOG_VERBOSE(component, p) _LOG_DEBUG(component, p)
 
 #define LOG_ECMA(level) LOG(level, ECMASCRIPT)
 
