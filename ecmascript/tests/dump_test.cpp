@@ -1149,20 +1149,20 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_CJS_EXPORTS: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsExports::SIZE, 1U);
-                JSHandle<JSCjsExports> cjsExports = factory->NewCjsExports();
+                CHECK_DUMP_FIELDS(JSObject::SIZE, CjsExports::SIZE, 1U);
+                JSHandle<CjsExports> cjsExports = factory->NewCjsExports();
                 DUMP_FOR_HANDLE(cjsExports);
                 break;
             }
             case JSType::JS_CJS_MODULE: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsModule::SIZE, 5U);
-                JSHandle<JSCjsModule> cjsModule = factory->NewCjsModule();
+                CHECK_DUMP_FIELDS(JSObject::SIZE, CjsModule::SIZE, 5U);
+                JSHandle<CjsModule> cjsModule = factory->NewCjsModule();
                 DUMP_FOR_HANDLE(cjsModule);
                 break;
             }
             case JSType::JS_CJS_REQUIRE: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsRequire::SIZE, 2U);
-                JSHandle<JSCjsRequire> cjsRequire = factory->NewCjsRequire();
+                CHECK_DUMP_FIELDS(JSObject::SIZE, CjsRequire::SIZE, 2U);
+                JSHandle<CjsRequire> cjsRequire = factory->NewCjsRequire();
                 DUMP_FOR_HANDLE(cjsRequire);
                 break;
             }

@@ -569,13 +569,13 @@ public:
                 ModuleNamespace::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::JS_CJS_EXPORTS:
-                JSCjsExports::Cast(object)->VisitRangeSlot(visitor);
+                CjsExports::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::JS_CJS_MODULE:
-                JSCjsModule::Cast(object)->VisitRangeSlot(visitor);
+                CjsModule::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::JS_CJS_REQUIRE:
-                JSCjsRequire::Cast(object)->VisitRangeSlot(visitor);
+                CjsRequire::Cast(object)->VisitRangeSlot(visitor);
                 break;
             default:
                 UNREACHABLE();

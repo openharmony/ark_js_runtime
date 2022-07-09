@@ -444,14 +444,14 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, JSHandle<JSTaggedValue> &t
     ObjectFactory *factory = GetFactory();
 
     // create "module", "exports", "require", "filename", "dirname"
-    JSHandle<JSCjsModule> module = factory->NewCjsModule();
+    JSHandle<CjsModule> module = factory->NewCjsModule();
     JSHandle<JSTaggedValue> require = GetGlobalEnv()->GetCjsRequireFunction();
-    JSHandle<JSCjsExports> exports = factory->NewCjsExports();
+    JSHandle<CjsExports> exports = factory->NewCjsExports();
     JSMutableHandle<JSTaggedValue> filename(thread_, JSTaggedValue::Undefined());;
     JSMutableHandle<JSTaggedValue> dirname(thread_, JSTaggedValue::Undefined());;
-    JSRequireManager::ResolveCurrentPath(thread_, dirname, filename, jsPandaFile);
+    RequireManager::ResolveCurrentPath(thread_, dirname, filename, jsPandaFile);
     CJSInfo cjsInfo(module, require, exports, filename, dirname);
-    JSRequireManager::InitializeCommonJS(thread_, cjsInfo);
+    RequireManager::InitializeCommonJS(thread_, cjsInfo);
 
     // Execute main function
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
@@ -473,7 +473,7 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, JSHandle<JSTaggedValue> &t
     EcmaInterpreter::Execute(info);
 
     // Collecting module.exports : exports ---> module.exports --->Module._cache
-    JSRequireManager::CollectExecutedExp(thread_, cjsInfo);
+    RequireManager::CollectExecutedExp(thread_, cjsInfo);
     return;
 }
 

@@ -13,19 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_BUILTINS_BUILTINS_CJS_EXPORTS_H
-#define ECMASCRIPT_BUILTINS_BUILTINS_CJS_EXPORTS_H
-
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/require/js_cjs_exports.h"
-#include "ecmascript/ecma_runtime_call_info.h"
+#include "ecmascript/builtins/builtins_cjs_exports.h"
 
 namespace panda::ecmascript::builtins {
-class BuiltinsCjsExports : public base::BuiltinsBase {
-public:
-
-    static JSTaggedValue CjsExportsConstructor(EcmaRuntimeCallInfo *argv);
-
-};
+JSTaggedValue BuiltinsCjsExports::CjsExportsConstructor(EcmaRuntimeCallInfo *argv)
+{
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
+    LOG_ECMA(ERROR) << "BuiltinsCjsExports::CjsExportsConstructor : can not be call";
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Hole());
+    return JSTaggedValue::Hole();
+}
 }  // namespace panda::ecmascript::builtins
-#endif  // ECMASCRIPT_BUILTINS_BUILTINS_CJS_EXPORTS_H
+
