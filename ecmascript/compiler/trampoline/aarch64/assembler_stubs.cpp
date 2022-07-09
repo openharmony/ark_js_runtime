@@ -1925,6 +1925,7 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
     Register newTarget(X3);
     Register thisObj(X4);
     Register argV(X5);
+    Register env(X6);
     Register callsiteSp = __ AvailableRegister2();
     Label pushCallThis;
 
@@ -1941,8 +1942,11 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Add(actualNumArgs, actualNumArgs, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
     __ Str(actualNumArgs, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Ldr(env, MemoryOperand(jsfunc, JSFunction::LEXICAL_ENV_OFFSET));
+    __ Str(env, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
+    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ Ldr(actualNumArgs, MemoryOperand(sp, 0));
     PopJSFunctionArgs(assembler, actualNumArgs, actualNumArgs);
     PopOptimizedFrame(assembler);
