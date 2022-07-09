@@ -511,6 +511,18 @@ void TSLoader::GenerateStaticHClass(JSHandle<TSTypeTable> tsTypeTable)
     }
 }
 
+JSHandle<JSTaggedValue> TSLoader::GetType(const GlobalTSTypeRef &gt) const
+{
+    JSThread *thread = vm_->GetJSThread();
+    uint32_t moduleId = gt.GetModuleId();
+    uint32_t localId = gt.GetLocalId();
+
+    JSHandle<TSModuleTable> mTable = GetTSModuleTable();
+    JSHandle<TSTypeTable> typeTable = mTable->GetTSTypeTable(thread, moduleId);
+    JSHandle<JSTaggedValue> type(thread, typeTable->Get(localId));
+    return type;
+}
+
 void TSModuleTable::Initialize(JSThread *thread, JSHandle<TSModuleTable> mTable)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();

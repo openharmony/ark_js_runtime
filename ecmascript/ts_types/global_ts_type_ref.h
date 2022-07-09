@@ -49,13 +49,20 @@ enum class TSPrimitiveType : int {
 class GlobalTSTypeRef {
 public:
     explicit GlobalTSTypeRef(uint32_t type = 0) : type_(type) {}
-    explicit GlobalTSTypeRef(int moduleId, int localId, int typeKind)
+    explicit GlobalTSTypeRef(int moduleId, int localId, int typeKind) : type_(0)
     {
-        type_ = 0;
         SetKind(typeKind);
         SetLocalId(localId);
         SetModuleId(moduleId);
     }
+
+    explicit GlobalTSTypeRef(int moduleId, int localId, TSTypeKind typeKind) : type_(0)
+    {
+        SetKind(static_cast<int>(typeKind));
+        SetLocalId(localId);
+        SetModuleId(moduleId);
+    }
+
     ~GlobalTSTypeRef() = default;
 
     static constexpr int TS_TYPE_RESERVED_COUNT = 50;
@@ -112,7 +119,7 @@ public:
 
     void Dump() const
     {
-        uint8_t kind = GetKind();
+        uint32_t kind = GetKind();
         uint32_t gcType = GetGCType();
         uint32_t moduleId = GetModuleId();
         uint32_t localId = GetLocalId();
