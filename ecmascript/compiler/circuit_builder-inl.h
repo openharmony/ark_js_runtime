@@ -502,6 +502,11 @@ GateRef CircuitBuilder::GetDepend() const
     return GetCurrentLabel()->GetDepend();
 }
 
+void CircuitBuilder::SetDepend(GateRef depend)
+{
+    GetCurrentLabel()->SetDepend(depend);
+}
+
 void Label::Seal()
 {
     return impl_->Seal();

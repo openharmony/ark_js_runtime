@@ -11,8 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/js_runtime/test/test_helper.gni")
-
-host_aot_test_action("suspendgenerator_phi") {
-  deps = []
-}
+10000
+1
+11
+20000
+102
+112
+30000
+1003
+1013
+40000
+1104
+1114
+undefined

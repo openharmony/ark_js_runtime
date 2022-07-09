@@ -360,6 +360,23 @@ struct BytecodeInfo {
     {
         return ComputeValueInputCount() + ComputeBCOffsetInputCount();
     }
+
+    bool IsGeneratorRelative() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::SUSPENDGENERATOR_PREF_V8_V8:
+            case EcmaOpcode::RESUMEGENERATOR_PREF_V8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsBc(EcmaOpcode ecmaOpcode) const
+    {
+        return opcode == ecmaOpcode;
+    }
 };
 
 enum BytecodeOffset {
@@ -437,6 +454,11 @@ public:
         return enableLog_;
     }
 
+    [[nodiscard]] const std::vector<kungfu::GateRef>& GetAsyncRelatedGates() const
+    {
+        return suspendAndResumeGates_;
+    }
+
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
@@ -474,7 +496,6 @@ private:
     GateRef RenameVariable(const size_t bbId, const uint8_t *end,
         const uint16_t reg, const bool acc, GateType gateType = GateType::AnyType());
     void BuildCircuit();
-
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
     void PrintGraph();
     void PrintBytecodeInfo();
@@ -499,6 +520,7 @@ private:
     ArgumentAccessor argAcc_;
     bool enableLog_ {false};
     std::map<uint8_t *, int32_t> pcToBCOffset_;
+    std::vector<kungfu::GateRef> suspendAndResumeGates_ {};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H

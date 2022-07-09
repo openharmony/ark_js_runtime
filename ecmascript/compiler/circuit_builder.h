@@ -396,6 +396,7 @@ public:
     inline Label *GetCurrentLabel() const;
     inline GateRef GetState() const;
     inline GateRef GetDepend() const;
+    inline void SetDepend(GateRef depend);
 
 private:
     Circuit *circuit_ {nullptr};

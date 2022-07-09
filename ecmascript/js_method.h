@@ -129,6 +129,11 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return IsNativeBit::Decode(callField_);
     }
 
+    bool IsAotWithCallField() const
+    {
+        return IsAotCodeBit::Decode(callField_);
+    }
+
     bool OnlyHaveThisWithCallField() const
     {
         return (callField_ & CALL_TYPE_MASK) == 1;  // 1: the first bit of callFiled is HaveThisBit

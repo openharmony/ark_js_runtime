@@ -559,11 +559,15 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
+    JSMethod *method = func->GetCallTarget();
+    if (method->IsAotWithCallField()) {
+        return GeneratorReEnterAot(thread, context);
+    }
+
     if (thread->IsAsmInterpreter()) {
         return InterpreterAssembly::GeneratorReEnterInterpreter(thread, context);
     }
-    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
-    JSMethod *method = func->GetCallTarget();
 
     JSTaggedType *currentSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
 
@@ -617,6 +621,27 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     // pop frame
     thread->SetCurrentSPFrame(currentSp);
     return res;
+}
+
+JSTaggedValue EcmaInterpreter::GeneratorReEnterAot(JSThread *thread, JSHandle<GeneratorContext> context)
+{
+    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
+    JSMethod *method = func->GetCallTarget();
+    JSTaggedValue genObject = context->GetGeneratorObject();
+    std::vector<JSTaggedType> args(method->GetNumArgs() + NUM_MANDATORY_JSFUNC_ARGS + 1,
+                                   JSTaggedValue::Undefined().GetRawData());
+    args[0] = func.GetTaggedValue().GetRawData();
+    args[1] = genObject.GetRawData();
+    JSTaggedValue env = func->GetLexicalEnv();
+    args[args.size() - 1] = env.GetRawData(); // last arg is env.
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto res = reinterpret_cast<JSFunctionEntryType>(entry)(thread->GetGlueAddr(),
+                                                            reinterpret_cast<uintptr_t>(thread->GetLastLeaveFrame()),
+                                                            static_cast<uint32_t>(args.size()) - 1,
+                                                            static_cast<uint32_t>(args.size()) - 1,
+                                                            args.data(),
+                                                            func->GetCodeEntry());
+    return JSTaggedValue(res);
 }
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
