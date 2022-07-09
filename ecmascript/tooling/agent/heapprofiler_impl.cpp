@@ -298,10 +298,10 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]const StartSamp
     return DispatchResponse::Fail("StartSampling not support now");
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
-    [[maybe_unused]]const StartTrackingHeapObjectsParams &params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(const StartTrackingHeapObjectsParams &params)
 {
-    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
+    bool traceAllocation = params.GetTrackAllocations();
+    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_, traceAllocation);
     if (result) {
         return DispatchResponse::Ok();
     } else {
