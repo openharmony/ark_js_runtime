@@ -20,7 +20,7 @@
 namespace panda::ecmascript::tooling {
 void JSPtHooks::Breakpoint(const JSPtLocation &location)
 {
-    LOG_DEBUGGER(DEBUG) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
+    LOG_DEBUGGER(VERBOSE) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
                          << location.GetBytecodeOffset();
 
     [[maybe_unused]] LocalScope scope(debugger_->vm_);
@@ -29,7 +29,7 @@ void JSPtHooks::Breakpoint(const JSPtLocation &location)
 
 void JSPtHooks::Exception([[maybe_unused]] const JSPtLocation &location)
 {
-    LOG_DEBUGGER(DEBUG) << "JSPtHooks: Exception";
+    LOG_DEBUGGER(VERBOSE) << "JSPtHooks: Exception";
     [[maybe_unused]] LocalScope scope(debugger_->vm_);
 
     debugger_->NotifyPaused({}, EXCEPTION);
@@ -37,7 +37,7 @@ void JSPtHooks::Exception([[maybe_unused]] const JSPtLocation &location)
 
 bool JSPtHooks::SingleStep(const JSPtLocation &location)
 {
-    LOG_DEBUGGER(DEBUG) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
+    LOG_DEBUGGER(VERBOSE) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
     [[maybe_unused]] LocalScope scope(debugger_->vm_);
     if (UNLIKELY(firstTime_)) {
@@ -61,7 +61,7 @@ bool JSPtHooks::SingleStep(const JSPtLocation &location)
 
 void JSPtHooks::LoadModule(std::string_view pandaFileName)
 {
-    LOG_DEBUGGER(INFO) << "JSPtHooks: LoadModule: " << pandaFileName;
+    LOG_DEBUGGER(VERBOSE) << "JSPtHooks: LoadModule: " << pandaFileName;
 
     [[maybe_unused]] LocalScope scope(debugger_->vm_);
 
@@ -73,7 +73,7 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
 
 void JSPtHooks::PendingJobEntry()
 {
-    LOG_DEBUGGER(DEBUG) << "JSPtHooks: PendingJobEntry";
+    LOG_DEBUGGER(VERBOSE) << "JSPtHooks: PendingJobEntry";
 
     [[maybe_unused]] LocalScope scope(debugger_->vm_);
 

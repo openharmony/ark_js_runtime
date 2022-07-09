@@ -59,13 +59,13 @@ void LLVMStackMapParser::PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo,
     for (; j < callsiteInfo.size(); j += 2) { // 2: base and derived
         const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
         const DwarfRegAndOffsetType derivedInfo = callsiteInfo[j + 1];
-        LOG_COMPILER(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
-        LOG_COMPILER(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
+        LOG_COMPILER(VERBOSE) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
+        LOG_COMPILER(VERBOSE) << std::dec << "base DWARF_REG:" << baseInfo.first
                     << " OFFSET:" << baseInfo.second;
         uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
         uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
         if (base != derived) {
-            LOG_COMPILER(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
+            LOG_COMPILER(VERBOSE) << std::dec << "derived DWARF_REG:" << derivedInfo.first
                 << " OFFSET:" << derivedInfo.second;
         }
     }

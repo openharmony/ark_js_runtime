@@ -24,6 +24,13 @@ constexpr static unsigned int DOMAIN = 0xD003F00;
 constexpr static auto TAG = "ArkCompiler";
 constexpr static OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, DOMAIN, TAG};
 
+#if ECMASCRIPT_ENABLE_VERBOSE_LEVEL_LOG
+// print Debug level log if enable Verbose log
+#define LOG_VERBOSE LOG_DEBUG
+#else
+#define LOG_VERBOSE LOG_LEVEL_MIN
+#endif
+
 namespace panda::ecmascript {
 template<LogLevel level>
 class Log {
@@ -31,7 +38,9 @@ public:
     Log() = default;
     ~Log()
     {
-        if constexpr (level == LOG_DEBUG) {
+        if constexpr (level == LOG_LEVEL_MIN) {
+            // print nothing
+        } else if constexpr (level == LOG_DEBUG) {
             OHOS::HiviewDFX::HiLog::Debug(LABEL, "%{public}s", stream_.str().c_str());
         } else if constexpr (level == LOG_INFO) {
             OHOS::HiviewDFX::HiLog::Info(LABEL, "%{public}s", stream_.str().c_str());
@@ -55,6 +64,6 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#define HILOG(level) HiLogIsLoggable(DOMAIN, TAG, LOG_##level) && panda::ecmascript::Log<LOG_##level>()
+#define HILOG_ECMA(level) HiLogIsLoggable(DOMAIN, TAG, LOG_##level) && panda::ecmascript::Log<LOG_##level>()
 
 #endif  // ECMASCRIPT_LOG_H

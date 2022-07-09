@@ -52,7 +52,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
-#ifdef INTERPRETER_LOG
+#if ECMASCRIPT_ENABLE_INTERPRETER_LOG
 #define LOG_INST() LOG_INTERPRETER(DEBUG)
 #else
 #define LOG_INST() false && LOG_INTERPRETER(DEBUG)
