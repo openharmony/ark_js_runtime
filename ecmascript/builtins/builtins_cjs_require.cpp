@@ -19,10 +19,9 @@
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/builtins/builtin_cjs_require.h"
+#include "ecmascript/builtins/builtins_cjs_require.h"
 
 namespace panda::ecmascript::builtins {
-
 JSTaggedValue BuiltinsCjsRequire::CjsRequireConstructor(EcmaRuntimeCallInfo *argv)
 {
     JSThread *thread = argv->GetThread();
@@ -40,7 +39,7 @@ JSTaggedValue BuiltinsCjsRequire::CjsRequireConstructor(EcmaRuntimeCallInfo *arg
         UNREACHABLE();
     }
     JSHandle<EcmaString> requestName = JSHandle<EcmaString>::Cast(GetCallArg(argv, 0));
-    result = JSCjsModule::Load(thread, requestName);
+    result = CjsModule::Load(thread, requestName);
     return result.GetTaggedValue();
 }
 
