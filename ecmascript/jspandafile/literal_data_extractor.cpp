@@ -35,7 +35,7 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const JSPandaFil
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    LOG_ECMA(DEBUG) << "Panda File" << jsPandaFile->GetJSPandaFileDesc();
+    LOG_ECMA(VERBOSE) << "Panda File" << jsPandaFile->GetJSPandaFileDesc();
     const panda_file::File *pf = jsPandaFile->GetPandaFile();
     panda_file::File::EntityId literalArraysId = pf->GetLiteralArraysId();
     panda_file::LiteralDataAccessor lda(*pf, literalArraysId);
@@ -121,7 +121,7 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    LOG_ECMA(DEBUG) << "Panda File" << jsPandaFile->GetJSPandaFileDesc();
+    LOG_ECMA(VERBOSE) << "Panda File" << jsPandaFile->GetJSPandaFileDesc();
     const panda_file::File *pf = jsPandaFile->GetPandaFile();
     panda_file::File::EntityId literalArraysId = pf->GetLiteralArraysId();
     panda_file::LiteralDataAccessor lda(*pf, literalArraysId);

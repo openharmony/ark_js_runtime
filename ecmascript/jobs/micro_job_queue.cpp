@@ -42,10 +42,9 @@ void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueu
     ENQUEUE_JOB_HITRACE(pendingJob, queueType);
     if (queueType == QueueType::QUEUE_PROMISE) {
         JSHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
-        LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
         TaggedQueue *newPromiseQueue = TaggedQueue::Push(thread, promiseQueue, JSHandle<JSTaggedValue>(pendingJob));
         jobQueue->SetPromiseJobQueue(thread, JSTaggedValue(newPromiseQueue));
-        LOG_ECMA(DEBUG) << "promiseQueue end length: " << newPromiseQueue->Size();
+        LOG_ECMA(VERBOSE) << "EnqueueJob length: " << newPromiseQueue->Size();
     } else if (queueType == QueueType::QUEUE_SCRIPT) {
         JSHandle<TaggedQueue> scriptQueue(thread, jobQueue->GetScriptJobQueue());
         TaggedQueue *newScriptQueue = TaggedQueue::Push(thread, scriptQueue, JSHandle<JSTaggedValue>(pendingJob));
@@ -59,9 +58,8 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> 
     JSMutableHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
     JSMutableHandle<PendingJob> pendingJob(thread, JSTaggedValue::Undefined());
     while (!promiseQueue->Empty()) {
-        LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
+        LOG_ECMA(VERBOSE) << "ExecutePendingJob length: " << promiseQueue->Size();
         pendingJob.Update(promiseQueue->Pop(thread));
-        LOG_ECMA(DEBUG) << "promiseQueue end length: " << promiseQueue->Size();
         PendingJob::ExecutePendingJob(pendingJob, thread);
         if (thread->HasPendingException()) {
             return;

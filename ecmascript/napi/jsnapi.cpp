@@ -269,7 +269,7 @@ bool JSNApi::StopDebugger(EcmaVM *vm)
 
 bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
-    LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
+    LOG_ECMA(DEBUG) << "start to execute ark file: " << fileName;
     JSThread *thread = vm->GetAssociatedJSThread();
     if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName.c_str(), entry)) {
         LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
@@ -282,6 +282,7 @@ bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string 
 bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
                      const std::string &entry, const std::string &filename)
 {
+    LOG_ECMA(DEBUG) << "start to execute ark buffer: " << filename;
     JSThread *thread = vm->GetAssociatedJSThread();
     if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, filename.c_str())) {
         LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
