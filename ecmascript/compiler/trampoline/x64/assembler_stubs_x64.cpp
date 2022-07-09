@@ -2077,8 +2077,11 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     PushMandatoryJSArgs(assembler, jsfunc, thisObj, newTarget);
     __ Addq(Immediate(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);
     __ Pushq(actualNumArgs);
+    __ Movq(Operand(jsfunc, JSFunction::LEXICAL_ENV_OFFSET), rax);
+    __ Pushq(rax);
     __ Movq(glue, rax);
     __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
+    __ Addq(FRAME_SLOT_SIZE, rsp);
     __ Mov(Operand(sp, 0), actualNumArgs);
     PopJSFunctionArgs(assembler, actualNumArgs);
     PopOptimizedFrame(assembler);
