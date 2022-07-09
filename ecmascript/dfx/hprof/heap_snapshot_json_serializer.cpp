@@ -76,8 +76,7 @@ void HeapSnapshotJSONSerializer::SerializeSnapshotHeader()
     stringBuffer_ << "\"location_fields\":[\"object_index\",\"script_id\",\"line\",\"column\"]},\n";  // 10.
     stringBuffer_ << "\"node_count\":" << snapshot_->GetNodeCount() << ",\n";                         // 11.
     stringBuffer_ << "\"edge_count\":" << snapshot_->GetEdgeCount() << ",\n";                         // 12.
-    stringBuffer_ << "\"trace_function_count\":"
-                  << "0\n";   // 13.
+    stringBuffer_ << "\"trace_function_count\":" << snapshot_->GetTrackAllocationsStack().size() << "\n";   // 13.
     stringBuffer_ << "},\n";  // 14.
 }
 
@@ -133,12 +132,60 @@ void HeapSnapshotJSONSerializer::SerializeEdges()
 
 void HeapSnapshotJSONSerializer::SerializeTraceFunctionInfo()
 {
-    stringBuffer_ << "\"trace_function_infos\":[],\n";  // Empty
+    const CVector<FunctionInfo> trackAllocationsStack = snapshot_->GetTrackAllocationsStack();
+    const StringHashMap *stringTable = snapshot_->GetEcmaStringTable();
+
+    stringBuffer_ << "\"trace_function_infos\":[";  // Empty
+    size_t i = 0;
+
+    for (const auto &info : trackAllocationsStack) {
+        if (i > 0) {  // add comma except the first line
+            stringBuffer_ << ",";
+        }
+        stringBuffer_ << info.functionId << ",";
+        CString functionName(info.functionName.c_str());
+        stringBuffer_ << stringTable->GetStringId(&functionName) << ",";
+        CString scriptName(info.scriptName.c_str());
+        stringBuffer_ << stringTable->GetStringId(&scriptName) << ",";
+        stringBuffer_ << info.scriptId << ",";
+        stringBuffer_ << info.columnNumber << ",";
+        stringBuffer_ << info.lineNumber << "\n";
+        i++;
+    }
+    stringBuffer_ << "],\n";
 }
 
 void HeapSnapshotJSONSerializer::SerializeTraceTree()
 {
-    stringBuffer_ << "\"trace_tree\":[],\n";  // Empty
+    stringBuffer_ << "\"trace_tree\":[";
+    TraceTree* tree = snapshot_->GetTraceTree();
+    if (tree != nullptr) {
+        SerializeTraceNode(tree->GetRoot());
+    }
+    stringBuffer_ << "],\n";
+}
+
+void HeapSnapshotJSONSerializer::SerializeTraceNode(TraceNode* node)
+{
+    if (node == nullptr) {
+        return;
+    }
+
+    stringBuffer_ << node->GetId() << ",";
+    stringBuffer_ << node->GetNodeIndex() << ",";
+    stringBuffer_ << node->GetTotalCount() << ",";
+    stringBuffer_ << node->GetTotalSize() << ",";
+    stringBuffer_ << "[";
+
+    int i = 0;
+    for (TraceNode* child : node->GetChildren()) {
+        if (i > 0) {
+            stringBuffer_ << ",";
+        }
+        SerializeTraceNode(child);
+        i++;
+    }
+    stringBuffer_ << "]";
 }
 
 void HeapSnapshotJSONSerializer::SerializeSamples()

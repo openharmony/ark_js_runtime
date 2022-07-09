@@ -30,6 +30,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "os/mem.h"
 #include "ecmascript/tooling/interface/stream.h"
+#include "ecmascript/interpreter/frame_handler.h"
 
 namespace panda::ecmascript {
 // Define the Object Graphic
@@ -106,6 +107,10 @@ public:
     void SetLive(bool isLive)
     {
         isLive_ = isLive;
+    }
+    void SetTraceId(uint64_t traceId)
+    {
+        traceId_ = traceId;
     }
     static Node *NewNode(const EcmaVM *vm, size_t id, size_t index, CString *name, NodeType type, size_t size,
                          TaggedObject *entry, bool isLive = true);
@@ -256,13 +261,95 @@ private:
     CUnorderedMap<Address, Node *> nodesMap_ {};
 };
 
+struct FunctionInfo {
+    int functionId = 0;
+    std::string functionName = "";
+    std::string scriptName = "";
+    int scriptId = 0;
+    int columnNumber = -1;
+    int lineNumber = -1;
+};
+
+class TraceTree;
+class TraceNode {
+public:
+    TraceNode(TraceTree* tree, uint32_t nodeIndex);
+    ~TraceNode();
+
+    TraceNode(const TraceNode&) = delete;
+    TraceNode& operator=(const TraceNode&) = delete;
+    TraceNode* FindChild(uint32_t nodeIndex);
+    TraceNode* FindOrAddChild(uint32_t nodeIndex);
+    uint32_t GetNodeIndex() const
+    {
+        return nodeIndex_;
+    }
+    uint32_t GetTotalSize() const
+    {
+        return totalSize_;
+    }
+    uint32_t GetTotalCount() const
+    {
+        return totalCount_;
+    }
+    uint32_t GetId() const
+    {
+        return id_;
+    }
+    const std::vector<TraceNode*>& GetChildren() const
+    {
+        return children_;
+    }
+    TraceNode &SetTotalSize(uint32_t totalSize)
+    {
+        totalSize_ = totalSize;
+        return *this;
+    }
+    TraceNode &SetTotalCount(uint32_t totalCount)
+    {
+        totalCount_ = totalCount;
+        return *this;
+    }
+
+private:
+    TraceTree* tree_;
+    uint32_t nodeIndex_;
+    uint32_t totalSize_;
+    uint32_t totalCount_;
+    uint32_t id_;
+    std::vector<TraceNode*> children_;
+};
+
+class TraceTree {
+public:
+    TraceTree() : nextNodeId_(1), root_(this, 0)
+    {
+    }
+    ~TraceTree() = default;
+    TraceTree(const TraceTree&) = delete;
+    TraceTree& operator=(const TraceTree&) = delete;
+    TraceNode* AddNodeToTree(CVector<uint32_t> traceNodeIndex);
+    TraceNode* GetRoot()
+    {
+        return &root_;
+    }
+    uint32_t GetNextNodeId()
+    {
+        return nextNodeId_++;
+    }
+
+private:
+    uint32_t nextNodeId_;
+    TraceNode root_;
+};
+
 class HeapSnapshot {
 public:
     static constexpr int SEQ_STEP = 2;
     NO_MOVE_SEMANTIC(HeapSnapshot);
     NO_COPY_SEMANTIC(HeapSnapshot);
-    explicit HeapSnapshot(const EcmaVM *vm, const bool isVmMode, const bool isPrivate)
-        : stringTable_(vm), vm_(vm), isVmMode_(isVmMode), isPrivate_(isPrivate)
+    explicit HeapSnapshot(const EcmaVM *vm, const bool isVmMode, const bool isPrivate, const bool trackAllocations)
+        : stringTable_(vm), vm_(vm), isVmMode_(isVmMode), isPrivate_(isPrivate), trackAllocations_(trackAllocations)
     {
     }
     ~HeapSnapshot();
@@ -271,11 +358,14 @@ public:
 
     void PrepareSnapshot();
     void UpdateNode();
-    void AddNode(TaggedObject* address);
+    Node *AddNode(TaggedObject* address);
     void MoveNode(uintptr_t address, TaggedObject* forward_address);
     void RecordSampleTime();
     bool FinishSnapshot();
     void PushHeapStat(Stream* stream);
+    int AddTraceNode(int sequenceId, int size);
+    void AddMethodInfo(JSMethod *method, const FrameHandler &frameHandler, int sequenceId);
+    void AddTraceNodeId(JSMethod *method);
 
     const CVector<TimeStamp> &GetTimeStamps() const
     {
@@ -329,6 +419,29 @@ public:
         return isPrivate_;
     }
 
+    bool trackAllocations() const
+    {
+        return trackAllocations_;
+    }
+
+    const CVector<FunctionInfo> &GetTrackAllocationsStack() const
+    {
+        return traceInfoStack_;
+    }
+
+    TraceTree* GetTraceTree()
+    {
+        return &traceTree_;
+    }
+
+    void PrepareTraceInfo()
+    {
+        struct FunctionInfo info;
+        info.functionName = "(root)";
+        GetString(info.functionName.c_str());
+        traceInfoStack_.push_back(info);
+    }
+
 private:
     void FillNodes();
     Node *GenerateNode(JSTaggedValue entry, int sequenceId = -1);
@@ -359,6 +472,13 @@ private:
     bool isVmMode_ {true};
     bool isPrivate_ {false};
     Node* privateStringNode_ {nullptr};
+    bool trackAllocations_ {false};
+    CVector<FunctionInfo> traceInfoStack_ {};
+    CMap<JSMethod *, struct FunctionInfo> stackInfo_;
+    CMap<std::string, int> scriptIdMap_;
+    TraceTree traceTree_;
+    CMap<JSMethod *, uint32_t> methodToTraceNodeId_;
+    CVector<uint32_t> traceNodeIndex_;
 };
 
 class EntryVisitor {
