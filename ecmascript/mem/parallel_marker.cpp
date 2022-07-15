@@ -62,7 +62,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
                     obj = value.GetTaggedObject();
                     MarkObject(threadId, obj);
                 } else {
-                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()), rootRegion);
                     obj = value.GetWeakReferentUnChecked();
                 }
                 if (needBarrier) {
@@ -99,11 +99,11 @@ void SemiGCMarker::ProcessMarkStack(uint32_t threadId)
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
+                Region *rootRegion = Region::ObjectAddressToRange(root);
                 if (value.IsWeakForHeapObject()) {
-                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()), rootRegion);
                     continue;
                 }
-                Region *rootRegion = Region::ObjectAddressToRange(root);
                 auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
                 if (!rootRegion->InYoungSpace() && slotStatus == SlotStatus::KEEP_SLOT) {
                     SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
@@ -132,6 +132,7 @@ void CompressGCMarker::ProcessMarkStack(uint32_t threadId)
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
                 if (value.IsWeakForHeapObject()) {
+                    // It is unnecessary to use region pointer in compressGCMarker.
                     RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
                     continue;
                 }
