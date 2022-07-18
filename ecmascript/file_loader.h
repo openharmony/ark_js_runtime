@@ -224,6 +224,9 @@ public:
     ~FileLoader() = default;
     void LoadStubFile(const std::string &fileName);
     void LoadAOTFile(const std::string &fileName);
+
+    static bool GetAbsolutePath(const std::string &relativePath, std::string &absPath);
+
     void AddAOTPackInfo(AOTModulePackInfo packInfo)
     {
         aotPackInfos_.emplace_back(packInfo);

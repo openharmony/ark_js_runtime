@@ -169,9 +169,9 @@ public:
         if (iterate == freeList_.end()) {
             return MemMap();
         }
-        freeList_.erase(iterate);
         MemMap memMap = iterate->second;
         size_t remainderSize = memMap.GetSize() - size;
+        freeList_.erase(iterate);
         if (remainderSize >= DEFAULT_REGION_SIZE) {
             auto next = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(memMap.GetMem()) + size);
             freeList_.insert(std::pair<size_t, MemMap>(remainderSize, MemMap(next, remainderSize)));
