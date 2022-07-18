@@ -133,9 +133,6 @@ private:
     void InitializeDisplayNames(const JSHandle<GlobalEnv> &env);
     void InitializeListFormat(const JSHandle<GlobalEnv> &env);
 
-    // Initialize IcuData Path
-    void InitializeIcuData();
-
     void GeneralUpdateError(ErrorParameter *error, EcmaEntrypoint constructor, EcmaEntrypoint method, const char *name,
                             JSType type) const;
 
