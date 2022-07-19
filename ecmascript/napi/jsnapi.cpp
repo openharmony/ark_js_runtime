@@ -30,6 +30,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/file_loader.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
@@ -59,6 +60,7 @@
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "generated/base_options.h"
 
+#include "ohos/init_data.h"
 #include "utils/pandargs.h"
 
 #include "os/mutex.h"
@@ -156,6 +158,7 @@ EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
         os::memory::LockHolder lock(mutex);
         vmCount_++;
         if (!initialize_) {
+            InitializeIcuData(options);
             InitializeMemMapAllocator();
             initialize_ = true;
         }
@@ -479,6 +482,22 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
 
     JSHandle<JSTaggedValue> exportObj(thread, ecmaModule->GetModuleValue(thread, keyHandle.GetTaggedValue(), false));
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
+}
+
+// Initialize IcuData Path
+void JSNApi::InitializeIcuData(const JSRuntimeOptions &options)
+{
+    std::string icuPath = options.GetIcuDataPath();
+    if (icuPath == "default") {
+        if (!WIN_OR_MAC_PLATFORM) {
+            SetHwIcuDirectory();
+        }
+    } else {
+        std::string absPath;
+        if (ecmascript::FileLoader::GetAbsolutePath(icuPath, absPath)) {
+            u_setDataDirectory(absPath.c_str());
+        }
+    }
 }
 
 void JSNApi::InitializeMemMapAllocator()
