@@ -176,33 +176,6 @@ using CjsRequire = builtins::BuiltinsCjsRequire;
 using ContainersPrivate = containers::ContainersPrivate;
 using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
 
-bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
-{
-    if (relativePath.size() >= PATH_MAX) {
-        return false;
-    }
-    char buffer[PATH_MAX] = {0};
-#ifndef PANDA_TARGET_WINDOWS
-    auto path = realpath(relativePath.c_str(), buffer);
-    if (path == nullptr) {
-        return false;
-    }
-    absPath = std::string(path);
-    return true;
-#else
-    auto path = _fullpath(buffer, relativePath.c_str(), sizeof(buffer) - 1);
-    if (path == nullptr) {
-        return false;
-    }
-    bool valid = PathCanonicalizeA(buffer, path);
-    if (!valid) {
-        return false;
-    }
-    absPath = std::string(buffer);
-    return true;
-#endif
-}
-
 void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 {
     thread_ = thread;
@@ -351,7 +324,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePluralRules(env);
     InitializeDisplayNames(env);
     InitializeListFormat(env);
-    InitializeIcuData();
 
     InitializeModuleNamespace(env, objFuncDynclass);
     InitializeCjsModule(env);
@@ -370,7 +342,6 @@ void Builtins::InitializeForSnapshot(JSThread *thread)
     vm_ = thread->GetEcmaVM();
     factory_ = vm_->GetFactory();
 
-    InitializeIcuData();
     // Initialize ArkTools
     JSRuntimeOptions options = vm_->GetJSOptions();
     if (options.EnableArkTools()) {
@@ -3352,22 +3323,5 @@ void Builtins::InitializeCjsRequire(const JSHandle<GlobalEnv> &env) const
     SetFunction(env, cjsRequirePrototype, "Main", builtins::BuiltinsCjsRequire::Main, FunctionLength::ONE);
 
     env->SetCjsRequireFunction(thread_, cjsRequireFunction);
-}
-
-void Builtins::InitializeIcuData()
-{
-    ASSERT(vm_ != nullptr);
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    std::string icuPath = options.GetIcuDataPath();
-    if (icuPath == "default") {
-        if (!WIN_OR_MAC_PLATFORM) {
-            SetHwIcuDirectory();
-        }
-    } else {
-        std::string absPath;
-        if (GetAbsolutePath(icuPath, absPath)) {
-            u_setDataDirectory(absPath.c_str());
-        }
-    }
 }
 }  // namespace panda::ecmascript

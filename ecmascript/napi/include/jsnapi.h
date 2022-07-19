@@ -1113,6 +1113,7 @@ public:
     static void SetHostResolvePathTracker(EcmaVM *vm,
                                           std::function<std::string(std::string dirPath, std::string requestPath)> cb);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
+    static void InitializeIcuData(const ecmascript::JSRuntimeOptions &options);
     static void InitializeMemMapAllocator();
     static void DestroyMemMapAllocator();
     static EcmaVM* CreateEcmaVM(const ecmascript::JSRuntimeOptions &options);

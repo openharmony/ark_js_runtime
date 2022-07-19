@@ -310,6 +310,7 @@ public:
 
     inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
+    void WaitAllTasksFinished();
     void WaitConcurrentMarkingFinished();
 
     MemGrowingType GetMemGrowingType() const

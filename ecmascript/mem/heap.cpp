@@ -126,7 +126,10 @@ void Heap::Initialize()
 
 void Heap::Destroy()
 {
-    Prepare();
+    if (workManager_ != nullptr) {
+        delete workManager_;
+        workManager_ = nullptr;
+    }
     if (activeSemiSpace_ != nullptr) {
         activeSemiSpace_->Destroy();
         delete activeSemiSpace_;
@@ -166,10 +169,6 @@ void Heap::Destroy()
         hugeObjectSpace_->Destroy();
         delete hugeObjectSpace_;
         hugeObjectSpace_ = nullptr;
-    }
-    if (workManager_ != nullptr) {
-        delete workManager_;
-        workManager_ = nullptr;
     }
     if (stwYoungGC_ != nullptr) {
         delete stwYoungGC_;
@@ -621,6 +620,16 @@ void Heap::WaitClearTaskFinished()
     os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
     while (!clearTaskFinished_) {
         waitClearTaskFinishedCV_.Wait(&waitClearTaskFinishedMutex_);
+    }
+}
+
+void Heap::WaitAllTasksFinished()
+{
+    WaitRunningTaskFinished();
+    sweeper_->EnsureAllTaskFinished();
+    WaitClearTaskFinished();
+    if (concurrentMarker_->IsEnabled() && thread_->IsMarking()) {
+        concurrentMarker_->WaitMarkingFinished();
     }
 }
 
