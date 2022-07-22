@@ -321,9 +321,11 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
     ASSERT_PRINT(U_SUCCESS(status), "constructGenerator failed");
     HourCycleOption hcDefault = OptionToHourCycle(generator->getDefaultHourCycle(status));
     // b. Let hc be dateTimeFormat.[[HourCycle]].
-    HourCycleOption hc = HourCycleOption::UNDEFINED;
-    hc = (hourCycle == HourCycleOption::UNDEFINED) ? OptionToHourCycle(resolvedLocale.extensions.find("hc")->second) :
-                                                   hourCycle;
+    HourCycleOption hc = hourCycle;
+    if (hourCycle == HourCycleOption::UNDEFINED
+        && resolvedLocale.extensions.find("hc") != resolvedLocale.extensions.end()) {
+        hc = OptionToHourCycle(resolvedLocale.extensions.find("hc")->second);
+    }
     // c. If hc is null, then
     //    i. Set hc to hcDefault.
     if (hc == HourCycleOption::UNDEFINED) {
