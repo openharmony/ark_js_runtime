@@ -569,11 +569,12 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify6)  // Test for bigint object
     ecmaRuntimeCallInfo->SetCallArg(0, bigIntHandle.GetTaggedValue());
 
     prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
-    TestHelper::TearDownFrame(thread, prev);
-    CString str = ConvertToString(EcmaString::Cast(result.GetTaggedObject()));
-    ASSERT_TRUE(result.IsString());
-    ASSERT_TRUE(EcmaString::StringsAreEqual(EcmaString::Cast(numericValue.GetTaggedValue().GetTaggedObject()),
-                EcmaString::Cast(result.GetTaggedObject())));
+    [[maybe_unused]] JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
+    bool hasPendingException = false;
+    if (thread->HasPendingException()) {
+        hasPendingException = true;
+        thread->ClearException();
+    }
+    ASSERT_TRUE(hasPendingException);
 }
 }  // namespace panda::test

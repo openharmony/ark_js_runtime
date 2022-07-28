@@ -126,7 +126,17 @@ JSTaggedValue SlowRuntimeStub::ToNumber(JSThread *thread, JSTaggedValue value)
 
     JSHandle<JSTaggedValue> number(thread, value);
     // may return exception
-    return JSTaggedValue::ToNumeric(thread, number).GetTaggedValue();
+    return JSTaggedValue::ToNumber(thread, number);
+}
+
+JSTaggedValue SlowRuntimeStub::ToNumeric(JSThread *thread, JSTaggedValue value)
+{
+    INTERPRETER_TRACE(thread, Tonumeric);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> numeric(thread, value);
+    // may return exception
+    return JSTaggedValue::ToNumeric(thread, numeric).GetTaggedValue();
 }
 
 JSTaggedValue SlowRuntimeStub::NotDyn(JSThread *thread, JSTaggedValue value)

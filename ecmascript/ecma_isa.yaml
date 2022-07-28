@@ -600,3 +600,7 @@ groups:
         prefix: ecma
         format: [pref_op_id_32]
         properties: [string_id]
+      - sig: ecma.tonumeric v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]

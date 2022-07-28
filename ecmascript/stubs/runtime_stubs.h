@@ -212,6 +212,7 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(DefineGetterSetterByValue)          \
     V(SuperCall)                          \
     V(LdBigInt)                           \
+    V(ToNumeric)                          \
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
     V(CopyAotRestArgs)                    \
@@ -390,6 +391,7 @@ private:
     static inline JSTaggedValue RuntimeStGlobalVar(JSThread *thread, const JSHandle<JSTaggedValue> &prop,
                                                    const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeToNumber(JSThread *thread, const JSHandle<JSTaggedValue> &value);
+    static inline JSTaggedValue RuntimeToNumeric(JSThread *thread, const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeEqDyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                              const JSHandle<JSTaggedValue> &right);
     static inline JSTaggedValue RuntimeNotEqDyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,

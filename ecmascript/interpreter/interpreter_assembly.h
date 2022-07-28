@@ -168,7 +168,6 @@ static std::array<DispatchEntryPoint, BCStubEntries::BC_HANDLER_COUNT> asmDispat
     InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,
-    InterpreterAssembly::HandleOverflow,
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_INTERPRETER_ASSEMBLY_64BIT_H

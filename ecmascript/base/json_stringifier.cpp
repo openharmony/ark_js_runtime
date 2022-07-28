@@ -287,7 +287,7 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
     JSTaggedValue tagValue = value.GetTaggedValue();
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
     // If Type(value) is Object, then
-    if (value->IsECMAObject()) {
+    if (value->IsECMAObject() || value->IsBigInt()) {
         // a. Let toJSON be Get(value, "toJSON").
         JSHandle<JSTaggedValue> toJson = thread_->GlobalConstants()->GetHandledToJsonString();
         JSHandle<JSTaggedValue> toJsonFun(
@@ -370,13 +370,13 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
             }
             case JSType::JS_PRIMITIVE_REF: {
                 SerializePrimitiveRef(valHandle);
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, JSTaggedValue::Exception());
                 return tagValue;
             }
             case JSType::SYMBOL:
                 return JSTaggedValue::Undefined();
             case JSType::BIGINT: {
-                result_ += ConvertToString(*BigInt::ToString(thread_, JSHandle<BigInt>(valHandle)));
-                return tagValue;
+                THROW_TYPE_ERROR_AND_RETURN(thread_, "cannot serialize a BigInt", JSTaggedValue::Exception());
             }
             default: {
                 if (!tagValue.IsCallable()) {
@@ -646,6 +646,8 @@ void JsonStringifier::SerializePrimitiveRef(const JSHandle<JSTaggedValue> &primi
         }
     } else if (primitive.IsBoolean()) {
         result_ += primitive.IsTrue() ? "true" : "false";
+    } else if (primitive.IsBigInt()) {
+        THROW_TYPE_ERROR(thread_, "cannot serialize a BigInt");
     }
 }
 

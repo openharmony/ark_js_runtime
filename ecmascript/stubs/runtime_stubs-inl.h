@@ -994,6 +994,11 @@ JSTaggedValue RuntimeStubs::RuntimeStGlobalVar(JSThread *thread, const JSHandle<
 
 JSTaggedValue RuntimeStubs::RuntimeToNumber(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
+    return JSTaggedValue::ToNumber(thread, value);
+}
+
+JSTaggedValue RuntimeStubs::RuntimeToNumeric(JSThread *thread, const JSHandle<JSTaggedValue> &value)
+{
     return JSTaggedValue::ToNumeric(thread, value).GetTaggedValue();
 }
 
