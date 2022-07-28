@@ -31,7 +31,6 @@ namespace panda::ecmascript {
     V(Ldboolean)                    \
     V(Ldnumber)                     \
     V(Ldstring)                     \
-    V(Ldbigint)                     \
     V(Ldnull)                       \
     V(Ldsymbol)                     \
     V(Ldfunction)                   \
@@ -228,6 +227,7 @@ namespace panda::ecmascript {
     V(SetPropertyByName)            \
     V(GreaterEqDynWithIC)           \
     V(LdBigInt)                     \
+    V(Tonumeric)                    \
     V(DefineGeneratorFuncWithMethodId) \
     V(GetSuperConstructor)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

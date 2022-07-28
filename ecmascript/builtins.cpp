@@ -273,14 +273,15 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     if (env == vm_->GetGlobalEnv()) {
         InitializeAllTypeError(env, objFuncDynclass);
         InitializeSymbol(env, primRefObjDynclass);
+        InitializeBigInt(env, primRefObjDynclass);
     } else {
         // error and symbol need to be shared when initialize realm
         InitializeAllTypeErrorWithRealm(env);
         InitializeSymbolWithRealm(env, primRefObjDynclass);
+        InitializeBigIntWithRealm(env);
     }
 
     InitializeNumber(env, globalObject, primRefObjDynclass);
-    InitializeBigInt(env, objFuncDynclass);
     InitializeDate(env, objFuncDynclass);
     InitializeObject(env, objFuncPrototype, objectFunction);
     InitializeBoolean(env, primRefObjDynclass);
@@ -769,12 +770,23 @@ void Builtins::InitializeNumber(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     env->SetNumberFunction(thread_, numFunction);
 }
+void Builtins::InitializeBigIntWithRealm(const JSHandle<GlobalEnv> &realm) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    realm->SetBigIntFunction(thread_, env->GetBigIntFunction());
 
-void Builtins::InitializeBigInt(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromASCII("BigInt"));
+    JSHandle<JSObject> globalObject(thread_, realm->GetGlobalObject());
+    PropertyDescriptor descriptor(thread_, env->GetBigIntFunction(), true, false, true);
+    JSObject::DefineOwnProperty(thread_, globalObject, nameString, descriptor);
+}
+
+void Builtins::InitializeBigInt(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &primRefObjDynclass) const
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     // BigInt.prototype
-    JSHandle<JSObject> bigIntFuncPrototype = factory_->NewJSObjectWithInit(objFuncDynclass);
+    JSHandle<JSObject> bigIntFuncPrototype = factory_->NewJSObjectWithInit(primRefObjDynclass);
     JSHandle<JSTaggedValue> bigIntFuncPrototypeValue(bigIntFuncPrototype);
 
     // BigInt.prototype_or_dynclass

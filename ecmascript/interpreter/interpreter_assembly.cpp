@@ -745,7 +745,7 @@ void InterpreterAssembly::HandleToNumberPrefV8(
     LOG_INST() << "intrinsics::tonumber"
                 << " v" << v0;
     JSTaggedValue value = GET_VREG_VALUE(v0);
-    if (value.IsNumber() || value.IsBigInt()) {
+    if (value.IsNumber()) {
         // fast path
         SET_ACC(value);
     } else {
@@ -3334,6 +3334,21 @@ void InterpreterAssembly::HandleLdBigIntPrefId32(
     INTERPRETER_RETURN_IF_ABRUPT(res);
     SET_ACC(res);
     DISPATCH(BytecodeInstruction::Format::PREF_ID32);
+}
+
+void InterpreterAssembly::HandleToNumericPrefV8(
+    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+    JSTaggedValue acc, int32_t hotnessCounter)
+{
+    uint16_t v0 = READ_INST_8_1();
+
+    LOG_INST() << "intrinsics::tonumeric"
+                << " v" << v0;
+    JSTaggedValue value = GET_VREG_VALUE(v0);
+    JSTaggedValue res = SlowRuntimeStub::ToNumeric(thread, value);
+    INTERPRETER_RETURN_IF_ABRUPT(res);
+    SET_ACC(res);
+    DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
 void InterpreterAssembly::HandleSuperCallPrefImm16V8(
