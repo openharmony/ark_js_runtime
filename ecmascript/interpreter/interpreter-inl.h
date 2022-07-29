@@ -1144,7 +1144,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         LOG_INST() << "intrinsics::tonumber"
                    << " v" << v0;
         JSTaggedValue value = GET_VREG_VALUE(v0);
-        if (value.IsNumber() || value.IsBigInt()) {
+        if (value.IsNumber()) {
             // fast path
             SET_ACC(value);
         } else {
@@ -3459,6 +3459,18 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_ID32);
     }
+    HANDLE_OPCODE(HANDLE_TONUMERIC_PREF_V8) {
+        uint16_t v0 = READ_INST_8_1();
+
+        LOG_INST() << "intrinsics::tonumeric"
+                   << " v" << v0;
+        JSTaggedValue value = GET_VREG_VALUE(v0);
+        SAVE_PC();
+        JSTaggedValue res = SlowRuntimeStub::ToNumeric(thread, value);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        SET_ACC(res);
+        DISPATCH(BytecodeInstruction::Format::PREF_V8);
+    }
     HANDLE_OPCODE(HANDLE_SUPERCALL_PREF_IMM16_V8) {
         uint16_t range = READ_INST_16_1();
         uint16_t v0 = READ_INST_8_3();
@@ -4038,6 +4050,7 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {STOWNBYNAMEWITHNAMESET_PREF_ID32_V8, "STOWNBYNAMEWITHNAMESET"},
         {LDFUNCTION_PREF, "LDFUNCTION"},
         {LDBIGINT_PREF_ID32, "LDBIGINT"},
+        {TONUMERIC_PREF_V8, "TONUMERIC"},
         {MOV_DYN_V8_V8, "MOV_DYN"},
         {MOV_DYN_V16_V16, "MOV_DYN"},
         {LDA_STR_ID32, "LDA_STR"},

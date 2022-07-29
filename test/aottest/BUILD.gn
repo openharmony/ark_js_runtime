@@ -67,6 +67,7 @@ group("ark_aot_test") {
     "sub:subAotAction",
     "throw:throwAotAction",
     "tonumber:tonumberAotAction",
+    "tonumeric:tonumericAotAction",
     "trystglobalbynameprefid32:trystglobalbynameprefid32AotAction",
     "typeof:typeofAotAction",
     "xor:xorAotAction",

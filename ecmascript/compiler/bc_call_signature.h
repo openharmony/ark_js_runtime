@@ -158,6 +158,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdFunctionPref)                              \
     T(HandleNewLexEnvWithNameDynPrefImm16Imm16)          \
     T(HandleLdBigIntPrefId32)                            \
+    T(HandleToNumericPrefV8)                             \
     T(HandleMovDynV8V8)                                  \
     T(HandleMovDynV16V16)                                \
     T(HandleLdaStrId32)                                  \
