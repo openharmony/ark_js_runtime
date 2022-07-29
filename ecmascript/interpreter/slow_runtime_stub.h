@@ -31,6 +31,7 @@ public:
     static JSTaggedValue NegDyn(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue AsyncFunctionEnter(JSThread *thread);
     static JSTaggedValue ToNumber(JSThread *thread, JSTaggedValue value);
+    static JSTaggedValue ToNumeric(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue NotDyn(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue IncDyn(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue DecDyn(JSThread *thread, JSTaggedValue value);

@@ -1527,6 +1527,13 @@ DEF_RUNTIME_STUBS(LdBigInt)
     return RuntimeLdBigInt(thread, numberBigInt).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(ToNumeric)
+{
+    RUNTIME_STUBS_HEADER(ToNumeric);
+    JSHandle<JSTaggedValue> value = GetHArg<JSTaggedValue>(argv, argc, 0);  // 0: means the zeroth parameter
+    return RuntimeToNumeric(thread, value).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
 {
     RUNTIME_STUBS_HEADER(NewLexicalEnvWithNameDyn);
