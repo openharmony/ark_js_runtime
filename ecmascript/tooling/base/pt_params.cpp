@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/tooling/base/pt_params.h"
+#include "ecmascript/tooling/base/parse_pt_int.h"
 
 namespace panda::ecmascript::tooling {
 std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
@@ -47,7 +48,12 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     std::string callFrameId;
     ret = params.GetString("callFrameId", &callFrameId);
     if (ret == Result::SUCCESS) {
-        paramsObject->callFrameId_ = std::stoi(callFrameId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(callFrameId, parsed)) {
+            paramsObject->callFrameId_ = parsed;
+        } else {
+            error += "Unknown 'callFrameId';";
+        }
     } else {
         error += "Unknown 'callFrameId';";
     }
@@ -163,7 +169,12 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const PtJso
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        paramsObject->scriptId_ = std::stoi(scriptId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(scriptId, parsed)) {
+            paramsObject->scriptId_ = parsed;
+        } else {
+            error += "Unknown 'scriptId';";
+        }
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -426,7 +437,12 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const PtJson &p
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        paramsObject->objectId_ = std::stoi(objectId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(objectId, parsed)) {
+            paramsObject->objectId_ = parsed;
+        } else {
+            error += "Unknown 'objectId';";
+        }
     } else {
         error += "Unknown 'objectId';";
     }
@@ -477,7 +493,12 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const PtJson 
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        paramsObject->objectId_ = std::stoi(objectId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(objectId, parsed)) {
+            paramsObject->objectId_ = parsed;
+        } else {
+            error += "Unknown 'objectId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'objectId';";
     }
@@ -659,7 +680,12 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     std::string heapObjectId;
     ret = params.GetString("heapObjectId", &heapObjectId);
     if (ret == Result::SUCCESS) {
-        paramsObject->heapObjectId_ = std::stoi(heapObjectId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(heapObjectId, parsed)) {
+            paramsObject->heapObjectId_ = parsed;
+        } else {
+            error += "Unknown 'heapObjectId';";
+        }
     } else {
         error += "Unknown 'heapObjectId';";
     }
@@ -680,7 +706,12 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const PtJso
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        paramsObject->objectId_ = std::stoi(objectId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(objectId, parsed)) {
+            paramsObject->objectId_ = parsed;
+        } else {
+            error += "Unknown 'objectId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'objectId';";
     }
@@ -701,7 +732,12 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        paramsObject->objectId_ = std::stoi(objectId);
+        int32_t parsed = 0;
+        if (ParsePtInt32(objectId, parsed)) {
+            paramsObject->objectId_ = parsed;
+        } else {
+            error += "Unknown 'objectId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'objectId';";
     }
