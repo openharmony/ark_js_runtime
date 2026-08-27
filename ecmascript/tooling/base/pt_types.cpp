@@ -14,6 +14,7 @@
  */
 
 #include "pt_types.h"
+#include "ecmascript/tooling/base/parse_pt_int.h"
 
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
 
@@ -475,7 +476,9 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const PtJson &params)
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        remoteObject->objectId_ = std::stoi(objectId);
+        if (!ParsePtInt32(objectId, remoteObject->objectId_)) {
+            error += "Unknown 'objectId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'objectId';";
     }
@@ -553,7 +556,9 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        exceptionDetails->scriptId_ = std::stoi(scriptId);
+        if (!ParsePtInt32(scriptId, exceptionDetails->scriptId_)) {
+            error += "Unknown 'scriptId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'scriptId';";
     }
@@ -953,7 +958,9 @@ std::unique_ptr<CallArgument> CallArgument::Create(const PtJson &params)
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
-        callArgument->objectId_ = std::stoi(objectId);
+        if (!ParsePtInt32(objectId, callArgument->objectId_)) {
+            error += "Unknown 'objectId';";
+        }
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'objectId';";
     }
@@ -989,7 +996,9 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        location->scriptId_ = std::stoi(scriptId);
+        if (!ParsePtInt32(scriptId, location->scriptId_)) {
+            error += "Unknown 'scriptId';";
+        }
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -1117,7 +1126,9 @@ std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        locationRange->scriptId_ = std::stoi(scriptId);
+        if (!ParsePtInt32(scriptId, locationRange->scriptId_)) {
+            error += "Unknown 'scriptId';";
+        }
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -1179,7 +1190,9 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        breakLocation->scriptId_ = std::stoi(scriptId);
+        if (!ParsePtInt32(scriptId, breakLocation->scriptId_)) {
+            error += "Unknown 'scriptId';";
+        }
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -1342,7 +1355,9 @@ std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
     std::string callFrameId;
     ret = params.GetString("callFrameId", &callFrameId);
     if (ret == Result::SUCCESS) {
-        callFrame->callFrameId_ = std::stoi(callFrameId);
+        if (!ParsePtInt32(callFrameId, callFrame->callFrameId_)) {
+            error += "Unknown 'callFrameId';";
+        }
     } else {
         error += "Unknown 'callFrameId';";
     }
